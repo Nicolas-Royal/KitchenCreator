@@ -1,0 +1,3 @@
+In ruby terminal paste the following command to execute the automate tool:
+load "C:/Users/usuario/Documents/Royal-Kitchen-Tools/Catalog Creator/script.rb"
+Verify the path is accurate and input data (main components stored and settings.csv for each object are ready), then execute.

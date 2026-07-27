@@ -1,0 +1,126 @@
+{
+  "familia": "esquinero",
+  "titulo": "Esquinero",
+  "descripcion": "Módulo base de esquinero.",
+  "componente_base": "Main Components/ESQUINERO.skp",
+  "salida_dir": "Output/Esquineros",
+  "nombre_patron": "ESQ-{LenX}-{divisor>f01cantdiv}div",
+  "grupos": [
+    {
+      "id": "dimensiones",
+      "titulo": "Dimensiones",
+      "campos": [
+        { "id": "LenX", "attr": "LenX", "label": "Ancho", "tipo": "numero", "unidad": "mm", "default": "", "requerido": true },
+        { "id": "LenY", "attr": "LenY", "label": "Profundidad", "tipo": "numero", "unidad": "mm", "default": "", "requerido": true },
+        { "id": "LenZ", "attr": "LenZ", "label": "Alto", "tipo": "numero", "unidad": "mm", "default": "", "requerido": true, "nota": "El alto del mueble incluye el alto del zócalo." },
+        { "id": "a02zocalo", "attr": "a02zocalo", "label": "Alto zócalo", "tipo": "numero", "unidad": "mm", "default": "100" }
+      ]
+    },
+    {
+      "id": "espesores",
+      "titulo": "Espesores",
+      "campos": [
+        { "id": "c01espestr", "attr": "c01espestr", "label": "Espesor estructura", "tipo": "numero", "unidad": "mm", "default": "18" },
+        { "id": "c02esppuerta", "attr": "c02esppuerta", "label": "Espesor puerta", "tipo": "numero", "unidad": "mm", "default": "18" },
+        { "id": "c03espfondo", "attr": "c03espfondo", "label": "Espesor fondo", "tipo": "numero", "unidad": "mm", "default": "12" }
+      ]
+    },
+    {
+      "id": "estructura",
+      "titulo": "Estructura e interior",
+      "campos": [
+        { "id": "e22tipotecho", "attr": "estructura>e22tipotecho", "label": "Tipo de techo", "tipo": "select", "default": "1", "opciones": [
+          { "label": "Ninguno", "valor": "1" },
+          { "label": "Amarre frontal", "valor": "2" },
+          { "label": "Amarre posterior", "valor": "3" },
+          { "label": "Amarre frontal + posterior", "valor": "4" },
+          { "label": "Techo completo", "valor": "5" }
+        ] },
+        { "id": "e23ancamtecho", "attr": "estructura>e23ancamtecho", "label": "Ancho amarres", "tipo": "numero", "unidad": "mm", "default": "" },
+        { "id": "c24entrepano", "attr": "c24entrepano", "label": "Entrepaño", "tipo": "select", "default": "1", "opciones": [
+          { "label": "Sí", "valor": "0" },
+          { "label": "No", "valor": "1" }
+        ] }
+      ]
+    },
+    {
+      "id": "frente",
+      "titulo": "Frente y puertas",
+      "campos": [
+        { "id": "EstiloPuerta", "attr": "EstiloPuerta", "label": "Diseño de puerta", "tipo": "select", "default": "1", "opciones": [
+          { "label": "Ninguna", "valor": "0" },
+          { "label": "Puerta lisa", "valor": "1" },
+          { "label": "Puerta italiana", "valor": "2" },
+          { "label": "Puerta vidrio", "valor": "3" },
+          { "label": "Puerta vidrio-madera", "valor": "4" },
+          { "label": "Puerta uñero", "valor": "5" },
+          { "label": "N cajones", "valor": "6" },
+          { "label": "2 cajones", "valor": "7" },
+          { "label": "3 cajones", "valor": "8" },
+          { "label": "4 cajones", "valor": "9" }
+        ] },
+        { "id": "f01posextintpu", "attr": "puerta>f01posextintpu", "label": "Posición de puertas", "tipo": "select", "default": "1", "opciones": [
+          { "label": "Puerta/Cajón exterior", "valor": "1" },
+          { "label": "Puerta/Cajón interior", "valor": "2" }
+        ] },
+        { "id": "f04seppuertas", "attr": "f04seppuertas", "label": "Separación entre puertas", "tipo": "numero", "unidad": "mm", "default": "3" },
+        { "id": "f11margsupcaj", "attr": "f11margsupcaj", "label": "Margen superior", "tipo": "numero", "unidad": "mm", "default": "0" },
+        { "id": "f12marginfcaj", "attr": "f12marginfcaj", "label": "Margen inferior", "tipo": "numero", "unidad": "mm", "default": "0" },
+        { "id": "f13margizqcaj", "attr": "f13margizqcaj", "label": "Margen izquierdo", "tipo": "numero", "unidad": "mm", "default": "2" },
+        { "id": "f14margdercaj", "attr": "f14margdercaj", "label": "Margen derecho", "tipo": "numero", "unidad": "mm", "default": "2" }
+      ]
+    },
+    {
+      "id": "tirador",
+      "titulo": "Tirador",
+      "campos": [
+        { "id": "f21tipotirador", "attr": "puerta>f21tipotirador", "label": "Tipo de tirador", "tipo": "select", "default": "1", "opciones": [
+          { "label": "Sin tirador", "valor": "1" },
+          { "label": "Tirador secc. circular", "valor": "2" },
+          { "label": "Tirador secc. cuadrada", "valor": "3" },
+          { "label": "Tirador arco", "valor": "4" },
+          { "label": "Tirador botón cuadrado", "valor": "5" },
+          { "label": "Tirador botón circular", "valor": "6" },
+          { "label": "Tirador CLE", "valor": "7" }
+        ] },
+        { "id": "f22postirador", "attr": "puerta>f22postirador", "label": "Posición de tirador", "tipo": "select", "default": "3", "opciones": [
+          { "label": "Arriba - Izquierda", "valor": "1" },
+          { "label": "Arriba - Centro", "valor": "2" },
+          { "label": "Arriba - Derecha", "valor": "3" },
+          { "label": "Centro - Izquierda", "valor": "4" },
+          { "label": "Centro - Centro", "valor": "5" },
+          { "label": "Centro - Derecha", "valor": "6" },
+          { "label": "Abajo - Izquierda", "valor": "7" },
+          { "label": "Abajo - Centro", "valor": "8" },
+          { "label": "Abajo - Derecha", "valor": "9" }
+        ] },
+        { "id": "f23orienttirador", "attr": "puerta>f23orienttirador", "label": "Orientación de tirador", "tipo": "select", "default": "2", "opciones": [
+          { "label": "Tirador horizontal", "valor": "1" },
+          { "label": "Tirador vertical", "valor": "2" }
+        ] }
+      ]
+    },
+    {
+      "id": "divisores",
+      "titulo": "Divisores",
+      "campos": [
+        { "id": "f01cantdiv", "attr": "divisor>f01cantdiv", "label": "Cantidad de divisores", "tipo": "derivado", "default": "1", "min": 1, "max": 6, "controla": ["divisor>f03espacio"] },
+        { "id": "f02tipomedida", "attr": "divisor>f02tipomedida", "label": "Tipo de medida", "tipo": "select", "default": "1", "opciones": [
+          { "label": "Separaciones iguales", "valor": "1" },
+          { "label": "Personalizado", "valor": "2" }
+        ] },
+        { "id": "e31_marg1", "attr": "divisor>e31_marg1", "label": "Margen frontal", "tipo": "numero", "unidad": "mm", "default": "" },
+        { "id": "e32_marg2", "attr": "divisor>e32_marg2", "label": "Margen posterior", "tipo": "numero", "unidad": "mm", "default": "" },
+        { "id": "e33_marg3", "attr": "divisor>e33_marg3", "label": "Margen izquierdo", "tipo": "numero", "unidad": "mm", "default": "" },
+        { "id": "e34_marg4", "attr": "divisor>e34_marg4", "label": "Margen derecho", "tipo": "numero", "unidad": "mm", "default": "" },
+        { "id": "f03espacio1", "attr": "divisor>f03espacio1", "label": "Espacio 1 (inferior)", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 1 } },
+        { "id": "f03espacio2", "attr": "divisor>f03espacio2", "label": "Espacio 2", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 2 } },
+        { "id": "f03espacio3", "attr": "divisor>f03espacio3", "label": "Espacio 3", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 3 } },
+        { "id": "f03espacio4", "attr": "divisor>f03espacio4", "label": "Espacio 4", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 4 } },
+        { "id": "f03espacio5", "attr": "divisor>f03espacio5", "label": "Espacio 5", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 5 } },
+        { "id": "f03espacio6", "attr": "divisor>f03espacio6", "label": "Espacio 6", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 6 } },
+        { "id": "f03espacio7", "attr": "divisor>f03espacio7", "label": "Espacio 7", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 7 } }
+      ]
+    }
+  ]
+}
