@@ -139,6 +139,77 @@ module RoyalKitchen
     end
 
     # -----------------------------------------------------------------------
+    # Presupuesto de alto de cajones — espejo en Ruby del cálculo de app.js.
+    #
+    # La fórmula del componente reparte el alto en partes iguales pero no tiene
+    # piso: si el reparto cae bajo el alto físico mínimo del cajón, recorta y la
+    # pila traspasa el mueble (errores 1 y 2 de Issues/errors.md). La UI ya lo
+    # bloquea; esto atrapa payloads que no pasaron por ella.
+    #
+    # Devuelve el mensaje de error, o nil si la configuración cabe.
+    # -----------------------------------------------------------------------
+    TOL_IN = 1.0 / 25.4   # 1 mm de tolerancia, en pulgadas
+
+    # Medida de un attr de la fila plana, en pulgadas. nil si no viene o no es número.
+    def medida_in(valores, attr)
+      return nil unless valores.key?(attr)
+      v = Engine.interpret(valores[attr])
+      v.is_a?(Numeric) ? v.to_f : nil
+    end
+
+    def a_mm(pulgadas)
+      (pulgadas * 25.4).round(1)
+    end
+
+    def cajones_efectivos(reglas, valores)
+      mapa   = reglas['estilos_con_cajones'] || {}
+      estilo = valores[reglas['attr_estilo_puerta']].to_s
+      return 0 unless mapa.key?(estilo)
+      mapa[estilo] == 'n' ? valores[reglas['attr_cantidad']].to_i : mapa[estilo].to_i
+    end
+
+    def validar_cajones(manifest, valores)
+      reglas = manifest['reglas_cajones']
+      return nil unless reglas
+
+      n = cajones_efectivos(reglas, valores)
+      return nil if n < 1
+
+      util = medida_in(valores, reglas['attr_alto_util'])
+      return nil if util.nil?
+      Array(reglas['attr_restar']).each do |attr|
+        v = medida_in(valores, attr)
+        util -= v if v
+      end
+
+      sep      = medida_in(valores, reglas['attr_separacion']) || 0.0
+      alto_min = reglas['alto_min_mm'].to_f / 25.4
+      minimo   = reglas['alto_min_mm']
+      disp     = util - sep * (n - 1)
+
+      return "El alto útil del mueble quedó en #{a_mm(util)} mm. Revisa alto, zócalo y márgenes." if disp <= 0
+
+      altos    = Array(reglas['attrs_alto']).first(n).map { |attr| medida_in(valores, attr) }
+      fijos    = altos.compact
+      libres   = n - fijos.size
+      restante = disp - fijos.inject(0.0) { |s, v| s + v }
+
+      bajo = fijos.find { |v| v < alto_min - TOL_IN }
+      return "El alto de un cajón (#{a_mm(bajo)} mm) es menor al mínimo de #{minimo} mm." if bajo
+
+      # Solo se bloquea lo que se PASA; que sobre alto deja un hueco, no un desborde.
+      if restante < -TOL_IN
+        return "Los altos fijados suman #{a_mm(disp - restante)} mm y solo caben #{a_mm(disp)} mm: " \
+               "se pasan #{a_mm(-restante)} mm."
+      elsif libres > 0 && (restante / libres) < alto_min - TOL_IN
+        return "Quedan #{a_mm(restante)} mm para #{libres} cajón(es) = #{a_mm(restante / libres)} mm " \
+               "cada uno, por debajo del mínimo de #{minimo} mm."
+      end
+
+      nil
+    end
+
+    # -----------------------------------------------------------------------
     # Generación: recibe { familia, nombre_salida, valores, insertar_en_escena }
     # donde `valores` ya es la fila plana { "prefijo>attr" => "800mm" }.
     # -----------------------------------------------------------------------
@@ -156,6 +227,9 @@ module RoyalKitchen
       manifest_wrap = cargar_manifest(familia)
       return manifest_wrap unless manifest_wrap['ok']
       manifest = manifest_wrap['manifest']
+
+      error_cajones = validar_cajones(manifest, valores)
+      return { 'ok' => false, 'error' => "Los cajones no caben. #{error_cajones}" } if error_cajones
 
       base_path = manifest['componente_base_abs']
       unless File.exist?(base_path)

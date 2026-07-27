@@ -88,8 +88,32 @@
     return f ? valores[f.id] : undefined;
   }
 
+  /* "190mm" / "25cm" / "600" -> milímetros. NaN si está vacío o no es medida. */
+  function parseMm(valor) {
+    if (valor == null) return NaN;
+    var m = String(valor).trim().match(/^(-?[\d.,]+)\s*(mm|cm|cms|m|in|"|pulg)?$/i);
+    if (!m) return NaN;
+    var n = parseFloat(m[1].replace(',', '.'));
+    if (isNaN(n)) return NaN;
+    switch ((m[2] || 'mm').toLowerCase()) {
+      case 'cm': case 'cms':      return n * 10;
+      case 'm':                   return n * 1000;
+      case 'in': case '"': case 'pulg': return n * 25.4;
+      default:                    return n;
+    }
+  }
+  /* Medida de un attr en mm, tal como se va a inyectar (resuelve presets). */
+  function attrMm(manifest, valores, attr) {
+    var f = fieldByAttr(manifest, attr);
+    return f ? parseMm(effectiveValue(f, valores)) : NaN;
+  }
+  function fmt(mm) { return String(Math.round(mm * 10) / 10); }
+
   function fieldVisible(field, manifest, valores) {
     if (!field.visible_si) return true;
+    if (field.visible_si.min_cajones != null) {
+      return cajonesEfectivos(manifest, valores) >= field.visible_si.min_cajones;
+    }
     var n = attrNumber(manifest, valores, field.visible_si.attr);
     if (isNaN(n)) return true;
     return n >= field.visible_si.min;
@@ -107,13 +131,109 @@
     return esperado.some(function (v) { return String(v) === actual; });
   }
 
+  // =========================================================================
+  //  Presupuesto de alto de cajones  (errores 1 y 2 de Issues/errors.md)
+  // -------------------------------------------------------------------------
+  //  La fórmula interna del componente reparte el alto en partes iguales
+  //  (=(LenZ - f02sepcajtirad*(a21cantcajon-1))/a21cantcajon) pero NO tiene
+  //  piso: si el reparto queda por debajo del alto físico mínimo del cajón, el
+  //  componente lo recorta hacia arriba y la pila traspasa el mueble. Aquí se
+  //  hace la misma cuenta antes de generar, para bloquear lo que no cabe.
+  //  Todos los parámetros viven en manifest.reglas_cajones (dato, no código).
+  // =========================================================================
+
+  /* Cajones efectivos según el diseño de puerta: "n" toma el contador,
+     7/8/9 son los componentes fijos de 2/3/4 cajones. 0 = no aplica. */
+  function cajonesEfectivos(manifest, valores) {
+    var R = manifest.reglas_cajones;
+    if (!R) return 0;
+    var estilo = String(attrRaw(manifest, valores, R.attr_estilo_puerta));
+    var mapa = R.estilos_con_cajones || {};
+    if (!Object.prototype.hasOwnProperty.call(mapa, estilo)) return 0;
+    if (mapa[estilo] === 'n') {
+      var n = attrNumber(manifest, valores, R.attr_cantidad);
+      return isNaN(n) ? 0 : n;
+    }
+    return parseInt(mapa[estilo], 10) || 0;
+  }
+
+  function presupuestoCajones(manifest, valores) {
+    var R = manifest.reglas_cajones;
+    var n = cajonesEfectivos(manifest, valores);
+    if (!R || n < 1) return { aplica: false };
+
+    var util = attrMm(manifest, valores, R.attr_alto_util);
+    if (isNaN(util)) return { aplica: false };
+    (R.attr_restar || []).forEach(function (a) {
+      var v = attrMm(manifest, valores, a);
+      if (!isNaN(v)) util -= v;
+    });
+
+    var sep = attrMm(manifest, valores, R.attr_separacion);
+    if (isNaN(sep)) sep = 0;
+
+    var altoMin    = R.alto_min_mm || 0;
+    var disponible = util - sep * (n - 1);   // suma de los n frentes
+
+    // Altos que la diseñadora fijó; los que están en «Automático» van vacíos.
+    // Si n supera la cantidad de campos disponibles, esos cajones también son
+    // automáticos (los reparte la fórmula del componente).
+    var attrsAlto = (R.attrs_alto || []).slice(0, n);
+    var fijos = [], libresIdx = [];
+    attrsAlto.forEach(function (a, i) {
+      var v = attrMm(manifest, valores, a);
+      if (isNaN(v)) libresIdx.push(i); else fijos.push({ mm: v, i: i });
+    });
+    var libres   = n - fijos.length;
+    var asignado = fijos.reduce(function (s, f) { return s + f.mm; }, 0);
+    var restante = disponible - asignado;
+    var porCajon = libres > 0 ? restante / libres : NaN;
+    var paso     = altoMin + sep;
+    // nMax = tope geométrico del mueble (todos los cajones al mínimo). No depende
+    // de n ni de los altos fijados, así que sirve de tope estable del contador.
+    var nMax     = paso > 0 ? Math.floor((util + sep) / paso) : n;
+    // cabenTotal = cuántos caben respetando los altos que ya fijó la diseñadora.
+    var cabenTotal = paso > 0 ? fijos.length + Math.max(0, Math.floor((restante + sep) / paso)) : n;
+
+    var ok = true, mensaje = '';
+    var chico = fijos.filter(function (f) { return f.mm < altoMin; })[0];
+    if (disponible <= 0) {
+      ok = false;
+      mensaje = 'El alto útil del mueble quedó en ' + fmt(util) + ' mm. Revisa alto, zócalo y márgenes.';
+    } else if (chico) {
+      ok = false;
+      mensaje = 'El alto del cajón ' + (chico.i + 1) + ' (' + fmt(chico.mm) + ' mm) es menor al mínimo de ' + altoMin + ' mm.';
+    } else if (restante < -1) {
+      // Solo bloquea lo que se PASA. Que sobre alto deja un hueco, no un desborde.
+      ok = false;
+      mensaje = 'Los altos fijados suman ' + fmt(asignado) + ' mm y solo caben ' + fmt(disponible) +
+                ' mm: se pasan ' + fmt(-restante) + ' mm.';
+    } else if (libres > 0 && porCajon < altoMin) {
+      ok = false;
+      mensaje = 'Quedan ' + fmt(restante) + ' mm para ' + libres + (libres === 1 ? ' cajón = ' : ' cajones = ') +
+                fmt(porCajon) + ' mm cada uno, por debajo del mínimo de ' + altoMin + ' mm. ' +
+                (fijos.length
+                  ? 'Con esos altos fijados caben ' + cabenTotal + (cabenTotal === 1 ? ' cajón' : ' cajones') + ' en total.'
+                  : 'Con ' + fmt(util) + ' mm de alto útil caben máximo ' + nMax + (nMax === 1 ? ' cajón.' : ' cajones.'));
+    }
+
+    return {
+      aplica: true, n: n, util: util, sep: sep, disponible: disponible,
+      asignado: asignado, restante: restante, porCajon: porCajon, libres: libres,
+      libresIdx: libresIdx, attrsAlto: attrsAlto,
+      altoMin: altoMin, nMax: nMax, cabenTotal: cabenTotal, ok: ok, mensaje: mensaje
+    };
+  }
+
   // ---- Defaults / registro nuevo ------------------------------------------
   function defaultValores(manifest) {
     var v = {};
     manifest.grupos.forEach(function (g) {
       g.campos.forEach(function (f) {
         if (f.tipo === 'preset') {
-          v[f.id] = (f.default != null && f.default !== '') ? f.default : (f.presets[0] ? f.presets[0].valor : '');
+          // default "" es legítimo (ej. «Automático»); solo se cae al primer
+          // preset cuando el manifiesto no declara default.
+          v[f.id] = (f.default != null) ? f.default : (f.presets[0] ? f.presets[0].valor : '');
           v[f.id + '::custom'] = '';
         } else {
           v[f.id] = (f.default != null) ? f.default : '';
@@ -214,6 +334,12 @@
     if (group.condicion && group.condicion.mensaje) {
       bodyEl.appendChild(el('p', 'group__note', group.condicion.mensaje));
     }
+    if (group.presupuesto === 'cajones') {
+      var pres = el('p', 'budget');
+      pres.dataset.budget = 'cajones';
+      pres.hidden = true;            // updateConditionals() lo llena y lo muestra
+      bodyEl.appendChild(pres);
+    }
     group.campos.forEach(function (f) {
       bodyEl.appendChild(renderField(f, manifest, registro));
     });
@@ -222,17 +348,10 @@
   }
 
   function renderField(field, manifest, registro) {
+    // `data-field-id` es el único enlace DOM↔manifiesto: updateConditionals()
+    // resuelve visible_si/habilitado_si leyendo el manifiesto, no el dataset.
     var wrap = el('div', 'field' + (field.requerido ? ' is-required' : ''));
     wrap.dataset.fieldId = field.id;
-    if (field.visible_si) {
-      wrap.dataset.visibleAttr = field.visible_si.attr;
-      wrap.dataset.visibleMin = field.visible_si.min;
-    }
-    if (field.habilitado_si) {
-      wrap.dataset.enableAttr = field.habilitado_si.attr;
-      var esperado = field.habilitado_si.valores || [field.habilitado_si.valor];
-      wrap.dataset.enableValores = esperado.join('|');
-    }
 
     var label = el('label', 'field__label', field.label);
     wrap.appendChild(label);
@@ -335,19 +454,33 @@
   }
 
   function ctrlStepper(field, manifest, registro) {
-    var min = field.min || 0, max = field.max || 99;
+    var min = field.min || 0;
     var step = el('div', 'stepper');
     var less = el('button', null, '−'); less.type = 'button';
     var val = el('div', 'stepper__val');
     var more = el('button', null, '+'); more.type = 'button';
 
+    /* Tope efectivo: el del manifiesto, acotado por lo que físicamente cabe
+       cuando el campo declara `max_regla` (evita el error 1 desde la captura). */
+    function maxEfectivo() {
+      var max = field.max || 99;
+      if (field.max_regla === 'cajones') {
+        var p = presupuestoCajones(manifest, registro.valores);
+        if (p.aplica && isFinite(p.nMax)) max = Math.min(max, Math.max(min, p.nMax));
+      }
+      return max;
+    }
+
     function get() { return parseInt(registro.valores[field.id], 10) || min; }
-    function set(n) {
-      n = Math.max(min, Math.min(max, n));
-      registro.valores[field.id] = String(n);
+    function pintar() {
+      var n = get(), max = maxEfectivo();
       val.textContent = String(n);
       less.disabled = n <= min;
       more.disabled = n >= max;
+    }
+    function set(n) {
+      registro.valores[field.id] = String(Math.max(min, Math.min(maxEfectivo(), n)));
+      pintar();
       // Actualiza sobre el DOM existente (visibilidad de subcampos) sin re-render
       // completo, que perdería el foco y el estado colapsado de los grupos.
       onValueChange(findManifest(registro.familia), registro);
@@ -355,44 +488,75 @@
     less.addEventListener('click', function () { set(get() - 1); });
     more.addEventListener('click', function () { set(get() + 1); });
 
-    val.textContent = String(get());
-    less.disabled = get() <= min;
-    more.disabled = get() >= max;
+    // Lo llama updateConditionals(): el tope depende de otros campos (alto,
+    // zócalo, separación), así que se recalcula en cada cambio del formulario.
+    step.__refreshLimits = pintar;
+    pintar();
 
     step.appendChild(less); step.appendChild(val); step.appendChild(more);
     return step;
   }
 
+  /* Pinta el resumen de alto de cajones del grupo con `presupuesto: "cajones"`. */
+  function refreshBudget(manifest, valores) {
+    var box = document.querySelector('.budget[data-budget="cajones"]');
+    if (!box) return;
+
+    var p = presupuestoCajones(manifest, valores);
+    box.hidden = !p.aplica;
+    if (!p.aplica) return;
+
+    box.classList.toggle('budget--bad', !p.ok);
+    var partes = [
+      'Alto útil ' + fmt(p.util) + ' mm',
+      p.n + (p.n === 1 ? ' cajón' : ' cajones'),
+      'asignado ' + fmt(p.asignado) + ' mm'
+    ];
+    if (p.libres > 0) {
+      partes.push('restante ' + fmt(p.restante) + ' mm → ' + fmt(p.porCajon) + ' mm c/u');
+    } else if (p.restante > 1) {
+      partes.push('sobran ' + fmt(p.restante) + ' mm sin usar');
+    }
+    box.textContent = partes.join(' · ') + (p.ok ? '' : ' — ' + p.mensaje);
+  }
+
   /* Recorre el DOM aplicando visible_si, habilitado_si y condicion de grupo. */
   function updateConditionals(manifest, registro) {
+    var valores = registro.valores;
+
     // grupos condicionales
     manifest.grupos.forEach(function (g) {
       if (!g.condicion) return;
       var sec = document.querySelector('.group[data-group="' + g.id + '"]');
-      if (sec) sec.classList.toggle('is-disabled', !groupEnabled(g, manifest, registro.valores));
+      if (sec) sec.classList.toggle('is-disabled', !groupEnabled(g, manifest, valores));
     });
-    // campos con visible_si
-    var fields = document.querySelectorAll('.field[data-visible-attr]');
-    Array.prototype.forEach.call(fields, function (wrap) {
-      var attr = wrap.dataset.visibleAttr;
-      var min = parseInt(wrap.dataset.visibleMin, 10);
-      var n = attrNumber(manifest, registro.valores, attr);
-      wrap.hidden = !isNaN(n) && n < min;
+
+    // Topes dinámicos de los contadores primero: el presupuesto de abajo se
+    // dibuja ya con el valor topado.
+    Array.prototype.forEach.call(document.querySelectorAll('.stepper'), function (s) {
+      if (typeof s.__refreshLimits === 'function') s.__refreshLimits();
     });
-    // campos con habilitado_si
-    var condFields = document.querySelectorAll('.field[data-enable-attr]');
-    Array.prototype.forEach.call(condFields, function (wrap) {
-      var attr = wrap.dataset.enableAttr;
-      var esperado = (wrap.dataset.enableValores || '').split('|');
-      var actual = String(attrRaw(manifest, registro.valores, attr));
-      var on = esperado.some(function (v) { return String(v) === actual; });
-      wrap.classList.toggle('is-disabled', !on);
-      // Solo input/select: los botones del stepper gestionan su propio disabled
-      // por min/max; la clase .is-disabled (pointer-events:none) bloquea su clic.
-      Array.prototype.forEach.call(wrap.querySelectorAll('input, select'), function (ctrl) {
-        ctrl.disabled = !on;
+
+    // Visibilidad y habilitación se resuelven desde el manifiesto (una sola
+    // implementación de cada predicado, compartida con flatten()).
+    manifest.grupos.forEach(function (g) {
+      g.campos.forEach(function (f) {
+        var wrap = document.querySelector('.field[data-field-id="' + f.id + '"]');
+        if (!wrap) return;
+        if (f.visible_si) wrap.hidden = !fieldVisible(f, manifest, valores);
+        if (f.habilitado_si) {
+          var on = fieldEnabled(f, manifest, valores);
+          wrap.classList.toggle('is-disabled', !on);
+          // Solo input/select: los botones del stepper gestionan su propio disabled
+          // por min/max; la clase .is-disabled (pointer-events:none) bloquea su clic.
+          Array.prototype.forEach.call(wrap.querySelectorAll('input, select'), function (ctrl) {
+            ctrl.disabled = !on;
+          });
+        }
       });
     });
+
+    refreshBudget(manifest, valores);
   }
 
   // =========================================================================
@@ -491,7 +655,22 @@
         flat[f.attr] = v;   // duplicados de attr: gana el último (quirk conocido de la definición)
       });
     });
+    aplicarAltosAutomaticos(manifest, registro, flat);
     return flat;
+  }
+
+  /* Cierra el reparto: los cajones en «Automático» reciben el alto restante ya
+     calculado, para que el .skp coincida con lo que mostró el presupuesto en vez
+     de depender de la fórmula sin piso del componente. */
+  function aplicarAltosAutomaticos(manifest, registro, flat) {
+    var p = presupuestoCajones(manifest, registro.valores);
+    if (!p.aplica || !p.ok || p.libres <= 0) return;
+    p.libresIdx.forEach(function (i) {
+      var attr = p.attrsAlto[i];
+      var f = fieldByAttr(manifest, attr);
+      if (!f || !fieldVisible(f, manifest, registro.valores)) return;
+      flat[attr] = (Math.round(p.porCajon * 100) / 100) + 'mm';
+    });
   }
 
   function generar() {
@@ -500,6 +679,13 @@
     var manifest = findManifest(r.familia);
     if (!manifest) return;
     if (!state.rootValido) { toast('error', 'Falta configurar la carpeta', 'Selecciona la carpeta del proyecto (contiene «Main Components»).'); return; }
+
+    // Sin esto el componente recorta los cajones y la pila traspasa el mueble.
+    var presupuesto = presupuestoCajones(manifest, r.valores);
+    if (presupuesto.aplica && !presupuesto.ok) {
+      toast('error', 'Los cajones no caben', presupuesto.mensaje);
+      return;
+    }
 
     var nombre = ($('#nombre-salida').value || r.nombre_salida || 'modulo').trim();
     r.nombre_salida = nombre;

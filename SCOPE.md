@@ -188,13 +188,17 @@ Principio: **la plantilla se genera desde el manifiesto** (botón "Exportar plan
 | 2026-07-24 | Habilitación **por campo** (`habilitado_si`) en vez de por grupo: los espesores y la corredera de cajón quedan siempre activos; solo «Cantidad de cajones» se habilita con diseño de puerta «N cajones». Se arregla el bug que impedía activar el grupo Cajones. |
 | 2026-07-24 | Variable `c24entrepano` (Entrepaño, Sí=0/No=1) expuesta en las tres familias. Formulario regrupado en 7 bloques temáticos (Dimensiones/Espesores/Estructura e interior/Frente y puertas/Tirador/Cajones/Divisores). |
 | 2026-07-24 | Alacena y Esquinero migradas a la UI (`manifest/alacena.json`, `manifest/esquinero.json`) y activadas en `FAMILIAS`; dejan de ser stubs "Próximamente". |
+| 2026-07-27 | **Orden de cajones resuelto: cajón 1 = superior.** El volcado lo confirma (`v02poscajon4 = 0`, posiciones acumuladas desde abajo). |
+| 2026-07-27 | La fórmula de reparto de alto del componente no tiene piso → el plugin calcula el presupuesto de alto (`reglas_cajones` en el manifiesto) y **bloquea** la generación de lo que no cabe, en vez de auto-ajustar. Alto mínimo de frente = 190 mm (preset CH, pendiente confirmar contra el herraje). |
+| 2026-07-27 | Los cuatro «Alto cajón» son tipo *preset* con Automático (restante) / CH / G / Personalizado, visibles según la cantidad efectiva de cajones (`visible_si.min_cajones`). |
+| 2026-07-27 | Tema de la interfaz a `#59b4a5` con logo `img/logo.jpg`. `--primary` es el color de marca y `--primary-strong` (`#35786c`) el de rellenos con texto encima (contraste AA). |
 
 ## 6. Preguntas abiertas
 
 - ¿Cuál es la variante vigente de Esquinero (`ESQUINERO.skp` vs `ESQUINERO(BASE).skp` vs `ESQUINERO-VIE.skp`)?
 - ¿`script3.rb` (unión booleana de piezas `P##`) entra al scope del plugin, o se evalúa aparte una vez validado que hace lo que promete?
 - **Variables por familia (pendiente del mantenedor):** el subconjunto exacto a exponer por Gabinete/Alacena/Esquinero se define y entrega vía la plantilla de 4 columnas en `Definiciones/`. Hasta entonces, Alacena y Esquinero van como stubs.
-- **Orden de cajones:** ¿`divisor>f03espacio1` es el cajón **superior** o el inferior? Define el `orden` de la expansión del campo derivado.
+- **Alto mínimo de frente de cajón:** hoy `alto_min_mm = 190` (tomado del preset CH). Confirmar contra la ficha del herraje y si difiere entre Tandem y Antaro (`b03tipocajon`).
 - **Márgenes vs espacios (off-by-one):** el CSV tiene `f03espacio1..7` (7) pero `g01margenf1..6` (6). ¿Los márgenes son *entre* cajones (N−1) o incluyen extremos?
 - **Medidas CH/G:** ¿existe tabla de estándares Royal Kitchens (medida por tipo de mueble/variable), o se ponen valores tentativos? Idealmente los presets viven en `_comunes.json` para editarlos sin tocar código.
 - **Presets globales vs por campo:** ¿"CH/G" significan lo mismo en todo el catálogo, o cambian según la variable?

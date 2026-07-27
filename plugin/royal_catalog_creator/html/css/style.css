@@ -10,9 +10,14 @@
   --text:      #1c2024;
   --text-dim:  #6b7280;
   --muted:     #9aa1ac;
-  --primary:   #c8102e;          /* rojo Royal */
+  /* Teal Royal. --primary es el color de marca (bordes, foco, acentos); sobre
+     fondo blanco tiene contraste 2.2:1, así que los rellenos con texto encima
+     usan --primary-strong (5.2:1, cumple AA). */
+  --primary:   #59b4a5;
+  --primary-strong:#35786c;
   --primary-ink:#ffffff;
-  --primary-weak:#fdecef;
+  --primary-weak:#eaf5f2;
+  --primary-on-weak:#35786c;     /* texto sobre --primary-weak */
   --accent:    #0f766e;
   --danger:    #dc2626;
   --ok:        #16a34a;
@@ -33,9 +38,11 @@
     --text:      #e7e9ee;
     --text-dim:  #a3abb8;
     --muted:     #6b7280;
-    --primary:   #f2415a;
+    --primary:   #6fc7b7;
+    --primary-strong:#3d8b7d;
     --primary-ink:#ffffff;
-    --primary-weak:#3a1620;
+    --primary-weak:#16302c;
+    --primary-on-weak:#6fc7b7;
     --accent:    #2dd4bf;
     --shadow:    0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
     --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
@@ -77,9 +84,11 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 }
 .sidebar__head { padding: 16px; border-bottom: 1px solid var(--border); }
 .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.brand__dot {
-  width: 28px; height: 28px; border-radius: 8px; flex: none;
-  background: linear-gradient(135deg, var(--primary), #7a0b1c);
+/* El JPG del logo viene sobre fondo blanco: se conserva la placa blanca también
+   en tema oscuro para que el escudo no quede recortado sobre el fondo. */
+.brand__logo {
+  width: 32px; height: 32px; flex: none; border-radius: 8px;
+  object-fit: contain; background: #fff;
   box-shadow: var(--shadow-sm);
 }
 .brand__name { font-weight: 700; letter-spacing: .2px; }
@@ -172,12 +181,24 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 .group.is-disabled .group__body { opacity: .45; pointer-events: none; }
 .group__note { grid-column: 1 / -1; font-size: 12px; color: var(--warn); margin: -2px 0 4px; }
 
+/* Presupuesto de alto (cajones): alto útil / asignado / restante en vivo. */
+.budget {
+  grid-column: 1 / -1; margin: 2px 0 6px; padding: 8px 12px;
+  font-size: 12px; line-height: 1.45; color: var(--primary-on-weak);
+  background: var(--primary-weak); border-radius: var(--radius-sm);
+  border-left: 3px solid var(--primary);
+}
+.budget--bad {
+  color: var(--danger); border-left-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
 /* ---------- Campos ---------- */
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field[hidden] { display: none; }
 .field__label { font-size: 12.5px; font-weight: 600; color: var(--text-dim); }
 .field__hint { font-size: 11px; color: var(--muted); }
-.field.is-required .field__label::after { content: " *"; color: var(--primary); }
+.field.is-required .field__label::after { content: " *"; color: var(--primary-strong); }
 .field.is-disabled .control, .field.is-disabled .preset, .field.is-disabled .stepper { opacity: .45; pointer-events: none; }
 .field.is-disabled .field__label { color: var(--muted); }
 .field__hint--cond { color: var(--warn); }
@@ -224,15 +245,15 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn--primary { background: var(--primary); color: var(--primary-ink); }
-.btn--primary:hover:not(:disabled) { background: color-mix(in srgb, var(--primary) 88%, #000); }
+.btn--primary { background: var(--primary-strong); color: var(--primary-ink); }
+.btn--primary:hover:not(:disabled) { background: color-mix(in srgb, var(--primary-strong) 88%, #000); }
 .btn--ghost { background: transparent; border-color: var(--border); color: var(--text); }
 .btn--ghost:hover:not(:disabled) { background: var(--surface-2); }
 .btn--block { width: 100%; }
 .btn--sm { padding: 7px 12px; font-size: 13px; }
 
 .chip { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
-  background: var(--primary-weak); color: var(--primary); flex: none; }
+  background: var(--primary-weak); color: var(--primary-on-weak); flex: none; }
 
 /* ---------- Toggle ---------- */
 .toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }

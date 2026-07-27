@@ -16,9 +16,13 @@ require 'sketchup.rb'
 require 'fileutils'
 
 # ----------------------------- CONFIG ---------------------------------------
-# Cambia esta ruta para inspeccionar otro componente (ALACENA.skp, ESQUINERO.skp...)
-BASE_COMPONENT_PATH = "C:/Users/usuario/Documents/Royal-Kitchen-Tools/Catalog Creator/Main Components/GABINETE.skp"
-OUTPUT_TXT          = "C:/Users/usuario/Documents/Royal-Kitchen-Tools/Catalog Creator/introspeccion_dump.txt"
+# Las rutas se derivan de la ubicación de este archivo (raíz del proyecto), así
+# no se rompen al mover/clonar el repo.
+# Cambia FAMILIA para inspeccionar otro componente (ALACENA.skp, ESQUINERO.skp...)
+PROJECT_ROOT        = File.expand_path(__dir__)
+FAMILIA             = "GABINETE"
+BASE_COMPONENT_PATH = File.join(PROJECT_ROOT, "Main Components", "#{FAMILIA}.skp")
+OUTPUT_TXT          = File.join(PROJECT_ROOT, "introspeccion_dump.txt")
 DICT                = "dynamic_attributes"
 # ----------------------------------------------------------------------------
 
@@ -75,10 +79,13 @@ def volcar_entidad(ent, ruta, prof, out)
       label     = meta["label"]     || "-"
       units     = meta["units"]     || "-"
       options   = meta["options"]   ? " | options: #{meta['options']}" : ""
-      formula   = meta["formula"]   ? "  <FÓRMULA>" : ""
+      # El texto de la fórmula es lo único que explica CÓMO se calcula la variable
+      # (ej. el reparto de alto de cajones). Se vuelca completo, no solo el marcador.
+      formula   = meta["formula"]   ? "  <FÓRMULA: #{meta['formula']}>" : ""
+      nominal   = meta["nominal"]   ? " | nominal: #{meta['nominal'].inspect}" : ""
 
       linea = "#{sangria}  - #{var} = #{valor.inspect}#{formula}\n" \
-              "#{sangria}      access=#{access}  units=#{units}\n" \
+              "#{sangria}      access=#{access}  units=#{units}#{nominal}\n" \
               "#{sangria}      label=#{label.inspect}  formlabel=#{formlabel.inspect}#{options}"
       out << linea
       puts linea

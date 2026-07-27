@@ -5,6 +5,16 @@
   "componente_base": "Main Components/GABINETE.skp",
   "salida_dir": "Output/Gabinetes",
   "nombre_patron": "GAB-{LenX}-{divisor>f01cantdiv}div",
+  "reglas_cajones": {
+    "alto_min_mm": 190,
+    "attr_alto_util": "LenZ",
+    "attr_restar": ["a02zocalo", "f11margsupcaj", "f12marginfcaj"],
+    "attr_separacion": "f02sepcajtirad",
+    "attr_cantidad": "cajon>a21cantcajon",
+    "attr_estilo_puerta": "EstiloPuerta",
+    "estilos_con_cajones": { "6": "n", "7": 2, "8": 3, "9": 4 },
+    "attrs_alto": ["b11altocaj1", "b12altocaj2", "b13altocaj3", "b14altocaj4"]
+  },
   "grupos": [
     {
       "id": "dimensiones",
@@ -119,20 +129,34 @@
     {
       "id": "cajones",
       "titulo": "Cajones",
+      "presupuesto": "cajones",
       "campos": [
         { "id": "b03tipocajon", "attr": "b03tipocajon", "label": "Estilo cajones", "tipo": "select", "default": "1", "opciones": [
           { "label": "Tandem", "valor": "1" },
           { "label": "Antaro", "valor": "2" }
         ] },
-        { "id": "a21cantcajon", "attr": "cajon>a21cantcajon", "label": "Cantidad de cajones", "tipo": "derivado", "default": "1", "min": 1, "max": 6, "controla": [],
+        { "id": "a21cantcajon", "attr": "cajon>a21cantcajon", "label": "Cantidad de cajones", "tipo": "derivado", "default": "1", "min": 1, "max": 6, "max_regla": "cajones", "controla": [],
           "habilitado_si": { "attr": "EstiloPuerta", "valor": "6", "mensaje": "Solo aplica con diseño de puerta «N cajones»." } },
-        { "id": "b11altocaj1", "attr": "b11altocaj1", "label": "Alto cajón 1 (superior)", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "presets": [
+        { "id": "b11altocaj1", "attr": "b11altocaj1", "label": "Alto cajón 1 (superior)", "tipo": "preset", "unidad": "mm", "default": "190mm", "permite_personalizado": true, "visible_si": { "min_cajones": 1 }, "presets": [
+          { "label": "Automático (restante)", "valor": "" },
           { "label": "CH (190 mm)", "valor": "190mm" },
           { "label": "G (383 mm)", "valor": "383mm" }
         ] },
-        { "id": "b12altocaj2", "attr": "b12altocaj2", "label": "Alto cajón 2", "tipo": "numero", "unidad": "mm", "default": "" },
-        { "id": "b13altocaj3", "attr": "b13altocaj3", "label": "Alto cajón 3", "tipo": "numero", "unidad": "mm", "default": "" },
-        { "id": "b14altocaj4", "attr": "b14altocaj4", "label": "Alto cajón 4 (inferior)", "tipo": "numero", "unidad": "mm", "default": "", "auto": true, "nota": "Se asigna el restante con base en las alturas anteriores. Vacío = automático." },
+        { "id": "b12altocaj2", "attr": "b12altocaj2", "label": "Alto cajón 2", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "min_cajones": 2 }, "presets": [
+          { "label": "Automático (restante)", "valor": "" },
+          { "label": "CH (190 mm)", "valor": "190mm" },
+          { "label": "G (383 mm)", "valor": "383mm" }
+        ] },
+        { "id": "b13altocaj3", "attr": "b13altocaj3", "label": "Alto cajón 3", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "min_cajones": 3 }, "presets": [
+          { "label": "Automático (restante)", "valor": "" },
+          { "label": "CH (190 mm)", "valor": "190mm" },
+          { "label": "G (383 mm)", "valor": "383mm" }
+        ] },
+        { "id": "b14altocaj4", "attr": "b14altocaj4", "label": "Alto cajón 4 (inferior)", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "min_cajones": 4 }, "nota": "«Automático» reparte el alto restante con base en las alturas anteriores.", "presets": [
+          { "label": "Automático (restante)", "valor": "" },
+          { "label": "CH (190 mm)", "valor": "190mm" },
+          { "label": "G (383 mm)", "valor": "383mm" }
+        ] },
         { "id": "f02sepcajtirad", "attr": "f02sepcajtirad", "label": "Separación entre cajones", "tipo": "numero", "unidad": "mm", "default": "" },
         { "id": "n02corredpers", "attr": "cajon>n02corredpers", "label": "Corredera cajón", "tipo": "numero", "unidad": "cm", "default": "" }
       ]
