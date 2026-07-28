@@ -46,6 +46,14 @@
     {
       "id": "frente",
       "titulo": "Frente y puertas",
+      "box_model": {
+        "titulo": "Márgenes del frente",
+        "centro": "Frente",
+        "arriba": "f11margsupcaj",
+        "abajo": "f12marginfcaj",
+        "izquierda": "f13margizqcaj",
+        "derecha": "f14margdercaj"
+      },
       "campos": [
         { "id": "EstiloPuerta", "attr": "EstiloPuerta", "label": "Diseño de puerta", "tipo": "select", "default": "1", "opciones": [
           { "label": "Ninguna", "valor": "0" },
@@ -64,10 +72,10 @@
           { "label": "Puerta/Cajón interior", "valor": "2" }
         ] },
         { "id": "f04seppuertas", "attr": "f04seppuertas", "label": "Separación entre puertas", "tipo": "numero", "unidad": "mm", "default": "3" },
-        { "id": "f11margsupcaj", "attr": "f11margsupcaj", "label": "Margen superior", "tipo": "numero", "unidad": "mm", "default": "0" },
-        { "id": "f12marginfcaj", "attr": "f12marginfcaj", "label": "Margen inferior", "tipo": "numero", "unidad": "mm", "default": "0" },
-        { "id": "f13margizqcaj", "attr": "f13margizqcaj", "label": "Margen izquierdo", "tipo": "numero", "unidad": "mm", "default": "2" },
-        { "id": "f14margdercaj", "attr": "f14margdercaj", "label": "Margen derecho", "tipo": "numero", "unidad": "mm", "default": "2" }
+        { "id": "f11margsupcaj", "attr": "f11margsupcaj", "label": "Margen superior", "label_corto": "Superior", "tipo": "numero", "unidad": "mm", "default": "0" },
+        { "id": "f12marginfcaj", "attr": "f12marginfcaj", "label": "Margen inferior", "label_corto": "Inferior", "tipo": "numero", "unidad": "mm", "default": "0" },
+        { "id": "f13margizqcaj", "attr": "f13margizqcaj", "label": "Margen izquierdo", "label_corto": "Izquierdo", "tipo": "numero", "unidad": "mm", "default": "2" },
+        { "id": "f14margdercaj", "attr": "f14margdercaj", "label": "Margen derecho", "label_corto": "Derecho", "tipo": "numero", "unidad": "mm", "default": "2" }
       ]
     },
     {
@@ -103,16 +111,24 @@
     {
       "id": "divisores",
       "titulo": "Divisores",
+      "box_model": {
+        "titulo": "Márgenes del divisor (vista de planta)",
+        "centro": "Planta",
+        "arriba": "divisor>e32_marg2",
+        "abajo": "divisor>e31_marg1",
+        "izquierda": "divisor>e33_marg3",
+        "derecha": "divisor>e34_marg4"
+      },
       "campos": [
         { "id": "f01cantdiv", "attr": "divisor>f01cantdiv", "label": "Cantidad de divisores", "tipo": "derivado", "default": "1", "min": 1, "max": 6, "controla": ["divisor>f03espacio"] },
         { "id": "f02tipomedida", "attr": "divisor>f02tipomedida", "label": "Tipo de medida", "tipo": "select", "default": "1", "opciones": [
           { "label": "Separaciones iguales", "valor": "1" },
           { "label": "Personalizado", "valor": "2" }
         ] },
-        { "id": "e31_marg1", "attr": "divisor>e31_marg1", "label": "Margen frontal", "tipo": "numero", "unidad": "mm", "default": "" },
-        { "id": "e32_marg2", "attr": "divisor>e32_marg2", "label": "Margen posterior", "tipo": "numero", "unidad": "mm", "default": "" },
-        { "id": "e33_marg3", "attr": "divisor>e33_marg3", "label": "Margen izquierdo", "tipo": "numero", "unidad": "mm", "default": "" },
-        { "id": "e34_marg4", "attr": "divisor>e34_marg4", "label": "Margen derecho", "tipo": "numero", "unidad": "mm", "default": "" },
+        { "id": "e31_marg1", "attr": "divisor>e31_marg1", "label": "Margen frontal", "label_corto": "Frontal", "tipo": "numero", "unidad": "mm", "default": "" },
+        { "id": "e32_marg2", "attr": "divisor>e32_marg2", "label": "Margen posterior", "label_corto": "Posterior", "tipo": "numero", "unidad": "mm", "default": "" },
+        { "id": "e33_marg3", "attr": "divisor>e33_marg3", "label": "Margen izquierdo", "label_corto": "Izquierdo", "tipo": "numero", "unidad": "mm", "default": "" },
+        { "id": "e34_marg4", "attr": "divisor>e34_marg4", "label": "Margen derecho", "label_corto": "Derecho", "tipo": "numero", "unidad": "mm", "default": "" },
         { "id": "f03espacio1", "attr": "divisor>f03espacio1", "label": "Espacio 1 (inferior)", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 1 } },
         { "id": "f03espacio2", "attr": "divisor>f03espacio2", "label": "Espacio 2", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 2 } },
         { "id": "f03espacio3", "attr": "divisor>f03espacio3", "label": "Espacio 3", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 3 } },

@@ -193,6 +193,41 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
   background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
 
+/* Editor de caja: los cuatro márgenes se capturan en su posición real, con un
+   rectángulo al centro que representa la pieza (frente o planta). */
+.boxmodel {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(96px, 1fr) minmax(120px, 1.3fr) minmax(96px, 1fr);
+  grid-template-rows: auto auto auto auto;
+  gap: 10px 14px;
+  align-items: center;
+  padding: 14px 16px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.boxmodel__titulo {
+  grid-column: 1 / -1; grid-row: 1;
+  font-size: 12px; font-weight: 600; color: var(--text-dim);
+}
+.boxmodel__arriba     { grid-column: 2; grid-row: 2; }
+.boxmodel__izquierda  { grid-column: 1; grid-row: 3; }
+.boxmodel__centro     { grid-column: 2; grid-row: 3; }
+.boxmodel__derecha    { grid-column: 3; grid-row: 3; }
+.boxmodel__abajo      { grid-column: 2; grid-row: 4; }
+.boxmodel__centro {
+  display: grid; place-items: center;
+  min-height: 74px; padding: 8px;
+  color: var(--primary-on-weak); font-size: 12px; font-weight: 600;
+  background: var(--primary-weak);
+  border: 2px dashed var(--primary);
+  border-radius: var(--radius-sm);
+}
+.boxmodel .field__label { text-align: center; }
+.boxmodel__izquierda .field__label,
+.boxmodel__derecha .field__label { text-align: left; }
+
 /* ---------- Campos ---------- */
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field[hidden] { display: none; }
@@ -313,4 +348,13 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
   .sidebar { display: none; }
   .group__body { grid-template-columns: 1fr; }
   .familias { grid-template-columns: 1fr; }
+  /* Sin ancho para el anillo: los cuatro márgenes pasan a lista, en el mismo
+     orden de lectura (arriba, izquierda, derecha, abajo). */
+  .boxmodel { grid-template-columns: 1fr; }
+  .boxmodel__titulo,
+  .boxmodel__arriba, .boxmodel__izquierda,
+  .boxmodel__centro, .boxmodel__derecha, .boxmodel__abajo {
+    grid-column: 1; grid-row: auto;
+  }
+  .boxmodel__centro { min-height: 44px; }
 }

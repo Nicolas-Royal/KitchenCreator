@@ -63,6 +63,13 @@
               <span class="toggle__track"><span class="toggle__thumb"></span></span>
               <span class="toggle__label">Insertar en escena</span>
             </label>
+            <!-- Apagarlo conserva el .skp reconfigurable (las variantes ocultas
+                 del componente dinámico siguen ahí). -->
+            <label class="toggle" title="Borra del .skp las variantes de puerta y cajón que el componente dejó ocultas.">
+              <input type="checkbox" id="toggle-limpiar" checked>
+              <span class="toggle__track"><span class="toggle__thumb"></span></span>
+              <span class="toggle__label">Limpiar piezas ocultas</span>
+            </label>
             <button class="btn btn--ghost" id="btn-clonar">Clonar</button>
             <button class="btn btn--primary" id="btn-generar">Generar</button>
           </div>

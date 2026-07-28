@@ -120,6 +120,69 @@ module RoyalKitchen
       end
 
       # ---------------------------------------------------------------------
+      # Borra las piezas que el componente dinámico dejó ocultas.
+      #
+      # El componente trae todas las variantes de puerta y cajón dentro y oculta
+      # (hidden = 1) las que no aplican a la configuración; el .skp de salida se
+      # llevaría decenas de componentes muertos. Aquí se eliminan.
+      #
+      # OJO con lo compartido: inst.make_unique solo independiza la definición
+      # raíz. Las definiciones anidadas siguen siendo las mismas del componente
+      # base y de las unidades ya insertadas en la escena, así que borrar dentro
+      # de ellas las corrompería. Por eso cada hijo se hace único ANTES de tocar
+      # su contenido.
+      #
+      # Devuelve la cantidad de piezas borradas.
+      # ---------------------------------------------------------------------
+      def eliminar_ocultos(inst)
+        borradas = 0
+        pila     = [inst.definition]
+
+        until pila.empty?
+          defn = pila.shift
+          next unless defn.valid?
+
+          # Se clasifica ANTES de borrar: después de erase_entities las
+          # referencias a lo borrado (y a lo que arrastre) quedan inválidas.
+          ocultos, contenedores = [], []
+          defn.entities.to_a.each do |e|
+            next unless e.respond_to?(:hidden?)
+            if oculto?(e)
+              ocultos << e
+            elsif e.is_a?(Sketchup::ComponentInstance) || e.is_a?(Sketchup::Group)
+              contenedores << e
+            end
+          end
+
+          unless ocultos.empty?
+            borradas += ocultos.size
+            defn.entities.erase_entities(ocultos)
+          end
+
+          contenedores.each do |hijo|
+            next unless hijo.valid?
+            # Si la definición está compartida hay que independizarla antes de
+            # entrar: si no, borrar aquí mutilaría el componente base y las
+            # unidades ya insertadas en la escena.
+            hijo.make_unique if hijo.definition.instances.size > 1
+            pila << hijo.definition
+          end
+        end
+
+        borradas
+      end
+
+      # Oculto = la bandera de SketchUp o el atributo dinámico `hidden` en 1.
+      # Se revisa el atributo porque el redibujado del DC no siempre alcanza a
+      # propagar la bandera a las piezas más anidadas.
+      def oculto?(ent)
+        return true if ent.hidden?
+        v = ent.get_attribute(DICT, 'hidden')
+        return false if v.nil?
+        v.to_s.strip.downcase =~ /\A(1|1\.0|true|yes)\z/ ? true : false
+      end
+
+      # ---------------------------------------------------------------------
       # Genera una unidad a partir de una fila plana { col => valor_raw }.
       #
       #   base_def       : Sketchup::ComponentDefinition ya cargada (definitions.load)
@@ -129,6 +192,7 @@ module RoyalKitchen
       #     :output_dir          -> carpeta destino del .skp (obligatorio para guardar)
       #     :insertar_en_escena  -> true conserva la instancia en el modelo (SCOPE §3.1)
       #     :transformation      -> Geom::Transformation para colocarla (auto-tiling)
+      #     :limpiar_ocultos     -> borra las variantes ocultas (default true)
       #
       # Devuelve { ok:, ruta:, instancia:, warnings: [] }.
       # ---------------------------------------------------------------------
@@ -158,6 +222,19 @@ module RoyalKitchen
             warnings << "Renderizado: #{e.message}"
           end
 
+          # Después del redibujado (ya se sabe qué quedó oculto) y antes de
+          # guardar. Deja el .skp como pieza final: el DC ya no puede volver a
+          # mostrar lo borrado, por eso la UI lo expone como interruptor.
+          limpiar = opts.key?(:limpiar_ocultos) ? opts[:limpiar_ocultos] : true
+          if limpiar
+            begin
+              borradas = eliminar_ocultos(inst)
+              warnings << "Se eliminaron #{borradas} piezas ocultas." if borradas > 0
+            rescue => e
+              warnings << "Limpieza de ocultos: #{e.message}"
+            end
+          end
+
           ruta = nil
           if opts[:output_dir]
             FileUtils.mkdir_p(opts[:output_dir])
@@ -167,6 +244,10 @@ module RoyalKitchen
 
           # Salida doble (SCOPE §3.1): si no se inserta en escena, se borra la instancia.
           inst.erase! unless opts[:insertar_en_escena]
+
+          # Al final: recoge tanto las definiciones que quedaron huérfanas por la
+          # limpieza como las del árbol independizado si la instancia se borró.
+          model.definitions.purge_unused if limpiar
 
           model.commit_operation
           { ok: true, ruta: ruta, instancia: (opts[:insertar_en_escena] ? inst : nil), warnings: warnings }

@@ -192,14 +192,19 @@ Principio: **la plantilla se genera desde el manifiesto** (botón "Exportar plan
 | 2026-07-27 | La fórmula de reparto de alto del componente no tiene piso → el plugin calcula el presupuesto de alto (`reglas_cajones` en el manifiesto) y **bloquea** la generación de lo que no cabe, en vez de auto-ajustar. Alto mínimo de frente = 190 mm (preset CH, pendiente confirmar contra el herraje). |
 | 2026-07-27 | Los cuatro «Alto cajón» son tipo *preset* con Automático (restante) / CH / G / Personalizado, visibles según la cantidad efectiva de cajones (`visible_si.min_cajones`). |
 | 2026-07-27 | Tema de la interfaz a `#59b4a5` con logo `img/logo.jpg`. `--primary` es el color de marca y `--primary-strong` (`#35786c`) el de rellenos con texto encima (contraste AA). |
+| 2026-07-27 | **«N cajones» = altos uniformes.** El componente `COA01` hace los cajones copia del primero (`Cajon.copies`), así que la UI captura **un solo** alto que aplica a los n (`reglas_cajones.uniforme_si_n`). Mostrar cuatro altos independientes prometía un control que el componente no tiene. |
+| 2026-07-27 | Alto mínimo de frente de cajón baja de 190 a **100 mm**. Los presets que ya no caben dejan de ofrecerse conforme se asignan altos (`limiteAltoCajon`): el desplegable de cada cajón filtra CH/G contra el espacio que le queda, dejando siempre Automático y Personalizado. |
+| 2026-07-27 | Los márgenes se capturan en un **editor de caja** (`box_model` a nivel de grupo): cada campo se dibuja en su posición alrededor de un rectángulo. Los campos siguen siendo campos normales del manifiesto; solo cambia dónde los coloca el render. |
+| 2026-07-27 | **Se borran las piezas ocultas al generar** (`Engine.eliminar_ocultos`), tras un toggle encendido por default. Precio: el `.skp` de salida deja de ser reconfigurable (el DC ya no puede volver a mostrar lo borrado). Cada contenedor anidado se hace único antes de tocarlo, porque sus definiciones son compartidas con el componente base. |
+| 2026-07-27 | En Divisores, cada espacio va seguido de su margen (espacio 1 → margen 1 → espacio 2 → …) en vez de los espacios juntos y los márgenes al final. |
 
 ## 6. Preguntas abiertas
 
 - ¿Cuál es la variante vigente de Esquinero (`ESQUINERO.skp` vs `ESQUINERO(BASE).skp` vs `ESQUINERO-VIE.skp`)?
 - ¿`script3.rb` (unión booleana de piezas `P##`) entra al scope del plugin, o se evalúa aparte una vez validado que hace lo que promete?
 - **Variables por familia (pendiente del mantenedor):** el subconjunto exacto a exponer por Gabinete/Alacena/Esquinero se define y entrega vía la plantilla de 4 columnas en `Definiciones/`. Hasta entonces, Alacena y Esquinero van como stubs.
-- **Alto mínimo de frente de cajón:** hoy `alto_min_mm = 190` (tomado del preset CH). Confirmar contra la ficha del herraje y si difiere entre Tandem y Antaro (`b03tipocajon`).
-- **Márgenes vs espacios (off-by-one):** el CSV tiene `f03espacio1..7` (7) pero `g01margenf1..6` (6). ¿Los márgenes son *entre* cajones (N−1) o incluyen extremos?
+- **Alto mínimo de frente de cajón:** hoy `alto_min_mm = 100` (valor pedido por el usuario, 2026-07-27). Confirmar contra la ficha del herraje y si difiere entre Tandem y Antaro (`b03tipocajon`).
+- **Márgenes vs espacios (off-by-one):** el CSV tiene `f03espacio1..7` (7) pero `g01margenf1..6` (6). ¿Los márgenes son *entre* cajones (N−1) o incluyen extremos? Hoy `f03espacio7` es inalcanzable: pide `f01cantdiv ≥ 7` y el contador topa en 6. Si son `n+1` espacios para `n` divisores, hay que corregir los `visible_si` de todos los espacios, no solo el séptimo.
 - **Medidas CH/G:** ¿existe tabla de estándares Royal Kitchens (medida por tipo de mueble/variable), o se ponen valores tentativos? Idealmente los presets viven en `_comunes.json` para editarlos sin tocar código.
 - **Presets globales vs por campo:** ¿"CH/G" significan lo mismo en todo el catálogo, o cambian según la variable?
 - **Auto-tiling — punto de origen:** ¿la primera unidad de la sesión se coloca en el origen del modelo, o la diseñadora fija un punto/pared de arranque? ¿El cursor avanza en +X siempre, o se detecta la orientación de la corrida?

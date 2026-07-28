@@ -168,6 +168,14 @@ module RoyalKitchen
       mapa[estilo] == 'n' ? valores[reglas['attr_cantidad']].to_i : mapa[estilo].to_i
     end
 
+    # Con «N cajones» el componente hace los cajones copia del primero: un solo
+    # alto manda sobre todos.
+    def cajones_uniformes?(reglas, valores)
+      return false unless reglas['uniforme_si_n']
+      estilo = valores[reglas['attr_estilo_puerta']].to_s
+      (reglas['estilos_con_cajones'] || {})[estilo] == 'n'
+    end
+
     def validar_cajones(manifest, valores)
       reglas = manifest['reglas_cajones']
       return nil unless reglas
@@ -189,10 +197,18 @@ module RoyalKitchen
 
       return "El alto útil del mueble quedó en #{a_mm(util)} mm. Revisa alto, zócalo y márgenes." if disp <= 0
 
-      altos    = Array(reglas['attrs_alto']).first(n).map { |attr| medida_in(valores, attr) }
+      uniforme = cajones_uniformes?(reglas, valores)
+      altos    = Array(reglas['attrs_alto']).first(uniforme ? 1 : n).map { |attr| medida_in(valores, attr) }
       fijos    = altos.compact
-      libres   = n - fijos.size
-      restante = disp - fijos.inject(0.0) { |s, v| s + v }
+
+      if uniforme
+        # El único alto capturado se multiplica por los n cajones.
+        libres   = fijos.empty? ? n : 0
+        restante = disp - (fijos.empty? ? 0.0 : fijos[0] * n)
+      else
+        libres   = n - fijos.size
+        restante = disp - fijos.inject(0.0) { |s, v| s + v }
+      end
 
       bajo = fijos.find { |v| v < alto_min - TOL_IN }
       return "El alto de un cajón (#{a_mm(bajo)} mm) es menor al mínimo de #{minimo} mm." if bajo
@@ -219,6 +235,8 @@ module RoyalKitchen
       nombre  = payload['nombre_salida'].to_s
       valores = payload['valores'] || {}
       en_escena = payload['insertar_en_escena'] ? true : false
+      # Ausente = payload viejo: se limpia, que es el comportamiento pedido.
+      limpiar = payload.key?('limpiar_ocultos') ? !!payload['limpiar_ocultos'] : true
 
       unless project_root_valido?
         return { 'ok' => false, 'error' => 'Configura primero la carpeta del proyecto (contiene «Main Components»).' }
@@ -239,7 +257,11 @@ module RoyalKitchen
       model    = Sketchup.active_model
       base_def = model.definitions.load(base_path)
 
-      opts = { output_dir: manifest['salida_dir_abs'], insertar_en_escena: en_escena }
+      opts = {
+        output_dir:         manifest['salida_dir_abs'],
+        insertar_en_escena: en_escena,
+        limpiar_ocultos:    limpiar
+      }
       if en_escena
         opts[:transformation] = Geom::Transformation.new(Geom::Point3d.new(@cursor_x, 0, 0))
       end

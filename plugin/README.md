@@ -21,13 +21,32 @@ Los campos se agrupan por bloque temático (el manifiesto define el orden):
 - **Dimensiones** — `LenX/LenY/LenZ` (+ `a02zocalo` en Gabinete/Esquinero).
 - **Espesores** — estructura/puerta/fondo (+ los de cajón en Gabinete).
 - **Estructura e interior** — tipo de techo, ancho de amarres y **Entrepaño** (`c24entrepano`).
-- **Frente y puertas** — diseño de puerta, cantidad/posición de puertas, separación y márgenes.
+- **Frente y puertas** — diseño de puerta, cantidad/posición de puertas, separación y márgenes
+  (estos últimos en el **editor de caja**, ver abajo).
 - **Tirador** — tipo, posición y orientación.
 - **Cajones** (solo Gabinete) — estilo, alturas, separación y corredera. Estos campos están
   **siempre activos**; únicamente «Cantidad de cajones» se habilita cuando el diseño de puerta es
-  «N cajones» (habilitación **por campo** vía `habilitado_si`, no por grupo). Los cuatro «Alto
-  cajón» ofrecen **Automático (restante) / CH / G / Personalizado** y solo se muestran cuando el
-  diseño de puerta implica esa cantidad de cajones (`visible_si.min_cajones`).
+  «N cajones» (habilitación **por campo** vía `habilitado_si`, no por grupo). Los «Alto cajón»
+  ofrecen **Automático (restante) / CH / G / Personalizado** y solo se muestran cuando el diseño de
+  puerta implica esa cantidad de cajones (`visible_si.min_cajones`). Con **«N cajones» se muestra
+  uno solo**: el componente hace los cajones copia del primero, así que todos miden lo mismo
+  (`reglas_cajones.uniforme_si_n`).
+
+### Editor de caja para márgenes
+
+Un grupo puede declarar `box_model` y sus cuatro márgenes se dibujan **en su posición** alrededor de
+un rectángulo, en vez de en fila:
+
+```json
+"box_model": { "titulo": "Márgenes del frente", "centro": "Frente",
+               "arriba": "f11margsupcaj", "abajo": "f12marginfcaj",
+               "izquierda": "f13margizqcaj", "derecha": "f14margdercaj" }
+```
+
+Los campos siguen siendo campos normales del manifiesto (mismo `attr`, `visible_si`, aplanado); lo
+único que cambia es dónde los coloca el render. `label_corto` da la etiqueta breve para dentro del
+widget. Lo usan el grupo «Frente y puertas» de las tres familias y «Divisores» del Esquinero (en
+vista de planta: frontal abajo, posterior arriba).
 
 ## Presupuesto de alto de cajones
 
@@ -43,18 +62,41 @@ disponible = util − f02sepcajtirad × (n − 1)      // suma de los n frentes
 
 - Un renglón bajo el título del grupo muestra en vivo *alto útil / asignado / restante por cajón*.
 - El contador «Cantidad de cajones» se topa solo en cuantos caben al mínimo.
+- **Los presets que ya no caben dejan de ofrecerse.** Cada desplegable filtra CH/G contra el alto
+  que le queda a ese cajón sin dejar a los demás bajo el mínimo (`limiteAltoCajon`); «Automático»,
+  «Personalizado…» y la opción ya seleccionada nunca se ocultan — si lo elegido dejó de caber, quien
+  avisa es el presupuesto en rojo, no un `<select>` que salta solo.
 - **Generar se bloquea** si algún alto queda bajo el mínimo o si los altos fijados se pasan; que
   **sobre** alto no bloquea (deja hueco, no desborda).
 - Los cajones en «Automático» reciben el alto restante ya calculado, para que el `.skp` coincida
   con lo que mostró el presupuesto.
+- En modo **uniforme** («N cajones») el único alto capturado se multiplica por los n cajones.
 
 Todo se configura en `reglas_cajones` del manifiesto (`alto_min_mm`, qué attrs restar, el mapa
-`estilos_con_cajones`). Es **dato, no código**: si el mínimo real del herraje no es 190 mm, se
-cambia ahí. Una familia sin `reglas_cajones` (Alacena, Esquinero) no se valida.
+`estilos_con_cajones`, `uniforme_si_n`). Es **dato, no código**: si el mínimo real del herraje no es
+100 mm, se cambia ahí. Una familia sin `reglas_cajones` (Alacena, Esquinero) no se valida.
 
-`cajon>a21cantcajon` admite 1-6 pero solo existen cuatro `b1Xaltocaj`: con «N cajones» y n > 4 los
-altos extra los reparte la fórmula del componente y solo aplica la validación.
-- **Divisores** — cantidad de divisores (contador) con sus espacios y márgenes.
+`cajon>a21cantcajon` admite 1-6 y solo existen cuatro `b1Xaltocaj`, pero en «N cajones» basta con el
+primero porque todos los cajones son copias suyas.
+- **Divisores** — cantidad de divisores (contador) con sus espacios y márgenes, intercalados:
+  espacio 1 → margen 1 → espacio 2 → margen 2 → …
+
+## Limpieza de piezas ocultas
+
+El componente trae dentro todas las variantes de puerta y cajón y oculta (`hidden = 1`) las que no
+aplican; el `.skp` de salida se llevaría decenas de componentes muertos. El toggle **«Limpiar piezas
+ocultas»** (encendido por default, junto a «Insertar en escena») las borra después del redibujado y
+antes de guardar.
+
+**Tiene un costo:** el `.skp` generado queda como pieza final — si después alguien cambia un valor en
+SketchUp, el componente dinámico ya no puede volver a mostrar lo borrado. Apaga el toggle cuando
+necesites un módulo reconfigurable.
+
+Detalle de implementación que no se debe tocar a la ligera: `inst.make_unique` solo independiza la
+definición **raíz**; las anidadas siguen compartidas con `Main Components/*.skp` y con las unidades
+ya insertadas en la escena. Por eso `Engine.eliminar_ocultos` hace único cada contenedor anidado
+—cuando su definición tiene más de una instancia— antes de borrar dentro de él. Sin eso, generar
+mutilaría el componente base.
 
 ## Estructura
 
@@ -131,9 +173,12 @@ El plugin necesita saber dónde están `Main Components/` (componente base `GABI
   (`... (13) (8) / 4 CAJONES (9)`). El manifiesto usa la lista limpia 0–13 (Ninguna, Lisa, Italiana,
   Vidrio, Vidrio-madera, Uñero, Avento S ×4, Avento D ×4). Confirmar códigos.
 - Presets CH/G del alto de cajón (`b11altocaj1`): CH=190 mm, G=383 mm (según nota del CSV).
-- **`alto_min_mm = 190`** en `reglas_cajones` se tomó del preset CH; falta confirmarlo contra la
+- **`alto_min_mm = 100`** en `reglas_cajones` (valor pedido, 2026-07-27); falta confirmarlo contra la
   ficha del herraje (Tandem vs Antaro). Para medirlo: generar un gabinete de `LenZ = 400 mm` con
   4 cajones y leer el `v01altocajon1` resultante — ese es el recorte real del componente.
+- **`divisor>f03espacio7` es inalcanzable:** pide `f01cantdiv ≥ 7` y el contador topa en 6. Si de
+  verdad son `n+1` espacios para `n` divisores, hay que recorrer los `visible_si` de todos los
+  espacios, no solo agregar el séptimo. Pendiente de confirmar con el mantenedor.
 - `b11altocaj1..b14altocaj4` **no aparecen** en `introspeccion_dump.txt` (volcado del 21-jul;
   `GABINETE.skp` se modificó el 23-jul). Volver a correr `introspeccion.rb` —ahora vuelca el texto
   de las fórmulas— para confirmar en qué entidad viven y si `COA01` («N cajones») los lee.
