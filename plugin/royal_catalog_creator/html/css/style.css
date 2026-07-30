@@ -237,6 +237,10 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 .field.is-disabled .control, .field.is-disabled .preset, .field.is-disabled .stepper { opacity: .45; pointer-events: none; }
 .field.is-disabled .field__label { color: var(--muted); }
 .field__hint--cond { color: var(--warn); }
+/* El mensaje de habilitado_si explica por qué el campo está apagado: cuando el
+   campo ya está activo la explicación sobra y solo sería ruido en el formulario.
+   Se resuelve aquí para no tener que refrescar texto desde updateConditionals(). */
+.field:not(.is-disabled) .field__hint--cond { display: none; }
 
 .control { position: relative; display: flex; align-items: center; }
 .input, .select {

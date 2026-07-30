@@ -172,6 +172,210 @@ module RoyalKitchen
         borradas
       end
 
+      # ---------------------------------------------------------------------
+      # Pone a cada división el nombre que ya resolvió la UI (Divisor/Entrepaño
+      # según el modo elegido en su margen frontal). Aquí no se infiere nada: el
+      # motor recibe la lista hecha y solo la aplica, en orden 1..n.
+      #
+      # Estructura confirmada por diagnóstico sobre GABINETE.skp (2026-07-29):
+      #
+      #   <unidad> > "DIA01 - ESPACIO 1 - DivisorHorizontal" > PanelXY#nn > Panel#nnn
+      #
+      #   - Cada división es una ComponentInstance hija directa del contenedor;
+      #     la caja de referencia que vive ahí también es un Group, y por eso el
+      #     filtro es por tipo y no por nombre.
+      #   - Cada copia trae definición propia (instances.size == 1): el DC ya las
+      #     independizó, así que no hace falta make_unique para nombrarlas por
+      #     separado.
+      #   - Salen ordenadas de abajo hacia arriba por z, que es justo el orden de
+      #     los índices 1..n de g01margenf{i} (verificado cruzando el margen
+      #     inyectado contra el desplazamiento en y de cada pieza).
+      #
+      # Se escribe SOLO el nombre de instancia: las definiciones se comparten con
+      # el componente base y renombrarlas contaminaría otras unidades.
+      #
+      # Devuelve la lista de warnings (vacía si todo salió bien).
+      # ---------------------------------------------------------------------
+      def nombrar_divisores(inst, spec)
+        nombres = Array(spec[:nombres])
+        return [] if nombres.empty?
+
+        contenedor = buscar_componentes_hijos(inst, spec[:prefijo].to_s)
+                     .reject { |e| e == inst }   # la raíz puede matchear por su propio nombre
+                     .first
+        return ["Divisores: no se encontró la pieza '#{spec[:prefijo]}'."] if contenedor.nil?
+
+        copias = contenedor.definition.entities
+                           .grep(Sketchup::ComponentInstance)
+                           .sort_by { |e| e.transformation.origin.z }
+
+        warnings = []
+        if copias.size != nombres.size
+          warnings << "Divisores: se esperaban #{nombres.size} piezas y se encontraron #{copias.size}."
+        end
+
+        copias.each_with_index do |copia, i|
+          break if i >= nombres.size
+          hoja_de(copia).name = nombres[i]
+        end
+
+        warnings
+      end
+
+      # Baja al último objeto real de la copia, que es donde debe verse el nombre
+      # en el Outliner. Solo se desciende mientras haya exactamente una instancia
+      # hija: así se ignoran los grupos auxiliares (la caja de escalado que el
+      # componente cuelga de cada pieza) y se para en cuanto hay ambigüedad.
+      def hoja_de(ent)
+        actual = ent
+        10.times do            # tope de seguridad: el árbol real tiene 1 nivel
+          hijos = actual.definition.entities.grep(Sketchup::ComponentInstance)
+          break unless hijos.size == 1
+          actual = hijos.first
+        end
+        actual
+      end
+
+      # ---------------------------------------------------------------------
+      # Une las dos medias piezas de cada entrepaño en una sola.
+      #
+      # El esquinero modela cada repisa en L como dos prismas independientes, así
+      # que el .skp de salida entregaba dos tableros donde debe haber una pieza.
+      #
+      # Estructura confirmada por diagnóstico sobre ESQUINERO.skp (2026-07-30):
+      #
+      #   <unidad> > Estructura > DIVISORES > PanelXY#nn > "ENTREPAÑO #n"
+      #            > P01-ESQ#n + P02-ESQ#n + 4 grupos auxiliares sin caras
+      #
+      #   - No hace falta localizar el contenedor de repisas: el nodo "ENTREPAÑO"
+      #     de cada copia ya agrupa las dos mitades, y buscarlo por prefijo los
+      #     devuelve todos.
+      #   - Cada mitad es un prisma cerrado (6 caras, 12 aristas) pero NO es
+      #     `manifold?`: trae colgando un grupo «SPanel» de una cara, y SketchUp
+      #     solo considera sólido lo que contiene únicamente caras y aristas. Por
+      #     eso no se unen las piezas originales sino copias limpias de ellas.
+      #   - El diagnóstico mostró instances.size == 1 en todo el camino, pero eso
+      #     no basta para tocar la geometría: ver buscar_para_modificar.
+      #
+      # Devuelve la lista de warnings (vacía si todo salió bien).
+      # ---------------------------------------------------------------------
+      def unir_piezas(inst, spec)
+        piezas = Array(spec[:piezas]).map(&:to_s)
+        return [] if piezas.size < 2
+
+        # Las Solid Tools son exclusivas de Pro. No es un error de generación:
+        # el mueble sale bien, solo con las mitades sin fusionar.
+        unless Sketchup.is_pro?
+          return ['Unión de entrepaños: requiere SketchUp Pro (Solid Tools). Las mitades quedaron separadas.']
+        end
+
+        grupos = buscar_para_modificar(inst, spec[:grupo].to_s).reject { |e| e == inst }
+        return ["Unión de entrepaños: no se encontró la pieza '#{spec[:grupo]}'."] if grupos.empty?
+
+        warnings = []
+        grupos.each_with_index do |grupo, i|
+          next if oculto?(grupo)
+          begin
+            aviso = unir_mitades(grupo, piezas, spec[:nombre].to_s)
+            warnings << "Entrepaño #{i + 1}: #{aviso}" if aviso
+          rescue => e
+            warnings << "Entrepaño #{i + 1}: #{e.message}"
+          end
+        end
+        warnings
+      end
+
+      # Igual que buscar_componentes_hijos, pero independiza cada contenedor por
+      # el que pasa. Es obligatorio cuando lo hallado se va a MODIFICAR: que una
+      # definición tenga una sola instancia no prueba que sea exclusiva de esta
+      # unidad — si alguna definición del camino está compartida con el
+      # componente base, esa única instancia se dibuja también dentro del base y
+      # de las unidades ya insertadas, y borrar ahí las mutila (mismo cuidado que
+      # documenta eliminar_ocultos).
+      #
+      # No desciende debajo de lo que ya matcheó: lo de adentro se busca aparte,
+      # y para entonces el contenedor ya es exclusivo.
+      def buscar_para_modificar(entidad, nombre_buscado, resultados = [])
+        buscado = nombre_buscado.downcase.strip
+
+        if entidad.name.to_s.downcase.include?(buscado) ||
+           entidad.definition.name.to_s.downcase.include?(buscado)
+          resultados << entidad
+          return resultados
+        end
+
+        entidad.definition.entities.to_a.each do |hijo|
+          next unless hijo.is_a?(Sketchup::ComponentInstance) || hijo.is_a?(Sketchup::Group)
+          hijo.make_unique if hijo.definition.instances.size > 1
+          buscar_para_modificar(hijo, buscado, resultados)
+        end
+
+        resultados
+      end
+
+      # Une las mitades dentro de UN contenedor, que buscar_para_modificar ya
+      # dejó independizado. Devuelve un warning o nil.
+      def unir_mitades(grupo, piezas, nombre)
+        mitades = piezas.map do |pref|
+          buscar_componentes_hijos(grupo, pref).reject { |e| e == grupo || oculto?(e) }.first
+        end
+        # Sin ninguna mitad no es una repisa, no hay nada que unir ni que avisar.
+        return nil if mitades.all?(&:nil?)
+        return "no se encontró alguna de las mitades (#{piezas.join(', ')})." if mitades.any?(&:nil?)
+
+        destino = grupo.definition.entities
+        copias  = mitades.map { |m| copia_solida(m, destino) }
+
+        aviso = nil
+        if copias.any? { |c| !c.manifold? }
+          aviso = 'alguna mitad no quedó como sólido cerrado; se dejaron separadas.'
+        else
+          union = copias[0].union(copias[1])
+          if union.nil?
+            aviso = 'la unión de las dos mitades falló; se dejaron separadas.'
+          elsif union.parent != grupo.definition
+            # Si el resultado no cae dentro del contenedor quedaría geometría
+            # suelta en la escena. Se descarta: la unión consumió las copias, no
+            # los originales, así que la repisa sigue completa.
+            union.erase! if union.valid?
+            aviso = 'la unión salió fuera del contenedor; se descartó y las mitades siguen separadas.'
+          else
+            union.name = nombre
+            # Refuerzo del material: además de las caras, el grupo resultante
+            # lleva el material a nivel de instancia como lo tenían las mitades,
+            # para que repintarlo después se comporte igual que antes de unir.
+            union.material = mitades[0].material if mitades[0].material
+            mitades.each { |m| m.erase! if m.valid? }
+          end
+        end
+
+        # Las copias sobreviven solo si la unión no llegó a consumirlas.
+        copias.each { |c| c.erase! if c.valid? } if aviso
+        aviso
+      end
+
+      # Copia de una pieza con solo su geometría cruda, que es lo que las Solid
+      # Tools aceptan como sólido. Se re-inserta la definición ya transformada y
+      # se explota dentro de un grupo nuevo; los contenedores anidados que trae
+      # el panel (el grupo «SPanel») se borran de la copia, no del original.
+      def copia_solida(pieza, destino)
+        g   = destino.add_group
+        tmp = g.entities.add_instance(pieza.definition, pieza.transformation)
+
+        # El material de estos paneles vive en la INSTANCIA, no en las caras: una
+        # instancia nueva de la misma definición nace sin él y la pieza fusionada
+        # saldría en blanco. Al explotar, SketchUp lo baja a las caras que usan el
+        # material por defecto, y la unión conserva materiales por cara.
+        tmp.material = pieza.material if pieza.material
+        tmp.explode
+
+        g.entities.to_a.each do |e|
+          next unless e.is_a?(Sketchup::Group) || e.is_a?(Sketchup::ComponentInstance)
+          e.erase! if e.valid?
+        end
+        g
+      end
+
       # Oculto = la bandera de SketchUp o el atributo dinámico `hidden` en 1.
       # Se revisa el atributo porque el redibujado del DC no siempre alcanza a
       # propagar la bandera a las piezas más anidadas.
@@ -193,6 +397,8 @@ module RoyalKitchen
       #     :insertar_en_escena  -> true conserva la instancia en el modelo (SCOPE §3.1)
       #     :transformation      -> Geom::Transformation para colocarla (auto-tiling)
       #     :limpiar_ocultos     -> borra las variantes ocultas (default true)
+      #     :divisores           -> { prefijo:, nombres: } para nombrar las divisiones
+      #     :union               -> { grupo:, piezas:, nombre: } para fusionar mitades
       #
       # Devuelve { ok:, ruta:, instancia:, warnings: [] }.
       # ---------------------------------------------------------------------
@@ -220,6 +426,28 @@ module RoyalKitchen
             $dc_observers.get_latest_class.redraw_with_undo(inst)
           rescue => e
             warnings << "Renderizado: #{e.message}"
+          end
+
+          # Después del redibujado, porque antes las copias no existen, y antes
+          # de la limpieza y el guardado para que los nombres lleguen al .skp.
+          if opts[:divisores]
+            begin
+              warnings.concat(nombrar_divisores(inst, opts[:divisores]))
+            rescue => e
+              warnings << "Nombrado de divisores: #{e.message}"
+            end
+          end
+
+          # Después del nombrado y antes de la limpieza: la unión destruye la
+          # estructura dinámica del entrepaño, así que va al final de todo lo que
+          # depende del componente dinámico, y antes del guardado para que las
+          # piezas fusionadas lleguen al .skp.
+          if opts[:union]
+            begin
+              warnings.concat(unir_piezas(inst, opts[:union]))
+            rescue => e
+              warnings << "Unión de entrepaños: #{e.message}"
+            end
           end
 
           # Después del redibujado (ya se sabe qué quedó oculto) y antes de

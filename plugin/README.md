@@ -18,7 +18,9 @@ Agregar una familia = crear su `manifest/<familia>.json` y activarla en `FAMILIA
 
 Los campos se agrupan por bloque temático (el manifiesto define el orden):
 
-- **Dimensiones** — `LenX/LenY/LenZ` (+ `a02zocalo` en Gabinete/Esquinero).
+- **Dimensiones** — `LenX/LenY/LenZ` (+ `a02zocalo` en Gabinete/Esquinero). En **Esquinero** las tres
+  no significan lo mismo: el mueble tiene dos alas, así que `LenX`/`LenY` son el **ancho izquierdo**
+  y el **derecho**, y la profundidad de cada una va en `a0101profizq` / `a0102profder`.
 - **Espesores** — estructura/puerta/fondo (+ los de cajón en Gabinete).
 - **Estructura e interior** — tipo de techo, ancho de amarres y **Entrepaño** (`c24entrepano`).
 - **Frente y puertas** — diseño de puerta, cantidad/posición de puertas, separación y márgenes
@@ -81,6 +83,30 @@ primero porque todos los cajones son copias suyas.
 - **Divisores** — cantidad de divisores (contador) con sus espacios y márgenes, intercalados:
   espacio 1 → margen 1 → espacio 2 → margen 2 → …
 
+## Unión de mitades (Esquinero)
+
+El esquinero modela cada repisa en L como **dos prismas independientes** (`P01-ESQ` + `P02-ESQ`)
+dentro de un nodo `ENTREPAÑO`, así que el `.skp` entregaba dos tableros donde debe haber una pieza.
+Al generar, después de aplicar las medidas, se fusionan en un solo sólido llamado **«Entrepaño»**.
+
+```json
+"reglas_union": { "grupo": "entrepaño", "piezas": ["p01-esq", "p02-esq"], "nombre": "Entrepaño" }
+```
+
+Es dato: una familia sin `reglas_union` (Gabinete, Alacena) no ejecuta el paso. A diferencia de
+`reglas_divisores`, no viaja en el payload —no hay nada que decida la diseñadora— y `main.rb` lo lee
+del manifiesto directo.
+
+Tres detalles que no son obvios:
+
+- Cada mitad es un prisma cerrado (6 caras, 12 aristas) pero **no** es `manifold?`: trae colgando un
+  grupo `SPanel` de una cara, y SketchUp solo considera sólido lo que contiene únicamente caras y
+  aristas. Por eso se unen **copias limpias** de cada mitad, no las piezas originales.
+- Requiere **SketchUp Pro** (Solid Tools). Sin Pro sale un aviso y las mitades quedan separadas; el
+  mueble se genera igual.
+- Como `eliminar_ocultos`, destruye la estructura dinámica de la pieza: el entrepaño del `.skp` ya no
+  es reconfigurable. Es el mismo trato que ya tenía el archivo de salida.
+
 ## Limpieza de piezas ocultas
 
 El componente trae dentro todas las variantes de puerta y cajón y oculta (`hidden = 1`) las que no
@@ -97,6 +123,12 @@ definición **raíz**; las anidadas siguen compartidas con `Main Components/*.sk
 ya insertadas en la escena. Por eso `Engine.eliminar_ocultos` hace único cada contenedor anidado
 —cuando su definición tiene más de una instancia— antes de borrar dentro de él. Sin eso, generar
 mutilaría el componente base.
+
+Vale para **todo** lo que modifique geometría, no solo para la limpieza: que una definición tenga
+`instances.size == 1` **no** prueba que sea exclusiva de esta unidad, porque si un ancestro está
+compartido esa única instancia se dibuja también dentro del base. Por eso la unión de mitades busca
+su contenedor con `Engine.buscar_para_modificar`, que independiza cada contenedor por el que pasa,
+en vez de con `buscar_componentes_hijos`, que es solo de lectura.
 
 ## Estructura
 

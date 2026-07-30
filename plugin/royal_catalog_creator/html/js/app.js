@@ -55,8 +55,9 @@
     return findField(manifest, function (f) { return f.attr === attr; });
   }
 
-  /* Valor "efectivo" de un campo tal como se inyectará (incluye unidad). */
-  function effectiveValue(field, valores) {
+  /* Valor tal como se capturó en el formulario (con unidad), sin los ajustes
+     declarativos del manifiesto. */
+  function valorCapturado(field, valores) {
     var raw = valores[field.id];
     if (field.tipo === 'numero') {
       if (raw == null || raw === '') return '';
@@ -73,6 +74,42 @@
       return (raw == null) ? '' : String(raw);   // ya viene como "190mm"
     }
     return raw == null ? '' : String(raw);
+  }
+
+  /* Valor "efectivo" de un campo tal como se inyectará (incluye unidad).
+     Con `manifest` aplica además el ajuste `suma` del manifiesto: el formulario
+     captura la medida del CUERPO y aquí se agrega lo que el componente espera
+     ver incluido (zócalo en LenZ, espesor de puerta en LenY). Sin `manifest` se
+     obtiene el valor crudo, que es lo que necesitan los propios sumandos. */
+  function effectiveValue(field, valores, manifest) {
+    var v = valorCapturado(field, valores);
+    if (!manifest || !field.suma || v === '') return v;
+    var extra = sumaExtra(manifest, field, valores);
+    if (!extra) return v;
+    var base = parseMm(v);
+    if (isNaN(base)) return v;
+    // Se emite en mm aunque el campo declare otra unidad: el valor va etiquetado
+    // y el motor lo convierte igual. Redondeo a centésima para no mandar 617.9999.
+    return (Math.round((base + extra) * 100) / 100) + 'mm';
+  }
+
+  /* Milímetros que el manifiesto manda sumar al valor capturado (`suma`). Cada
+     sumando puede traer condiciones `si` —todas deben cumplirse— para no sumar
+     una puerta que no existe o que va montada por dentro del cuerpo. */
+  function sumaExtra(manifest, field, valores) {
+    var total = 0;
+    (field.suma || []).forEach(function (s) {
+      var aplica = (s.si || []).every(function (c) { return condicionCumple(manifest, valores, c); });
+      if (!aplica) return;
+      var f = fieldByAttr(manifest, s.attr);
+      // Lo que no se inyecta tampoco existe en el modelo, así que no se suma.
+      if (!f || !fieldVisible(f, manifest, valores) || !fieldEnabled(f, manifest, valores)) return;
+      // Sin manifiesto: el sumando se lee crudo, para que un ajuste no pueda
+      // encadenarse con otro (ni entrar en recursión).
+      var mm = parseMm(valorCapturado(f, valores));
+      if (!isNaN(mm)) total += mm;
+    });
+    return total;
   }
 
   /* Valor numérico simple de un attr (para visible_si / patrón de nombre). */
@@ -102,10 +139,11 @@
       default:                    return n;
     }
   }
-  /* Medida de un attr en mm, tal como se va a inyectar (resuelve presets). */
+  /* Medida de un attr en mm, tal como se va a inyectar (resuelve presets y
+     aplica `suma`: es el mismo número que verá SketchUp). */
   function attrMm(manifest, valores, attr) {
     var f = fieldByAttr(manifest, attr);
-    return f ? parseMm(effectiveValue(f, valores)) : NaN;
+    return f ? parseMm(effectiveValue(f, valores, manifest)) : NaN;
   }
   function fmt(mm) { return String(Math.round(mm * 10) / 10); }
 
@@ -125,13 +163,24 @@
     if (!group.condicion) return true;
     return String(attrRaw(manifest, valores, group.condicion.attr)) === String(group.condicion.valor);
   }
+  /* Predicado de condición del manifiesto, en una sola implementación para que
+     habilitado_si y los sumandos de `suma` no puedan divergir:
+       { attr, valor }        -> igual a ese valor
+       { attr, valores: [] }  -> igual a alguno
+       { attr, excepto: [] }  -> distinto de todos (ej. «puerta ≠ Ninguna») */
+  function condicionCumple(manifest, valores, cond) {
+    var actual = String(attrRaw(manifest, valores, cond.attr));
+    if (cond.excepto) {
+      return !cond.excepto.some(function (v) { return String(v) === actual; });
+    }
+    var esperado = cond.valores || [cond.valor];
+    return esperado.some(function (v) { return String(v) === actual; });
+  }
   /* Habilitación por campo: el control queda activo solo si el attr de referencia
-     tiene alguno de los valores esperados (habilitado_si.valor o .valores[]). */
+     cumple la condición declarada. */
   function fieldEnabled(field, manifest, valores) {
     if (!field.habilitado_si) return true;
-    var esperado = field.habilitado_si.valores || [field.habilitado_si.valor];
-    var actual = String(attrRaw(manifest, valores, field.habilitado_si.attr));
-    return esperado.some(function (v) { return String(v) === actual; });
+    return condicionCumple(manifest, valores, field.habilitado_si);
   }
 
   // =========================================================================
@@ -181,6 +230,10 @@
     var n = cajonesEfectivos(manifest, valores);
     if (!R || n < 1) return { aplica: false };
 
+    // attrMm devuelve el alto YA compensado (LenZ incluye el zócalo por el ajuste
+    // `suma`), que es exactamente lo que se inyecta y lo que revalida main.rb.
+    // Por eso attr_restar sigue quitando el zócalo aquí: no hay doble descuento,
+    // los dos espejos parten del mismo número. Ver validar_cajones en main.rb.
     var util = attrMm(manifest, valores, R.attr_alto_util);
     if (isNaN(util)) return { aplica: false };
     (R.attr_restar || []).forEach(function (a) {
@@ -468,7 +521,25 @@
       wrap.appendChild(el('span', 'field__hint field__hint--cond', field.habilitado_si.mensaje));
     }
     if (field.nota) wrap.appendChild(el('span', 'field__hint', field.nota));
+    // El campo captura la medida del cuerpo: sin este total la suma declarada en
+    // el manifiesto sería invisible y parecería que el plugin ignora lo escrito.
+    // updateConditionals() lo rellena, igual que el resumen del presupuesto.
+    if (field.suma) {
+      var tot = el('span', 'field__hint');
+      tot.dataset.hintSuma = '1';
+      tot.hidden = true;
+      wrap.appendChild(tot);
+    }
     return wrap;
+  }
+
+  function refrescarHintSuma(wrap, field, manifest, valores) {
+    var span = wrap.querySelector('[data-hint-suma]');
+    if (!span) return;
+    var total = parseMm(effectiveValue(field, valores, manifest));
+    var hay   = sumaExtra(manifest, field, valores) > 0 && !isNaN(total);
+    span.hidden = !hay;
+    span.textContent = hay ? 'Total en SketchUp: ' + fmt(total) + ' mm' : '';
   }
 
   function onValueChange(manifest, registro) {
@@ -669,6 +740,7 @@
         var wrap = document.querySelector('.field[data-field-id="' + f.id + '"]');
         if (!wrap) return;
         if (f.visible_si) wrap.hidden = !fieldVisible(f, manifest, valores);
+        if (f.suma) refrescarHintSuma(wrap, f, manifest, valores);
         // El primer alto pasa a mandar sobre todos los cajones: se renombra para
         // que la etiqueta no siga prometiendo un control por cajón.
         if (indiceAlto(manifest, f.attr) === 0) {
@@ -782,13 +854,38 @@
       g.campos.forEach(function (f) {
         if (!fieldVisible(f, manifest, registro.valores)) return;
         if (!fieldEnabled(f, manifest, registro.valores)) return;
-        var v = effectiveValue(f, registro.valores);
+        var v = effectiveValue(f, registro.valores, manifest);
         if (v === '' || v == null) return;
         flat[f.attr] = v;   // duplicados de attr: gana el último (quirk conocido de la definición)
       });
     });
     aplicarAltosAutomaticos(manifest, registro, flat);
     return flat;
+  }
+
+  /* Nombre de la pieza de cada división, resuelto desde el MODO elegido en el
+     desplegable del margen frontal. No se compara la medida contra 0: el dato
+     explícito ya existe, y un margen personalizado de 0 mm sigue siendo
+     entrepaño. Se resuelve una sola vez, aquí, y el motor solo aplica la lista
+     (índice 0 = división 1 = la de más abajo). El mapeo modo→nombre vive en
+     reglas_divisores del manifiesto, amarrado a los mismos valores de preset. */
+  function nombresDivisores(manifest, registro) {
+    var R = manifest.reglas_divisores;
+    if (!R) return null;
+    var n = attrNumber(manifest, registro.valores, R.attr_cantidad);
+    if (isNaN(n) || n < 1) return null;
+
+    var mapa = R.nombres_por_modo || {};
+    var nombres = [];
+    for (var i = 1; i <= n; i++) {
+      var f = fieldByAttr(manifest, R.attr_modo.replace('{i}', i));
+      // Campo ausente, oculto o deshabilitado: no hay modo elegido, va el default.
+      var modo = (f && fieldVisible(f, manifest, registro.valores) &&
+                       fieldEnabled(f, manifest, registro.valores))
+        ? registro.valores[f.id] : null;
+      nombres.push(Object.prototype.hasOwnProperty.call(mapa, modo) ? mapa[modo] : R.nombre_default);
+    }
+    return { prefijo: R.prefijo, nombres: nombres };
   }
 
   /* Cierra el reparto: los cajones en «Automático» reciben el alto restante ya
@@ -828,6 +925,10 @@
       limpiar_ocultos: $('#toggle-limpiar').checked,
       valores: flatten(manifest, r)
     };
+    // Fuera de `valores`: no es un atributo del componente, es una instrucción
+    // de nombrado para el motor.
+    var div = nombresDivisores(manifest, r);
+    if (div) payload.divisores = div;
     $('#btn-generar').disabled = true;
     toast('warn', 'Generando…', nombre);
     SU.generar(JSON.stringify(payload));

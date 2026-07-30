@@ -183,6 +183,11 @@ module RoyalKitchen
       n = cajones_efectivos(reglas, valores)
       return nil if n < 1
 
+      # La fila plana trae LenZ con el zócalo ya sumado (ajuste `suma` del
+      # manifiesto, resuelto en app.js#effectiveValue), así que restarlo aquí es
+      # correcto y no duplica el descuento: app.js hace la misma resta sobre el
+      # mismo número compensado. Los dos espejos leen el alto FINAL, no el
+      # capturado. Ver el comentario de presupuestoCajones en app.js.
       util = medida_in(valores, reglas['attr_alto_util'])
       return nil if util.nil?
       Array(reglas['attr_restar']).each do |attr|
@@ -264,6 +269,27 @@ module RoyalKitchen
       }
       if en_escena
         opts[:transformation] = Geom::Transformation.new(Geom::Point3d.new(@cursor_x, 0, 0))
+      end
+
+      # Nombres de las piezas de cada división, ya resueltos por la UI a partir
+      # del modo elegido en el margen frontal. Viajan aparte de la fila plana
+      # porque no son atributos del componente, y el motor solo los aplica.
+      div = payload['divisores']
+      if div.is_a?(Hash) && div['nombres'].is_a?(Array) && !div['nombres'].empty?
+        opts[:divisores] = { prefijo: div['prefijo'].to_s, nombres: div['nombres'].map(&:to_s) }
+      end
+
+      # La unión de mitades no depende de nada que decida la diseñadora: es un
+      # post-proceso geométrico de la familia. Por eso se lee del manifiesto aquí
+      # y no viaja en el payload, a diferencia de los nombres de divisor. Una
+      # familia sin `reglas_union` (Gabinete, Alacena) simplemente no lo ejecuta.
+      uni = manifest['reglas_union']
+      if uni.is_a?(Hash) && uni['grupo'] && uni['nombre'] && uni['piezas'].is_a?(Array)
+        opts[:union] = {
+          grupo:  uni['grupo'].to_s,
+          piezas: uni['piezas'].map(&:to_s),
+          nombre: uni['nombre'].to_s
+        }
       end
 
       res = Engine.generar_unidad(base_def, nombre, valores, opts)
