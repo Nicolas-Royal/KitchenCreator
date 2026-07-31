@@ -138,6 +138,9 @@ royal_catalog_creator.rb          Registrar (SketchupExtension)
 royal_catalog_creator/
   main.rb                         Menú/toolbar, HtmlDialog y callbacks
   engine.rb                       Motor de inyección (refactor de script.rb)
+  plantilla.rb                    Modelo de columnas de la plantilla (desde los manifiestos)
+  xlsx.rb                         Lector/escritor mínimo de .xlsx, sin gems
+  importer.rb                     Parseo estructural del archivo a importar (CSV/XLSX)
   manifest/gabinete.json          Manifiesto curado = única fuente de la UI
   html/dialog.html · css · js     Interfaz moderna (tema claro/oscuro)
 ```
@@ -193,6 +196,82 @@ El plugin necesita saber dónde están `Main Components/` (componente base `GABI
 3. (Opcional) activa **Insertar en escena** para colocar la unidad en el modelo (auto-tiling en +X).
 4. **Generar** → crea `Output/Gabinetes/<nombre>.skp`.
 5. **Clonar** duplica un módulo para variar 1–2 valores.
+6. **Generar todos** genera en lote todos los módulos de la barra izquierda (ver abajo).
+
+Para capturar muchos de golpe: **Plantilla…** → llenar en Excel → **Importar…** → revisar la tabla →
+**Generar todos**.
+
+## Plantilla de Excel
+
+El botón **«Plantilla de Excel…»** de la barra izquierda escribe un `.xlsx` con una columna por
+variable de las tres familias y **desplegables nativos** en cada campo de lista. Se genera **desde
+los manifiestos**: agregar una variable a `manifest/*.json` la hace aparecer sola en el Excel.
+
+El diseño completo (regla de columnas, convenciones de celda, formato del archivo) está en
+[`Definiciones/PLANTILLA.md`](../Definiciones/PLANTILLA.md). Lo mínimo que hay que saber:
+
+- **La columna se identifica por el campo, no por el `attr`.** Dos familias comparten columna solo si
+  coinciden `attr`, `tipo`, `unidad`, `label` y el juego entero de opciones; si no, se parte con
+  prefijo `[GAB]` / `[GAB·ALA]` / `[ESQ]`. Sin esa regla, `EstiloPuerta` ofrecería «4 cajones» en un
+  Esquinero y `LenY` mezclaría «Profundidad» con «Ancho derecho».
+- Las celdas llevan **etiquetas legibles** (`Puerta lisa`), no códigos; los números van **sin unidad**
+  (va en el encabezado). Celda vacía = el `default` del manifiesto.
+- El `.xlsx` se escribe **sin gems** (`xlsx.rb`): zip con entradas sin comprimir y cadenas *inline*.
+  De zlib solo se usa el CRC32, con respaldo propio. No tocar el orden de los elementos de la hoja:
+  `dataValidations` va después de `sheetData` o Excel declara el archivo dañado.
+
+## Importar
+
+**«Importar…»** lee un `.xlsx` o `.csv` y muestra los módulos en una **tabla de revisión editable**
+antes de crearlos. Nada llega a la barra izquierda hasta pulsar «Importar N».
+
+Reparto de responsabilidades, para no crear un tercer espejo de las reglas:
+
+- **`importer.rb` solo parsea estructura** (archivo → encabezados + celdas de texto). Cero manifiesto.
+- **`app.js` valida la semántica** reusando `fieldVisible` / `fieldEnabled` / `parseMm` /
+  `valorCapturado` / `presupuestoCajones`, los mismos que usa el formulario.
+
+En la tabla: ✔ lista · ⚠ con avisos · ✖ con errores. Los errores se anclan a la **celda** y editarla
+revalida en vivo; «Importar N» queda deshabilitado mientras quede algún ✖. Las columnas que no
+aplican a la familia de esa fila se ven en gris.
+
+Qué es error y qué es aviso:
+
+| | |
+|---|---|
+| **Error** | familia desconocida · nombre vacío, con caracteres inválidos o repetido · opción que no existe en el manifiesto **de esa familia** · medida no parseable · derivado fuera de rango · requerido vacío · cajones que no caben |
+| **Aviso** | columna de otra familia con dato · dato sobre un campo que `visible_si`/`habilitado_si` apaga · encabezado desconocido |
+
+Detalles que no son obvios:
+
+- Los controles de la tabla son **propios**, no los del formulario. `ctrlPreset`/`ctrlStepper` y
+  `updateConditionals` se buscan con `document.querySelector`, así que con N filas todas las
+  instancias chocarían entre sí. Aquí solo hace falta capturar texto.
+- Un valor inválido **no se borra**: se agrega como opción del desplegable para que se vea qué traía
+  el archivo, y la celda queda en rojo.
+- Con dos filas del mismo nombre se marcan **las dos** — no hay forma de saber cuál es la buena.
+- Los CSV que exporta Excel en Windows vienen en **ANSI (Windows-1252)**; el lector lo detecta y
+  convierte, si no «Puerta uñero» no coincidiría con ninguna opción.
+- Leer `.xlsx` requiere `zlib` (Excel comprime); escribirlo no. Sin zlib, el mensaje manda a CSV.
+
+## Generar todos (lote)
+
+El botón bajo «+ Nuevo módulo» genera **todos** los módulos de la sesión; los que ya estaban
+generados se vuelven a guardar y sobrescriben su `.skp` (la confirmación lo advierte).
+
+- **Estrictamente secuencial, una unidad a la vez.** El puente Ruby↔JS es asíncrono y el cursor de
+  auto-tiling (`@cursor_x`) avanza por unidad: mandar el lote en paralelo apilaría todos los muebles
+  en el mismo punto. La cola se destraba en `onGenerar`, que es la única señal de que una terminó.
+- **Un fallo no aborta el lote.** El módulo queda con ✕ en su tarjeta y el motivo en el `title`; al
+  final sale el resumen «X generados · Y con error».
+- **Cancelar** detiene la cola *después* de la unidad en curso, nunca a media generación.
+- El pre-vuelo avisa en la confirmación cuántos módulos no pasan el presupuesto de cajones.
+- Los toggles **Insertar en escena** y **Limpiar piezas ocultas** son estado **de sesión**, no del
+  módulo: viven en el DOM del editor y el lote aplica los mismos a todas las unidades.
+
+Detalle que no se debe deshacer: el payload lleva `registro_id` y `main.rb#generar` lo **devuelve en
+todas sus respuestas**. Sin él, `onGenerar` marcaba como generado al módulo *activo* — correcto con
+un botón individual, equivocado en cuanto hay una cola.
 
 ## Notas de la definición (pendientes con el mantenedor)
 

@@ -13,10 +13,13 @@
     sync: function () { console.warn('[CC] sketchup.sync no disponible (fuera de SketchUp).'); },
     get_manifest: function () { console.warn('[CC] sketchup.get_manifest no disponible.'); },
     generar: function () { console.warn('[CC] sketchup.generar no disponible.'); },
-    elegir_carpeta: function () { console.warn('[CC] sketchup.elegir_carpeta no disponible.'); }
+    elegir_carpeta: function () { console.warn('[CC] sketchup.elegir_carpeta no disponible.'); },
+    exportar_plantilla: function () { console.warn('[CC] sketchup.exportar_plantilla no disponible.'); },
+    importar_archivo: function () { console.warn('[CC] sketchup.importar_archivo no disponible.'); }
   };
 
-  var ICONOS = { gabinete: '🗄️', alacena: '📦', esquinero: '📐' };
+  var ICONOS  = { gabinete: '🗄️', alacena: '📦', esquinero: '📐' };
+  var ESTADOS = { generado: '✓ generado', error: '✕ error' };
 
   // ---- Estado --------------------------------------------------------------
   var state = {
@@ -24,10 +27,12 @@
     projectRoot: '',
     rootValido: false,
     manifests: {},        // familia -> manifest
-    registros: [],        // { id, familia, titulo, nombre_salida, valores, estado }
+    registros: [],        // { id, familia, titulo, nombre_salida, valores, estado, error }
     activeId: null,
     seq: 1,
-    pending: null         // { registroId } esperando manifest
+    pending: null,        // { registroId } esperando manifest
+    lote: null,           // cola de «Generar todos»; null = no hay lote corriendo
+    importar: null        // tabla de revisión en curso; null = no hay importación
   };
 
   // ---- Utilidades ----------------------------------------------------------
@@ -384,13 +389,20 @@
 
       var meta = el('div', 'mod-card__meta');
       meta.appendChild(el('span', null, (ICONOS[r.familia] || '•') + ' ' + r.titulo));
-      var estado = el('span', null, r.estado === 'generado' ? '✓ generado' : 'borrador');
+      var estado = el('span', null, ESTADOS[r.estado] || 'borrador');
+      // El resumen del lote solo da conteos; el motivo del fallo vive aquí.
+      if (r.estado === 'error') {
+        estado.className = 'mod-card__error';
+        estado.title = r.error || '';
+      }
       meta.appendChild(estado);
 
       card.appendChild(top);
       card.appendChild(meta);
       cont.appendChild(card);
     });
+
+    actualizarBotonLote();
   }
 
   function renderRoot() {
@@ -404,6 +416,9 @@
   //  Render: editor (formulario)
   // =========================================================================
   function renderEditor() {
+    // Con una importación en revisión, la tabla manda: cambiar de panel a media
+    // corrección perdería lo capturado sin que nadie lo haya pedido.
+    if (state.importar) { renderImport(); return; }
     var r = activeRegistro();
     if (!r) { showPane('empty'); return; }
     var manifest = findManifest(r.familia);
@@ -546,6 +561,7 @@
     updateConditionals(manifest, registro);
     // refresca meta/estado (auto-nombre no se pisa si el usuario ya lo editó)
     registro.estado = 'borrador';
+    registro.error  = null;   // tocar el módulo invalida el fallo anterior
     renderSidebar();
   }
 
@@ -767,8 +783,9 @@
   //  Acciones
   // =========================================================================
   function showPane(which) {
-    $('#pane-empty').hidden = which !== 'empty';
+    $('#pane-empty').hidden  = which !== 'empty';
     $('#pane-editor').hidden = which !== 'editor';
+    $('#pane-import').hidden = which !== 'import';
   }
 
   function openFamiliaModal() { $('#modal-familia').hidden = false; }
@@ -902,25 +919,34 @@
     });
   }
 
-  function generar() {
-    var r = activeRegistro();
-    if (!r) return;
-    var manifest = findManifest(r.familia);
-    if (!manifest) return;
-    if (!state.rootValido) { toast('error', 'Falta configurar la carpeta', 'Selecciona la carpeta del proyecto (contiene «Main Components»).'); return; }
+  /* Manda UN registro a generar. Devuelve { ok } o { ok:false, titulo, error }
+     sin depender del registro activo ni del input del nombre, para que el lote
+     no cambie de resultado según qué módulo esté abierto.
 
+     Los dos toggles sí se leen del DOM: «Insertar en escena» y «Limpiar piezas
+     ocultas» son estado de SESIÓN, no del registro (nunca se guardaron en él),
+     así que el lote aplica los mismos que el botón individual. */
+  function generarRegistro(r) {
+    if (!state.rootValido) {
+      return { ok: false, titulo: 'Falta configurar la carpeta',
+               error: 'Selecciona la carpeta del proyecto (contiene «Main Components»).' };
+    }
+    var manifest = findManifest(r.familia);
+    if (!manifest) {
+      return { ok: false, titulo: 'Falta el manifiesto', error: 'No se cargó el manifiesto de ' + r.titulo + '.' };
+    }
     // Sin esto el componente recorta los cajones y la pila traspasa el mueble.
     var presupuesto = presupuestoCajones(manifest, r.valores);
     if (presupuesto.aplica && !presupuesto.ok) {
-      toast('error', 'Los cajones no caben', presupuesto.mensaje);
-      return;
+      return { ok: false, titulo: 'Los cajones no caben', error: presupuesto.mensaje };
     }
 
-    var nombre = ($('#nombre-salida').value || r.nombre_salida || 'modulo').trim();
-    r.nombre_salida = nombre;
+    r.nombre_salida = (r.nombre_salida || 'modulo').trim();
     var payload = {
+      // Vuelve en la respuesta: en lote el registro activo no es el que se generó.
+      registro_id: r.id,
       familia: r.familia,
-      nombre_salida: nombre,
+      nombre_salida: r.nombre_salida,
       insertar_en_escena: $('#toggle-escena').checked,
       limpiar_ocultos: $('#toggle-limpiar').checked,
       valores: flatten(manifest, r)
@@ -929,10 +955,564 @@
     // de nombrado para el motor.
     var div = nombresDivisores(manifest, r);
     if (div) payload.divisores = div;
-    $('#btn-generar').disabled = true;
-    toast('warn', 'Generando…', nombre);
     SU.generar(JSON.stringify(payload));
+    return { ok: true };
   }
+
+  function generar() {
+    var r = activeRegistro();
+    if (!r || state.lote) return;
+    // Mientras el editor está abierto, el input manda sobre el registro.
+    r.nombre_salida = ($('#nombre-salida').value || r.nombre_salida || 'modulo').trim();
+
+    var res = generarRegistro(r);
+    if (!res.ok) { toast('error', res.titulo, res.error); return; }
+    $('#btn-generar').disabled = true;
+    toast('warn', 'Generando…', r.nombre_salida);
+  }
+
+  function marcarError(r, mensaje) {
+    r.estado = 'error';
+    r.error  = mensaje || 'Error desconocido';
+  }
+
+  // =========================================================================
+  //  Lote: «Generar todos»
+  // -------------------------------------------------------------------------
+  //  Estrictamente secuencial. El puente con Ruby es asíncrono y el cursor de
+  //  auto-tiling (@cursor_x en main.rb) avanza por unidad: mandar N llamadas a
+  //  la vez apilaría los muebles en el mismo punto. La cola se destraba en
+  //  onGenerar, que es la única señal de que una unidad terminó.
+  // =========================================================================
+
+  /* Registros que el motor rechazaría por presupuesto de cajones. Se detectan
+     antes de arrancar para poder advertirlo en la confirmación en vez de a
+     media cola. */
+  function invalidosDelLote() {
+    return state.registros.filter(function (r) {
+      var m = findManifest(r.familia);
+      if (!m) return true;
+      var p = presupuestoCajones(m, r.valores);
+      return p.aplica && !p.ok;
+    });
+  }
+
+  function generarTodos() {
+    if (state.lote || !state.registros.length) return;
+    if (!state.rootValido) {
+      toast('error', 'Falta configurar la carpeta', 'Selecciona la carpeta del proyecto (contiene «Main Components»).');
+      return;
+    }
+
+    var total = state.registros.length;
+    var malos = invalidosDelLote().length;
+    var cuerpo = 'Se generarán ' + total + (total === 1 ? ' módulo.' : ' módulos.') +
+                 '\nLos que ya estaban generados se vuelven a guardar y sobrescriben su .skp.';
+    if (malos) {
+      cuerpo += '\n\n' + malos + (malos === 1 ? ' módulo no pasa' : ' módulos no pasan') +
+                ' la validación: quedarán marcados con ✕ y el resto se genera igual.';
+    }
+
+    confirmar('Generar todos', cuerpo, function () {
+      state.lote = {
+        pendientes: state.registros.map(function (r) { return r.id; }),
+        total: total, hechos: 0, ok: 0, fallos: 0, avisos: 0, cancelado: false
+      };
+      $('#btn-generar').disabled = true;
+      siguienteDelLote();
+    });
+  }
+
+  function siguienteDelLote() {
+    var L = state.lote;
+    if (!L) return;
+    if (L.cancelado || !L.pendientes.length) { finLote(); return; }
+
+    var id = L.pendientes.shift();
+    var r  = state.registros.filter(function (x) { return x.id === id; })[0];
+    if (!r) { L.hechos++; siguienteDelLote(); return; }   // lo borraron a media cola
+
+    actualizarBotonLote(r.nombre_salida);
+    var res = generarRegistro(r);
+    if (res.ok) return;   // la cola sigue en onGenerar
+
+    // El fallo es local: no llegó a Ruby, así que no vendrá respuesta y hay que
+    // destrabar la cola aquí mismo.
+    marcarError(r, res.error);
+    L.hechos++; L.fallos++;
+    renderSidebar();
+    siguienteDelLote();
+  }
+
+  function finLote() {
+    var L = state.lote;
+    state.lote = null;
+    $('#btn-generar').disabled = false;
+    renderSidebar();
+    if (!L) return;
+
+    var partes = [L.ok + (L.ok === 1 ? ' generado' : ' generados')];
+    if (L.fallos) partes.push(L.fallos + ' con error');
+    if (L.avisos) partes.push(L.avisos + (L.avisos === 1 ? ' aviso' : ' avisos'));
+    if (L.cancelado && L.pendientes.length) partes.push(L.pendientes.length + ' sin generar (cancelado)');
+    toast(L.fallos ? 'warn' : 'ok', 'Lote terminado', partes.join(' · '));
+  }
+
+  /* El propio botón hace de indicador de progreso: no hay lugar en la barra
+     lateral para una barra aparte y así el estado se ve donde se disparó. */
+  function actualizarBotonLote(nombre) {
+    var acciones = $('#lote-acciones');
+    var btn      = $('#btn-generar-todos');
+    var cancel   = $('#btn-cancelar-lote');
+    if (!acciones) return;
+
+    acciones.hidden = state.registros.length === 0;
+    var L = state.lote;
+    if (!L) {
+      btn.disabled = false;
+      btn.textContent = 'Generar todos (' + state.registros.length + ')';
+      btn.title = '';
+      cancel.hidden = true;
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Generando ' + Math.min(L.hechos + 1, L.total) + '/' + L.total + '…';
+    btn.title = nombre || btn.title;
+    cancel.hidden = false;
+    cancel.textContent = L.cancelado ? 'Cancelando…' : 'Cancelar';
+  }
+
+  // =========================================================================
+  //  Importación — mapeo, validación y tabla de revisión
+  // -------------------------------------------------------------------------
+  //  Ruby entrega la tabla en crudo (encabezados + celdas de texto), el modelo
+  //  de columnas de la plantilla y los tres manifiestos. Todo lo semántico se
+  //  resuelve aquí reusando los mismos predicados del formulario
+  //  (fieldVisible / fieldEnabled / parseMm / presupuestoCajones): son la única
+  //  implementación de esas reglas y no deben tener un tercer espejo.
+  // =========================================================================
+
+  function normTexto(t) {
+    return String(t == null ? '' : t).replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+
+  function campoPorId(manifest, id) {
+    return findField(manifest, function (f) { return f.id === id; });
+  }
+
+  function familiaPorTexto(modelo, t) {
+    var n = normTexto(t), hit = null;
+    modelo.familias.forEach(function (f) {
+      if (!hit && (normTexto(f.titulo) === n || normTexto(f.id) === n)) hit = f.id;
+    });
+    return hit;
+  }
+
+  /* Encabezado -> columnas candidatas. Un encabezado de la plantilla identifica
+     una columna exacta; uno crudo (`divisor>f03espacio1`, como el CSV viejo)
+     puede corresponder a varias, y ahí decide la familia de cada fila. */
+  function resolverHeader(modelo, header) {
+    var n = normTexto(header);
+    var exacta = null, porAttr = [];
+    modelo.columnas.forEach(function (c) {
+      if (!exacta && normTexto(c.header) === n) exacta = c;
+      if (c.attr && c.attr === String(header).trim()) porAttr.push(c);
+    });
+    if (exacta) return [exacta];
+    return porAttr.length ? porAttr : null;
+  }
+
+  function columnaParaFamilia(cands, familia) {
+    var hit = null;
+    cands.forEach(function (c) {
+      if (hit) return;
+      if (c.clase !== 'campo' || (familia && c.familias.indexOf(familia) >= 0)) hit = c;
+    });
+    return hit;
+  }
+
+  /* Texto de celda -> valor interno del formulario. */
+  function convertirCelda(campo, texto) {
+    var t = String(texto).trim();
+    if (campo.tipo === 'select') {
+      var o = buscarOpcion(campo.opciones, t);
+      return o ? { valor: o.valor } : { error: 'Opción no válida.' };
+    }
+    if (campo.tipo === 'preset') {
+      var p = buscarOpcion(campo.presets, t);
+      if (p) return { valor: p.valor };
+      if (!campo.permite_personalizado) return { error: 'Opción no válida.' };
+      var n = numeroEnUnidad(t, campo.unidad);
+      if (n === null) return { error: 'Escribe una opción de la lista o una medida.' };
+      return { valor: '__custom__', custom: n };
+    }
+    if (campo.tipo === 'derivado') {
+      if (!/^-?\d+$/.test(t)) return { error: 'Debe ser un número entero.' };
+      var v   = parseInt(t, 10);
+      var min = campo.min != null ? campo.min : 0;
+      var max = campo.max != null ? campo.max : 99;
+      if (v < min || v > max) return { error: 'Fuera de rango (' + min + '–' + max + ').' };
+      return { valor: String(v) };
+    }
+    var m = numeroEnUnidad(t, campo.unidad);
+    return m === null ? { error: 'No es una medida válida.' } : { valor: m };
+  }
+
+  function buscarOpcion(lista, t) {
+    var n = normTexto(t), hit = null;
+    (lista || []).forEach(function (o) {
+      if (hit) return;
+      if (normTexto(o.label) === n || String(o.valor) === String(t).trim()) hit = o;
+    });
+    return hit;
+  }
+
+  /* El formulario guarda el número SIN unidad (la pone el campo al aplanar), así
+     que una celda con unidad explícita («25cm») se convierte a la del campo. */
+  function numeroEnUnidad(texto, unidad) {
+    var mm = parseMm(texto);
+    if (isNaN(mm)) return null;
+    var v = unidad === 'cm' ? mm / 10 : (unidad === 'm' ? mm / 1000 : mm);
+    return String(Math.round(v * 1000) / 1000);
+  }
+
+  // ---- Validación de una fila ---------------------------------------------
+  function validarFila(f, imp) {
+    f.errores = {};
+    f.avisos  = [];
+    f.error   = null;
+    f.valores = null;
+
+    var texto = function (i) { return i >= 0 ? String(f.celdas[i] == null ? '' : f.celdas[i]).trim() : ''; };
+
+    f.familia = imp.idxFamilia >= 0 ? familiaPorTexto(imp.modelo, texto(imp.idxFamilia)) : null;
+    if (!f.familia) {
+      if (imp.idxFamilia >= 0) f.errores[imp.idxFamilia] = 'Familia desconocida.';
+      else f.error = 'El archivo no trae columna «familia».';
+    }
+
+    f.nombre = texto(imp.idxNombre);
+    if (imp.idxNombre < 0) {
+      f.error = f.error || 'El archivo no trae columna «nombre_salida».';
+    } else if (!f.nombre) {
+      f.errores[imp.idxNombre] = 'Falta el nombre.';
+    } else if (/[\\\/:*?"<>|]/.test(f.nombre)) {
+      f.errores[imp.idxNombre] = 'Caracteres no válidos para un nombre de archivo.';
+    } else if (imp.repetidos[normTexto(f.nombre)] > 1) {
+      f.errores[imp.idxNombre] = 'Nombre repetido en el archivo.';
+    } else if (nombreEnSesion(f.nombre)) {
+      f.errores[imp.idxNombre] = 'Ya hay un módulo con ese nombre en la sesión.';
+    }
+
+    var manifest = f.familia ? findManifest(f.familia) : null;
+    if (!manifest) { f.estado = 'error'; return; }
+
+    var valores = defaultValores(manifest);
+    imp.cols.forEach(function (c) {
+      // familia y nombre_salida ya se consumieron arriba; no son campos del
+      // manifiesto y avisar de ellas sería ruido en cada fila.
+      if (c.indice === imp.idxFamilia || c.indice === imp.idxNombre) return;
+      var t = texto(c.indice);
+      if (t === '') return;
+      var col = columnaParaFamilia(c.cands, f.familia);
+      if (!col || col.clase !== 'campo') {
+        f.avisos.push('«' + c.header + '» no aplica a ' + manifest.titulo + ': se ignora.');
+        return;
+      }
+      var campo = campoPorId(manifest, col.ids[f.familia]);
+      if (!campo) { f.avisos.push('«' + c.header + '» no existe en ' + manifest.titulo + ': se ignora.'); return; }
+      var r = convertirCelda(campo, t);
+      if (r.error) { f.errores[c.indice] = r.error; return; }
+      valores[campo.id] = r.valor;
+      if (r.custom != null) valores[campo.id + '::custom'] = r.custom;
+    });
+    f.valores = valores;
+
+    // Requeridos y campos apagados se resuelven con los MISMOS predicados que el
+    // formulario, ya con todos los valores puestos.
+    manifest.grupos.forEach(function (g) {
+      g.campos.forEach(function (campo) {
+        var vis = fieldVisible(campo, manifest, valores);
+        var on  = fieldEnabled(campo, manifest, valores);
+        var i   = indiceDeCampo(imp, f.familia, campo.id);
+        if (campo.requerido && vis && on && valorCapturado(campo, valores) === '') {
+          if (i >= 0) f.errores[i] = 'Requerido.';
+          else f.error = f.error || 'Falta «' + campo.label + '» y no viene en el archivo.';
+        }
+        // Dato capturado sobre un campo que la propia configuración apaga: no es
+        // un error, pero conviene decir que no va a llegar al .skp.
+        if ((!vis || !on) && i >= 0 && texto(i) !== '') {
+          f.avisos.push('«' + campo.label + '» no aplica con esta configuración: se ignora.');
+        }
+      });
+    });
+
+    var p = presupuestoCajones(manifest, valores);
+    if (p.aplica && !p.ok) f.error = f.error || p.mensaje;
+
+    var hayErr = f.error || Object.keys(f.errores).length > 0;
+    f.estado = hayErr ? 'error' : (f.avisos.length ? 'aviso' : 'ok');
+  }
+
+  function indiceDeCampo(imp, familia, campoId) {
+    var idx = -1;
+    imp.cols.forEach(function (c) {
+      if (idx >= 0) return;
+      var col = columnaParaFamilia(c.cands, familia);
+      if (col && col.clase === 'campo' && col.ids[familia] === campoId) idx = c.indice;
+    });
+    return idx;
+  }
+
+  function nombreEnSesion(nombre) {
+    var n = normTexto(nombre);
+    return state.registros.some(function (r) { return normTexto(r.nombre_salida) === n; });
+  }
+
+  function recontarNombres(imp) {
+    imp.repetidos = {};
+    imp.filas.forEach(function (f) {
+      var n = normTexto(f.celdas[imp.idxNombre]);
+      if (n) imp.repetidos[n] = (imp.repetidos[n] || 0) + 1;
+    });
+  }
+
+  function revalidarTodo(imp) {
+    recontarNombres(imp);
+    imp.filas.forEach(function (f) { validarFila(f, imp); });
+  }
+
+  // ---- Construcción desde la respuesta de Ruby -----------------------------
+  function armarImportacion(res) {
+    // Los manifiestos llegan con el archivo: así la tabla se puede validar de
+    // inmediato aunque la sesión no haya abierto todavía esa familia.
+    var mans = res.manifiestos || {};
+    for (var fam in mans) {
+      if (Object.prototype.hasOwnProperty.call(mans, fam)) state.manifests[fam] = mans[fam];
+    }
+
+    var imp = {
+      modelo: res.modelo, ruta: res.ruta, cols: [], filas: [],
+      desconocidos: [], idxFamilia: -1, idxNombre: -1, repetidos: {},
+      truncado: !!res.truncado, maxFilas: res.max_filas
+    };
+
+    (res.headers || []).forEach(function (h, i) {
+      if (String(h).trim() === '') return;
+      var cands = resolverHeader(res.modelo, h);
+      if (!cands) { imp.desconocidos.push(h); return; }
+      if (cands[0].clase === 'familia') imp.idxFamilia = i;
+      if (cands[0].clase === 'nombre')  imp.idxNombre  = i;
+      imp.cols.push({ indice: i, header: String(h).trim(), cands: cands });
+    });
+
+    (res.filas || []).forEach(function (celdas) {
+      imp.filas.push({ celdas: celdas.slice(), errores: {}, avisos: [], estado: 'ok' });
+    });
+
+    revalidarTodo(imp);
+    state.importar = imp;
+    renderImport();
+  }
+
+  // ---- Tabla ---------------------------------------------------------------
+  function renderImport() {
+    var imp = state.importar;
+    if (!imp) { renderEditor(); return; }
+    showPane('import');
+
+    var tabla = $('#import-tabla');
+    tabla.innerHTML = '';
+
+    var thead = el('thead');
+    var trh   = el('tr');
+    trh.appendChild(el('th', null, ''));
+    imp.cols.forEach(function (c) {
+      var th = el('th', null, c.header);
+      th.title = c.header;
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    tabla.appendChild(thead);
+
+    var tbody = el('tbody');
+    imp.filas.forEach(function (f) { tbody.appendChild(filaImport(f, imp)); });
+    tabla.appendChild(tbody);
+
+    var avisos = [];
+    if (imp.truncado) avisos.push('El archivo trae más de ' + imp.maxFilas + ' filas; solo se leyeron las primeras.');
+    if (imp.desconocidos.length) {
+      avisos.push('Columnas que no se reconocen y se ignoran: ' + imp.desconocidos.join(' · '));
+    }
+    var caja = $('#import-avisos');
+    caja.hidden = avisos.length === 0;
+    caja.textContent = avisos.join('\n');
+
+    pintarValidacion(imp);
+  }
+
+  function filaImport(f, imp) {
+    var tr = el('tr');
+    f.__estado = el('td', 'celda-estado');
+    tr.appendChild(f.__estado);
+    f.__celdas = {};
+
+    imp.cols.forEach(function (c) {
+      var td = el('td');
+      td.appendChild(controlCelda(f, c, imp));
+      f.__celdas[c.indice] = td;
+      tr.appendChild(td);
+    });
+    return tr;
+  }
+
+  /* Controles propios, no los del formulario: `ctrlSelect`/`ctrlPreset` y
+     `updateConditionals` se buscan por `document.querySelector`, y con N filas
+     todas las instancias chocarían entre sí. Aquí solo hace falta capturar
+     texto, así que un input o un select bastan. */
+  function controlCelda(f, c, imp) {
+    var col = columnaParaFamilia(c.cands, f.familia) || c.cands[0];
+    var val = f.celdas[c.indice] == null ? '' : String(f.celdas[c.indice]);
+    var ctrl;
+
+    if (col.opciones && col.opciones.length && (col.estricta || col.clase !== 'campo')) {
+      ctrl = el('select');
+      var vacia = el('option', null, '');
+      vacia.value = '';
+      ctrl.appendChild(vacia);
+      var conocida = false;
+      col.opciones.forEach(function (o) {
+        var opt = el('option', null, o.label);
+        opt.value = o.label;
+        if (normTexto(o.label) === normTexto(val) || String(o.valor) === val) conocida = true;
+        ctrl.appendChild(opt);
+      });
+      // Un valor que no está en la lista se agrega para poder mostrarlo: la celda
+      // se marca en rojo, pero no se pierde lo que el archivo traía.
+      if (val && !conocida) {
+        var extra = el('option', null, val);
+        extra.value = val;
+        ctrl.appendChild(extra);
+      }
+      ctrl.value = val;
+    } else {
+      ctrl = el('input');
+      ctrl.type = 'text';
+      ctrl.value = val;
+      if (col.opciones && col.opciones.length) {
+        ctrl.title = 'Opciones: ' + col.opciones.map(function (o) { return o.label; }).join(' · ') +
+                     ' — o una medida.';
+      }
+    }
+
+    ctrl.addEventListener('change', function () {
+      f.celdas[c.indice] = ctrl.value;
+      revalidarTodo(imp);
+      pintarValidacion(imp);
+      // La familia decide qué columnas aplican y qué opciones ofrece cada celda.
+      if (c.indice === imp.idxFamilia) renderImport();
+    });
+    return ctrl;
+  }
+
+  /* Repinta estados sin reconstruir controles: reconstruirlos perdería el foco
+     a media corrección. */
+  function pintarValidacion(imp) {
+    var ICONO = { ok: '✔', aviso: '⚠', error: '✖' };
+    var ok = 0, conError = 0;
+
+    imp.filas.forEach(function (f) {
+      if (!f.__estado) return;
+      f.__estado.textContent = ICONO[f.estado] || '';
+      f.__estado.className = 'celda-estado es-' + f.estado;
+      f.__estado.title = f.error ? f.error : (f.avisos.length ? f.avisos.join('\n') : '');
+
+      imp.cols.forEach(function (c) {
+        var td = f.__celdas[c.indice];
+        if (!td) return;
+        var msg = f.errores[c.indice];
+        var col = columnaParaFamilia(c.cands, f.familia);
+        var na  = f.familia && (!col || (col.clase === 'campo' &&
+                    col.familias.indexOf(f.familia) < 0));
+        td.className = (msg ? 'is-bad' : '') + (na ? ' is-na' : '');
+        td.title = msg || (na ? 'No aplica a esta familia.' : '');
+      });
+
+      if (f.estado === 'error') conError++; else ok++;
+    });
+
+    $('#import-resumen').textContent =
+      imp.filas.length + ' filas · ' + ok + ' listas · ' + conError + ' con error';
+    $('#btn-import-ok').disabled = ok === 0;
+    $('#btn-import-ok').textContent = 'Importar ' + ok;
+    $('#btn-import-descartar').disabled = conError === 0;
+  }
+
+  // ---- Acciones ------------------------------------------------------------
+  function importarPedir() {
+    if (!state.rootValido) {
+      toast('error', 'Falta configurar la carpeta', 'Selecciona la carpeta del proyecto (contiene «Main Components»).');
+      return;
+    }
+    $('#btn-importar').disabled = true;
+    SU.importar_archivo();
+  }
+
+  function importarConfirmar() {
+    var imp = state.importar;
+    if (!imp) return;
+    var buenas = imp.filas.filter(function (f) { return f.estado !== 'error'; });
+    if (!buenas.length) return;
+
+    buenas.forEach(function (f) {
+      var manifest = findManifest(f.familia);
+      state.registros.push({
+        id: 'r' + (state.seq++), familia: f.familia, titulo: manifest.titulo,
+        valores: f.valores, estado: 'borrador', nombre_salida: f.nombre
+      });
+    });
+
+    state.importar = null;
+    state.activeId = state.registros[state.registros.length - 1].id;
+    renderSidebar();
+    renderEditor();
+    toast('ok', 'Importados ' + buenas.length + (buenas.length === 1 ? ' módulo' : ' módulos'),
+          'Quedan como borradores: revísalos y usa «Generar todos».');
+  }
+
+  function importarDescartarMalas() {
+    var imp = state.importar;
+    if (!imp) return;
+    imp.filas = imp.filas.filter(function (f) { return f.estado !== 'error'; });
+    revalidarTodo(imp);
+    renderImport();
+  }
+
+  function importarCancelar() {
+    state.importar = null;
+    renderEditor();
+  }
+
+  // =========================================================================
+  //  Confirmación
+  // -------------------------------------------------------------------------
+  //  Modal propio en vez de window.confirm(): el diálogo nativo dentro de
+  //  UI::HtmlDialog es del navegador embebido y bloquea el hilo del diálogo.
+  //  Reusa el mismo markup .modal del selector de familia.
+  // =========================================================================
+  function confirmar(titulo, cuerpo, onOk) {
+    $('#modal-confirm-title').textContent = titulo;
+    $('#modal-confirm-body').textContent  = cuerpo;
+
+    // Se reemplaza el botón para no acumular listeners entre confirmaciones.
+    var ok    = $('#modal-confirm-ok');
+    var nuevo = ok.cloneNode(true);
+    ok.parentNode.replaceChild(nuevo, ok);
+    nuevo.addEventListener('click', function () { cerrarConfirm(); onOk(); });
+
+    $('#modal-confirm').hidden = false;
+  }
+  function cerrarConfirm() { $('#modal-confirm').hidden = true; }
 
   // =========================================================================
   //  Toasts
@@ -989,17 +1569,53 @@
       renderEditor();
     },
 
+    onImportar: function (res) {
+      $('#btn-importar').disabled = false;
+      if (!res || res.cancelado) return;
+      if (!res.ok) { toast('error', 'No se pudo leer el archivo', res.error || 'Desconocido'); return; }
+      armarImportacion(res);
+    },
+
+    onPlantilla: function (res) {
+      $('#btn-plantilla').disabled = false;
+      if (!res || res.cancelado) return;
+      if (res.ok) toast('ok', 'Plantilla generada', res.ruta);
+      else        toast('error', 'No se pudo generar la plantilla', res.error || 'Desconocido');
+    },
+
     onGenerar: function (res) {
-      $('#btn-generar').disabled = false;
-      var r = activeRegistro();
+      // El id viaja en el payload y vuelve aquí: durante un lote el registro
+      // activo NO es el que se acaba de generar. Sin id (respuesta vieja) se
+      // conserva el comportamiento anterior.
+      var id = res && res.registro_id;
+      var r  = id
+        ? state.registros.filter(function (x) { return x.id === id; })[0]
+        : activeRegistro();
+      var L = state.lote;
+      var avisos = (res && res.warnings) ? res.warnings.length : 0;
+
       if (res && res.ok) {
-        if (r) { r.estado = 'generado'; renderSidebar(); }
-        toast('ok', 'Módulo generado', res.ruta || 'Insertado en la escena.');
-        if (res.warnings && res.warnings.length) {
-          toast('warn', 'Avisos (' + res.warnings.length + ')', res.warnings.slice(0, 4).join(' · '));
+        if (r) { r.estado = 'generado'; r.error = null; }
+        if (L) {
+          L.ok++; L.avisos += avisos;   // en lote los avisos se suman al resumen final
+        } else {
+          toast('ok', 'Módulo generado', res.ruta || 'Insertado en la escena.');
+          if (avisos) toast('warn', 'Avisos (' + avisos + ')', res.warnings.slice(0, 4).join(' · '));
         }
       } else {
-        toast('error', 'Error al generar', res && res.error ? res.error : 'Desconocido');
+        var msg = (res && res.error) ? res.error : 'Desconocido';
+        if (r) marcarError(r, msg);
+        if (L) L.fallos++;
+        else   toast('error', 'Error al generar', msg);
+      }
+
+      if (L) {
+        L.hechos++;
+        renderSidebar();
+        siguienteDelLote();
+      } else {
+        $('#btn-generar').disabled = false;
+        renderSidebar();
       }
     }
   };
@@ -1012,7 +1628,23 @@
     $('#btn-nuevo-2').addEventListener('click', openFamiliaModal);
     $('#btn-clonar').addEventListener('click', clonarActivo);
     $('#btn-generar').addEventListener('click', generar);
+    $('#btn-generar-todos').addEventListener('click', generarTodos);
+    // Se detiene DESPUÉS de la unidad en curso: cortar a media generación
+    // dejaría la instancia a medio construir en la escena.
+    $('#btn-cancelar-lote').addEventListener('click', function () {
+      if (!state.lote) return;
+      state.lote.cancelado = true;
+      actualizarBotonLote();
+    });
     $('#btn-carpeta').addEventListener('click', function () { SU.elegir_carpeta(); });
+    $('#btn-plantilla').addEventListener('click', function () {
+      $('#btn-plantilla').disabled = true;
+      SU.exportar_plantilla();
+    });
+    $('#btn-importar').addEventListener('click', importarPedir);
+    $('#btn-import-ok').addEventListener('click', importarConfirmar);
+    $('#btn-import-descartar').addEventListener('click', importarDescartarMalas);
+    $('#btn-import-cancelar').addEventListener('click', importarCancelar);
 
     $('#nombre-salida').addEventListener('input', function () {
       var r = activeRegistro();
@@ -1022,7 +1654,16 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function (b) {
       b.addEventListener('click', closeFamiliaModal);
     });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeFamiliaModal(); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-confirm-close]'), function (b) {
+      b.addEventListener('click', cerrarConfirm);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      closeFamiliaModal();
+      cerrarConfirm();
+    });
+
+    renderSidebar();   // deja el botón del lote en su estado inicial (oculto)
 
     SU.sync();
   }

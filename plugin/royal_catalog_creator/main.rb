@@ -10,6 +10,8 @@ module RoyalKitchen
   module CatalogCreator
 
     require File.join(__dir__, 'engine')
+    require File.join(__dir__, 'plantilla')
+    require File.join(__dir__, 'importer')
 
     # -- Configuración ------------------------------------------------------
     PREF_SECTION = 'RoyalCatalogCreator'.freeze
@@ -114,6 +116,14 @@ module RoyalKitchen
       dialog.add_action_callback('generar') do |_ctx, payload_json|
         responder(dialog, 'onGenerar', generar(payload_json))
       end
+
+      dialog.add_action_callback('exportar_plantilla') do |_ctx|
+        responder(dialog, 'onPlantilla', exportar_plantilla)
+      end
+
+      dialog.add_action_callback('importar_archivo') do |_ctx|
+        responder(dialog, 'onImportar', importar_archivo)
+      end
     end
 
     # Envía un objeto Ruby de vuelta a la UI como argumento de window.CC.<fn>.
@@ -134,6 +144,69 @@ module RoyalKitchen
       data['componente_base_abs'] = File.join(project_root, data['componente_base'].to_s)
       data['salida_dir_abs']      = File.join(project_root, data['salida_dir'].to_s)
       { 'ok' => true, 'manifest' => data }
+    rescue => e
+      { 'ok' => false, 'error' => e.message }
+    end
+
+    # Manifiestos de las familias activas, en el orden de FAMILIAS. Es la fuente
+    # de la plantilla: agregar una familia la agrega al Excel sin tocar código.
+    def manifiestos_activos
+      FAMILIAS.select { |f| f['activo'] }.map do |f|
+        wrap = cargar_manifest(f['id'])
+        raise "No se pudo leer el manifiesto de #{f['titulo']}: #{wrap['error']}" unless wrap['ok']
+        [f['id'], wrap['manifest']]
+      end
+    end
+
+    # -----------------------------------------------------------------------
+    # Exportar plantilla: escribe el .xlsx derivado de los manifiestos.
+    # -----------------------------------------------------------------------
+    def exportar_plantilla
+      unless project_root_valido?
+        return { 'ok' => false, 'error' => 'Configura primero la carpeta del proyecto (contiene «Main Components»).' }
+      end
+
+      dir = File.join(project_root, 'Input')
+      dir = project_root unless File.directory?(dir)
+      ruta = UI.savepanel('Guardar plantilla de importación', dir, 'plantilla_catalogo.xlsx')
+      return { 'ok' => false, 'cancelado' => true } unless ruta
+
+      # Algunos diálogos de Windows devuelven la ruta sin extensión si el usuario
+      # borró la sugerida; sin .xlsx, Excel no la reconoce.
+      ruta += '.xlsx' unless ruta.downcase.end_with?('.xlsx')
+
+      Plantilla.exportar(ruta, manifiestos_activos)
+      { 'ok' => true, 'ruta' => ruta }
+    rescue => e
+      { 'ok' => false, 'error' => e.message }
+    end
+
+    # -----------------------------------------------------------------------
+    # Importar: lee el archivo y devuelve la tabla en crudo junto con el modelo
+    # de columnas y los manifiestos.
+    #
+    # Los manifiestos viajan enteros a propósito: la UI necesita los tres para
+    # validar filas de cualquier familia, y mandarlos aquí evita una danza de
+    # peticiones asíncronas antes de poder dibujar la tabla.
+    # -----------------------------------------------------------------------
+    def importar_archivo
+      unless project_root_valido?
+        return { 'ok' => false, 'error' => 'Configura primero la carpeta del proyecto (contiene «Main Components»).' }
+      end
+
+      dir  = File.join(project_root, 'Input')
+      dir  = project_root unless File.directory?(dir)
+      ruta = UI.openpanel('Elegir archivo a importar', dir, 'Plantilla|*.xlsx;*.csv;*.txt||')
+      return { 'ok' => false, 'cancelado' => true } unless ruta
+
+      res = Importer.leer(ruta)
+      return res unless res['ok']
+
+      mans = manifiestos_activos
+      res['ruta']        = ruta
+      res['modelo']      = Plantilla.modelo(mans)
+      res['manifiestos'] = mans.each_with_object({}) { |(fam, man), h| h[fam] = man }
+      res
     rescue => e
       { 'ok' => false, 'error' => e.message }
     end
@@ -231,11 +304,18 @@ module RoyalKitchen
     end
 
     # -----------------------------------------------------------------------
-    # Generación: recibe { familia, nombre_salida, valores, insertar_en_escena }
-    # donde `valores` ya es la fila plana { "prefijo>attr" => "800mm" }.
+    # Generación: recibe { registro_id, familia, nombre_salida, valores,
+    # insertar_en_escena } donde `valores` ya es la fila plana
+    # { "prefijo>attr" => "800mm" }.
+    #
+    # `registro_id` se devuelve intacto en TODAS las respuestas: la UI lo usa
+    # para saber a qué tarjeta pertenece el resultado, porque en «Generar todos»
+    # el módulo activo no es el que se acaba de generar.
     # -----------------------------------------------------------------------
     def generar(payload_json)
+      reg_id  = nil
       payload = JSON.parse(payload_json)
+      reg_id  = payload['registro_id']
       familia = payload['familia'].to_s
       nombre  = payload['nombre_salida'].to_s
       valores = payload['valores'] || {}
@@ -244,19 +324,23 @@ module RoyalKitchen
       limpiar = payload.key?('limpiar_ocultos') ? !!payload['limpiar_ocultos'] : true
 
       unless project_root_valido?
-        return { 'ok' => false, 'error' => 'Configura primero la carpeta del proyecto (contiene «Main Components»).' }
+        return { 'ok' => false, 'registro_id' => reg_id,
+                 'error' => 'Configura primero la carpeta del proyecto (contiene «Main Components»).' }
       end
 
       manifest_wrap = cargar_manifest(familia)
-      return manifest_wrap unless manifest_wrap['ok']
+      return manifest_wrap.merge('registro_id' => reg_id) unless manifest_wrap['ok']
       manifest = manifest_wrap['manifest']
 
       error_cajones = validar_cajones(manifest, valores)
-      return { 'ok' => false, 'error' => "Los cajones no caben. #{error_cajones}" } if error_cajones
+      if error_cajones
+        return { 'ok' => false, 'registro_id' => reg_id, 'error' => "Los cajones no caben. #{error_cajones}" }
+      end
 
       base_path = manifest['componente_base_abs']
       unless File.exist?(base_path)
-        return { 'ok' => false, 'error' => "No se encontró el componente base:\n#{base_path}" }
+        return { 'ok' => false, 'registro_id' => reg_id,
+                 'error' => "No se encontró el componente base:\n#{base_path}" }
       end
 
       model    = Sketchup.active_model
@@ -301,13 +385,14 @@ module RoyalKitchen
       end
 
       {
-        'ok'       => res[:ok],
-        'ruta'     => res[:ruta],
-        'error'    => res[:error],
-        'warnings' => res[:warnings] || []
+        'ok'          => res[:ok],
+        'registro_id' => reg_id,
+        'ruta'        => res[:ruta],
+        'error'       => res[:error],
+        'warnings'    => res[:warnings] || []
       }
     rescue => e
-      { 'ok' => false, 'error' => e.message }
+      { 'ok' => false, 'registro_id' => reg_id, 'error' => e.message }
     end
 
     # -----------------------------------------------------------------------

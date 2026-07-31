@@ -19,6 +19,18 @@
           </div>
         </div>
         <button id="btn-nuevo" class="btn btn--primary btn--block">+ Nuevo módulo</button>
+        <!-- El propio botón hace de barra de progreso durante el lote; «Cancelar»
+             solo aparece mientras hay una cola corriendo. -->
+        <div class="lote" id="lote-acciones" hidden>
+          <button id="btn-generar-todos" class="btn btn--ghost btn--sm btn--block">Generar todos</button>
+          <button id="btn-cancelar-lote" class="btn btn--ghost btn--sm" hidden>Cancelar</button>
+        </div>
+        <div class="side-row">
+          <button id="btn-importar" class="btn btn--ghost btn--sm btn--block"
+                  title="Carga módulos desde un .xlsx o .csv y los revisa antes de crearlos.">Importar…</button>
+          <button id="btn-plantilla" class="btn btn--ghost btn--sm btn--block"
+                  title="Genera un Excel con una columna por variable y sus desplegables.">Plantilla…</button>
+        </div>
       </header>
 
       <nav class="modulos" id="lista-modulos" aria-label="Módulos de la sesión">
@@ -79,6 +91,25 @@
           <!-- grupos/campos inyectados por JS -->
         </div>
       </section>
+
+      <!-- Revisión de la importación -->
+      <section class="importar" id="pane-import" hidden>
+        <header class="editor__head">
+          <div class="editor__title">
+            <span class="chip">Importar</span>
+            <span id="import-resumen" class="muted"></span>
+          </div>
+          <div class="editor__actions">
+            <button class="btn btn--ghost" id="btn-import-descartar">Descartar filas con error</button>
+            <button class="btn btn--ghost" id="btn-import-cancelar">Cancelar</button>
+            <button class="btn btn--primary" id="btn-import-ok">Importar</button>
+          </div>
+        </header>
+        <p class="importar__avisos" id="import-avisos" hidden></p>
+        <div class="tabla-wrap">
+          <table class="tabla" id="import-tabla"><!-- filas inyectadas por JS --></table>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -93,6 +124,22 @@
       <p class="muted">Elige el tipo de módulo a crear.</p>
       <div class="familias" id="familias-grid">
         <!-- tarjetas de familia inyectadas por JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Confirmación genérica (modal) ============ -->
+  <div class="modal" id="modal-confirm" hidden>
+    <div class="modal__backdrop" data-confirm-close></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title">
+      <div class="modal__head">
+        <h2 id="modal-confirm-title">Confirmar</h2>
+        <button class="modal__x" data-confirm-close aria-label="Cerrar">×</button>
+      </div>
+      <p class="muted modal__texto" id="modal-confirm-body"></p>
+      <div class="modal__acciones">
+        <button class="btn btn--ghost" data-confirm-close>Cancelar</button>
+        <button class="btn btn--primary" id="modal-confirm-ok">Continuar</button>
       </div>
     </div>
   </div>

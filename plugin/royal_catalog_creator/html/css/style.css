@@ -117,6 +117,13 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
   cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 6px;
 }
 .mod-card__del:hover { color: var(--danger); background: var(--surface-2); }
+/* El error de una unidad del lote se lee en su propia tarjeta: el toast final
+   solo da el conteo, así que sin esto no se sabría cuál falló. */
+.mod-card__error { color: var(--danger); font-weight: 600; }
+
+.lote, .side-row { display: flex; gap: 8px; margin-top: 8px; }
+.lote[hidden] { display: none; }
+.lote .btn--block, .side-row .btn--block { flex: 1; }
 
 .sidebar__foot { border-top: 1px solid var(--border); padding: 12px 14px; }
 .root-status { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
@@ -316,6 +323,44 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 .modal__head h2 { margin: 0; font-size: 18px; }
 .modal__x { border: none; background: transparent; font-size: 24px; line-height: 1; color: var(--muted); cursor: pointer; }
 .modal__x:hover { color: var(--text); }
+/* pre-line: los cuerpos de confirmación llevan saltos de línea propios. */
+/* ---------------- Tabla de revisión de importación ---------------- */
+.importar { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+.importar__avisos {
+  margin: 0; padding: 10px 16px; font-size: 12px; color: var(--muted);
+  background: var(--surface-2); border-bottom: 1px solid var(--border); white-space: pre-line;
+}
+/* El scroll vive en el contenedor, no en el body: con 60 columnas el diálogo
+   entero se desplazaría en horizontal y la barra lateral se saldría de vista. */
+.tabla-wrap { flex: 1; overflow: auto; min-height: 0; }
+.tabla { border-collapse: separate; border-spacing: 0; font-size: 12px; }
+.tabla th, .tabla td {
+  border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  padding: 4px 6px; white-space: nowrap; vertical-align: middle;
+}
+.tabla thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface-2); text-align: left; font-weight: 600;
+  max-width: 210px; overflow: hidden; text-overflow: ellipsis;
+}
+.tabla tbody tr:hover td { background: var(--primary-weak); }
+.tabla .celda-estado { text-align: center; font-weight: 700; width: 28px; cursor: help; }
+.tabla .es-ok    { color: var(--ok); }
+.tabla .es-aviso { color: var(--warn); }
+.tabla .es-error { color: var(--danger); }
+.tabla input, .tabla select {
+  width: 100%; min-width: 92px; max-width: 200px; border: 1px solid transparent;
+  background: transparent; color: var(--text); font: inherit; padding: 2px 4px; border-radius: 4px;
+}
+.tabla input:focus, .tabla select:focus { border-color: var(--primary); outline: none; background: var(--surface); }
+.tabla td.is-bad { background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.tabla td.is-bad input, .tabla td.is-bad select { color: var(--danger); }
+/* Columna que no aplica a la familia de esa fila: se ve, pero no se captura. */
+.tabla td.is-na { background: var(--surface-2); }
+.tabla td.is-na input, .tabla td.is-na select { opacity: .35; }
+
+.modal__texto { white-space: pre-line; }
+.modal__acciones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
 .familias { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
 .fam-card {
