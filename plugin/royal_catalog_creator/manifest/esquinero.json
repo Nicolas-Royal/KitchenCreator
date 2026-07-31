@@ -48,13 +48,6 @@
       "id": "estructura",
       "titulo": "Estructura e interior",
       "campos": [
-        { "id": "e22tipotecho", "attr": "estructura>e22tipotecho", "label": "Tipo de techo", "tipo": "select", "default": "1", "opciones": [
-          { "label": "Ninguno", "valor": "1" },
-          { "label": "Amarre frontal", "valor": "2" },
-          { "label": "Amarre posterior", "valor": "3" },
-          { "label": "Amarre frontal + posterior", "valor": "4" },
-          { "label": "Techo completo", "valor": "5" }
-        ] },
         { "id": "e23ancamtecho", "attr": "estructura>e23ancamtecho", "label": "Ancho amarres", "tipo": "numero", "unidad": "mm", "default": "" },
         { "id": "c24entrepano", "attr": "c24entrepano", "label": "Entrepaño", "tipo": "select", "default": "1", "opciones": [
           { "label": "Sí", "valor": "0" },
@@ -80,11 +73,7 @@
           { "label": "Puerta italiana", "valor": "2" },
           { "label": "Puerta vidrio", "valor": "3" },
           { "label": "Puerta vidrio-madera", "valor": "4" },
-          { "label": "Puerta uñero", "valor": "5" },
-          { "label": "N cajones", "valor": "6" },
-          { "label": "2 cajones", "valor": "7" },
-          { "label": "3 cajones", "valor": "8" },
-          { "label": "4 cajones", "valor": "9" }
+          { "label": "Puerta uñero", "valor": "5" }
         ] },
         { "id": "f01posextintpu", "attr": "puerta>f01posextintpu", "label": "Posición de puertas", "tipo": "select", "default": "1", "opciones": [
           { "label": "Puerta/Cajón exterior", "valor": "1" },

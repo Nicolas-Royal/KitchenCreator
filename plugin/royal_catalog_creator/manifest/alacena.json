@@ -40,13 +40,6 @@
       "id": "estructura",
       "titulo": "Estructura e interior",
       "campos": [
-        { "id": "e22tipotecho", "attr": "estructura>e22tipotecho", "label": "Tipo de techo", "tipo": "select", "default": "1", "opciones": [
-          { "label": "Ninguno", "valor": "1" },
-          { "label": "Amarre frontal", "valor": "2" },
-          { "label": "Amarre posterior", "valor": "3" },
-          { "label": "Amarre frontal + posterior", "valor": "4" },
-          { "label": "Techo completo", "valor": "5" }
-        ] },
         { "id": "e23ancamtecho", "attr": "estructura>e23ancamtecho", "label": "Ancho amarres", "tipo": "numero", "unidad": "mm", "default": "" },
         { "id": "c24entrepano", "attr": "c24entrepano", "label": "Entrepaño", "tipo": "select", "default": "1", "opciones": [
           { "label": "Sí", "valor": "0" },

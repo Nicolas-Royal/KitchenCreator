@@ -22,7 +22,8 @@ Los campos se agrupan por bloque temático (el manifiesto define el orden):
   no significan lo mismo: el mueble tiene dos alas, así que `LenX`/`LenY` son el **ancho izquierdo**
   y el **derecho**, y la profundidad de cada una va en `a0101profizq` / `a0102profder`.
 - **Espesores** — estructura/puerta/fondo (+ los de cajón en Gabinete).
-- **Estructura e interior** — tipo de techo, ancho de amarres y **Entrepaño** (`c24entrepano`).
+- **Estructura e interior** — ancho de amarres y **Entrepaño** (`c24entrepano`); **tipo de techo solo en
+  Gabinete** (Alacena no lo lleva y el Esquinero trae el suyo fijo en el componente base).
 - **Frente y puertas** — diseño de puerta, cantidad/posición de puertas, separación y márgenes
   (estos últimos en el **editor de caja**, ver abajo).
 - **Tirador** — tipo, posición y orientación.
