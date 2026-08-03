@@ -16,7 +16,7 @@
 
 | Versión | Fecha | Autor | Cambios |
 |---|---|---|---|
-| 1.0 | 2026-08-03 | `[por confirmar: autor responsable del documento]` | Primera edición. Cubre instalación, captura visual, captura masiva por Excel y solución de problemas. |
+| 1.0 | 2026-08-03 | Nicolás Mauricio Cantú Salinas | Primera edición. Cubre instalación, captura visual, captura masiva por Excel y solución de problemas. |
 
 ---
 

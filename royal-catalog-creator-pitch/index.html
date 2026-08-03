@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Royal Catalog Creator — Presentación Ejecutiva</title>
+
+<!-- Fonts: Fraunces (display serif) + Sora (body/labels) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ===========================================================================
+   THEME — "Royal Teal": construido a partir del color de marca real del
+   plugin (#59b4a5 / #35786c), para que la diapositiva 4 (interfaz real
+   embebida) no se sienta como un color ajeno insertado en la presentación.
+   =========================================================================== */
+:root{
+  --bg:#F7F3EC;
+  --bg-alt:#EFE9DC;
+  --ink:#1E2723;
+  --ink-soft:#4A544E;
+  --ink-faint:#7C867F;
+  --teal:#59b4a5;
+  --teal-strong:#35786c;
+  --teal-weak:#eaf5f2;
+  --line: rgba(30,39,35,0.10);
+  --line-strong: rgba(30,39,35,0.18);
+  --card-bg:#ffffff;
+  --shadow: 0 20px 60px rgba(30,39,35,0.12), 0 2px 8px rgba(30,39,35,0.06);
+
+  /* Fijo, no cambia con el tema: chrome siempre oscuro (barra del demo-window,
+     franja de estadística, fondo "hero" de la diapositiva 5) — no es texto,
+     así que no debe invertirse cuando --ink se vuelve claro en modo noche. */
+  --chrome-dark:#1E2723;
+
+  --font-display:'Fraunces', serif;
+  --font-body:'Sora', sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-normal: 0.7s;
+
+  --slide-padding: 130px;
+}
+
+/* Modo noche: mismo sistema, superficies invertidas. Se activa con
+   data-theme="night" en <html> (botón muy pequeño en la esquina). */
+:root[data-theme="night"]{
+  --bg:#141C19;
+  --bg-alt:#1B2622;
+  --ink:#F2EFE7;
+  --ink-soft:#C7D0CB;
+  --ink-faint:#8A958E;
+  --teal-weak: rgba(89,180,165,0.16);
+  --line: rgba(242,239,231,0.10);
+  --line-strong: rgba(242,239,231,0.18);
+  --card-bg:#1E2B27;
+  --shadow: 0 20px 60px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+/* ===========================================================================
+   FIXED 16:9 STAGE — MANDATORY BASE (viewport-base.css, included in full)
+   =========================================================================== */
+html, body{
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--stage-bg, #000);
+}
+.deck-viewport {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: var(--stage-bg, #000);
+}
+.deck-stage {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    transform-origin: 0 0;
+    background: var(--slide-bg, #fff);
+}
+.slide {
+    position: absolute;
+    inset: 0;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    display: block;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    background: var(--slide-bg, #fff);
+}
+.slide.active,
+.slide.visible {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 1;
+}
+img, video, canvas, svg { max-width: 100%; max-height: 100%; }
+.deck-controls {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    z-index: 1000;
+}
+@media print {
+    html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+    .deck-viewport { position: static; overflow: visible; background: #fff; }
+    .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+    .slide {
+        position: relative; display: block !important; visibility: visible !important;
+        opacity: 1 !important; pointer-events: auto !important;
+        width: 1920px; height: 1080px; break-after: page; page-break-after: always;
+    }
+    .slide:last-child { break-after: auto; page-break-after: auto; }
+    .deck-controls { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+    }
+}
+
+/* ===========================================================================
+   SHARED SLIDE CHROME
+   =========================================================================== */
+.slide{ background:var(--bg); font-family:var(--font-body); color:var(--ink); }
+
+.kicker{
+  font-family:var(--font-body); font-weight:600; font-size:20px;
+  letter-spacing:0.3em; text-transform:uppercase; color:var(--teal-strong);
+}
+
+.rule{
+  width:120px; height:4px; background:var(--teal);
+  transform-origin:left;
+}
+
+/* faint architectural blueprint lines — evocan un plano de gabinete */
+.blueprint{
+  position:absolute;
+  border:1.5px solid var(--line);
+  opacity:0.9;
+}
+.blueprint::before, .blueprint::after{
+  content:''; position:absolute; left:0; right:0; height:1.5px; background:var(--line);
+}
+.blueprint::before{ top:33%; }
+.blueprint::after{ top:66%; }
+.blueprint-v{ position:absolute; top:0; bottom:0; width:1.5px; background:var(--line); }
+.bv1{ left:33%; } .bv2{ left:66%; }
+.blueprint-tag{
+  position:absolute; left:22px; top:22px;
+  font-family:var(--font-body); font-size:16px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--teal-strong); opacity:0.8;
+}
+.dot-accent{ position:absolute; width:10px; height:10px; border-radius:50%; background:var(--teal); }
+
+/* Reveal / stagger */
+.reveal{
+  opacity:0; transform:translateY(28px);
+  transition: opacity var(--duration-normal) var(--ease-out-expo),
+              transform var(--duration-normal) var(--ease-out-expo);
+}
+.slide.visible .reveal{ opacity:1; transform:translateY(0); }
+.reveal:nth-child(1){ transition-delay:0.05s; }
+.reveal:nth-child(2){ transition-delay:0.18s; }
+.reveal:nth-child(3){ transition-delay:0.31s; }
+.reveal:nth-child(4){ transition-delay:0.44s; }
+.reveal:nth-child(5){ transition-delay:0.57s; }
+
+.reveal-line{
+  transform:scaleX(0); opacity:0; transition: transform var(--duration-normal) var(--ease-out-expo), opacity 0.3s;
+}
+.slide.visible .reveal-line{ transform:scaleX(1); opacity:1; }
+
+.page-number{
+  position:absolute; right:130px; bottom:80px;
+  font-family:var(--font-body); font-weight:500; font-size:20px; color:var(--ink-faint);
+}
+.page-brand{
+  position:absolute; left:130px; bottom:80px;
+  font-family:var(--font-body); font-weight:500; font-size:20px; color:var(--ink-faint);
+}
+
+/* ===========================================================================
+   SLIDE 1 — PORTADA
+   =========================================================================== */
+#slide-1 .blueprint{ right:110px; top:150px; width:640px; height:780px; }
+#slide-1 .dot-accent{ right:90px; top:130px; }
+#slide-1 .kicker{ position:absolute; top:120px; left:130px; }
+#slide-1 .logo-mark{
+  position:absolute; top:112px; right:130px;
+  width:56px; height:56px; border-radius:12px; overflow:hidden;
+  box-shadow:var(--shadow);
+}
+#slide-1 .logo-mark img{ width:100%; height:100%; object-fit:cover; }
+#slide-1 h1{
+  position:absolute; left:126px; top:300px;
+  font-family:var(--font-display); font-weight:600;
+  font-size:128px; line-height:1.05; color:var(--ink);
+  max-width:1150px; letter-spacing:-0.01em;
+}
+#slide-1 h1 .accent{ color:var(--teal-strong); font-style:italic; }
+#slide-1 .rule{ position:absolute; left:130px; top:660px; }
+#slide-1 .subtitle{
+  position:absolute; left:130px; top:700px;
+  font-family:var(--font-body); font-weight:400; font-size:32px;
+  color:var(--ink-soft); max-width:900px; line-height:1.5;
+}
+#slide-1 .footer{
+  position:absolute; left:130px; bottom:90px;
+  font-family:var(--font-body); font-weight:500; font-size:20px;
+  color:var(--ink); letter-spacing:0.04em;
+}
+#slide-1 .footer b{ color:var(--teal-strong); }
+
+/* ===========================================================================
+   SLIDE 2 — EL PROBLEMA
+   =========================================================================== */
+#slide-2 .content{ position:absolute; left:var(--slide-padding); top:140px; right:var(--slide-padding); }
+#slide-2 h2{
+  font-family:var(--font-display); font-weight:600; font-size:72px; color:var(--ink);
+  max-width:1300px; line-height:1.15; margin-top:24px;
+}
+#slide-2 .cards{ display:flex; gap:40px; margin-top:80px; }
+#slide-2 .card{
+  flex:1; background:var(--card-bg); border-radius:20px; padding:48px 40px;
+  box-shadow:var(--shadow); border:1px solid var(--line);
+}
+#slide-2 .card .num{
+  font-family:var(--font-display); font-weight:600; font-size:44px; color:var(--teal);
+  display:block; margin-bottom:24px;
+}
+#slide-2 .card p{ font-size:28px; line-height:1.5; color:var(--ink-soft); }
+#slide-2 .bridge{
+  position:absolute; left:130px; bottom:150px; right:130px;
+  font-family:var(--font-display); font-style:italic; font-weight:600; font-size:34px;
+  color:var(--teal-strong); border-left:4px solid var(--teal); padding-left:28px;
+}
+
+/* ===========================================================================
+   SLIDE 3 — LA SOLUCIÓN
+   =========================================================================== */
+#slide-3 .content{ position:absolute; left:var(--slide-padding); top:140px; right:var(--slide-padding); }
+#slide-3 h2{
+  font-family:var(--font-display); font-weight:600; font-size:72px; color:var(--ink);
+  max-width:1300px; line-height:1.15; margin-top:24px;
+}
+#slide-3 .cards{ display:flex; gap:40px; margin-top:80px; }
+#slide-3 .card{
+  flex:1; background:var(--card-bg); border-radius:20px; padding:48px 40px 40px;
+  box-shadow:var(--shadow); border:1px solid var(--line); position:relative;
+}
+#slide-3 .card .icon{
+  width:64px; height:64px; border-radius:16px; background:var(--teal-weak);
+  display:flex; align-items:center; justify-content:center; margin-bottom:28px;
+}
+#slide-3 .card .icon svg{ width:32px; height:32px; stroke:var(--teal-strong); }
+#slide-3 .card h3{ font-family:var(--font-display); font-weight:600; font-size:32px; margin-bottom:14px; }
+#slide-3 .card p{ font-size:24px; line-height:1.5; color:var(--ink-soft); }
+#slide-3 .bridge{
+  position:absolute; left:130px; bottom:150px;
+  font-family:var(--font-display); font-style:italic; font-weight:600; font-size:34px;
+  color:var(--teal-strong);
+}
+#slide-3 .bridge svg{ width:30px; height:30px; vertical-align:-6px; margin-left:10px; stroke:var(--teal-strong); }
+
+/* ===========================================================================
+   SLIDE 4 — DEMO INTERACTIVA (interfaz REAL del plugin embebida)
+   =========================================================================== */
+#slide-4{ background:var(--bg-alt); }
+#slide-4 .kicker{ position:absolute; top:90px; left:130px; }
+#slide-4 h2{
+  position:absolute; top:130px; left:130px;
+  font-family:var(--font-display); font-weight:600; font-size:56px; color:var(--ink);
+}
+#slide-4 .demo-window{
+  position:absolute; left:50%; top:250px; transform:translateX(-50%);
+  width:1520px; height:700px;
+  background:#fff; border-radius:22px; overflow:hidden;
+  box-shadow: 0 40px 90px rgba(30,39,35,0.28), 0 4px 16px rgba(30,39,35,0.12);
+  border:1px solid var(--line-strong);
+}
+#slide-4 .demo-window__bar{
+  height:44px; background:var(--chrome-dark); display:flex; align-items:center; gap:10px; padding:0 20px;
+}
+#slide-4 .demo-window__bar .traffic{ width:12px; height:12px; border-radius:50%; }
+#slide-4 .demo-window__bar .t1{ background:#e5645b; }
+#slide-4 .demo-window__bar .t2{ background:#e6b34d; }
+#slide-4 .demo-window__bar .t3{ background:var(--teal); }
+#slide-4 .demo-window__bar .label{
+  margin-left:14px; font-family:var(--font-body); font-size:15px; color:#cfd6d3; letter-spacing:0.02em;
+}
+#slide-4 .demo-window__frame{ width:100%; height:calc(100% - 44px); border:0; }
+#slide-4 .caption{
+  position:absolute; left:130px; bottom:70px;
+  font-family:var(--font-body); font-size:24px; color:var(--ink-soft);
+}
+#slide-4 .caption b{ color:var(--teal-strong); }
+
+/* ===========================================================================
+   SLIDE 5 — 3 MODELOS GENERADOS (flotan y giran suavemente)
+   =========================================================================== */
+#slide-5{ background:var(--chrome-dark); overflow:hidden; }
+#slide-5 .glow{
+  position:absolute; left:50%; top:50%; width:1600px; height:1600px;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle, rgba(89,180,165,0.18) 0%, transparent 60%);
+}
+#slide-5 .kicker{ position:absolute; top:90px; left:130px; color:var(--teal); }
+#slide-5 h2{
+  position:absolute; top:130px; left:130px;
+  font-family:var(--font-display); font-weight:600; font-size:56px; color:#F7F3EC;
+}
+#slide-5 .stage3d{
+  position:absolute; left:0; right:0; top:320px; bottom:120px;
+  display:flex; align-items:center; justify-content:center; gap:160px;
+  perspective:1800px;
+}
+/* Caja 3D real (6 caras) en vez de un plano — así nunca se ve como una
+   línea "de canto" ni con texto espejeado al girar. Fórmula estándar de
+   cubo CSS adaptada a caras rectangulares: W=ancho, H=alto, D=profundidad. */
+#slide-5 .unit{ position:relative; width:260px; }
+#slide-5 .unit .tag{
+  position:absolute; top:-46px; left:50%; transform:translateX(-50%); z-index:2;
+  font-family:var(--font-body); font-weight:600; font-size:18px; letter-spacing:0.12em;
+  text-transform:uppercase; color:var(--teal); white-space:nowrap;
+}
+#slide-5 .float-wrap{ animation: floatY 4.4s ease-in-out infinite; }
+#slide-5 .unit.u2 .float-wrap{ animation-duration:3.8s; animation-delay:-1.1s; }
+#slide-5 .unit.u3 .float-wrap{ animation-duration:5.1s; animation-delay:-2.6s; }
+#slide-5 .spin-wrap{
+  width:260px; height:380px; margin:0 auto; position:relative;
+  transform-style:preserve-3d; animation: spinY 9s linear infinite;
+}
+#slide-5 .unit.u2 .spin-wrap{ animation-duration:11s; animation-delay:-3.4s; }
+#slide-5 .unit.u3 .spin-wrap{ animation-duration:8s; animation-delay:-6.1s; }
+#slide-5 .box3d{ position:absolute; inset:0; transform-style:preserve-3d; }
+#slide-5 .box3d .f{ position:absolute; box-shadow: inset 0 0 0 1px rgba(30,39,35,0.08); }
+#slide-5 .f-front{ width:260px; height:380px; left:0; top:0; transform:translateZ(80px);
+  background:linear-gradient(160deg, #F2ECDF 0%, #E5DECB 100%); border-radius:6px; }
+#slide-5 .f-back{ width:260px; height:380px; left:0; top:0; transform:translateZ(-80px) rotateY(180deg);
+  background:#C9BFA8; border-radius:6px; }
+#slide-5 .f-right{ width:160px; height:380px; left:50px; top:0; transform:rotateY(90deg) translateZ(130px);
+  background:#D6CCB5; }
+#slide-5 .f-left{ width:160px; height:380px; left:50px; top:0; transform:rotateY(-90deg) translateZ(130px);
+  background:#CBC1AA; }
+#slide-5 .f-top{ width:260px; height:160px; left:0; top:110px; transform:rotateX(90deg) translateZ(190px);
+  background:#F8F3E8; border-radius:6px 6px 0 0; }
+#slide-5 .f-bottom{ width:260px; height:160px; left:0; top:110px; transform:rotateX(-90deg) translateZ(190px);
+  background:#BDB39C; border-radius:0 0 6px 6px; }
+#slide-5 .door{
+  position:absolute; inset:24px 24px 100px 24px;
+  border:2px solid rgba(30,39,35,0.18); border-radius:6px;
+}
+#slide-5 .door::after{
+  content:''; position:absolute; right:12px; top:50%; transform:translateY(-50%);
+  width:6px; height:60px; border-radius:4px; background:var(--teal-strong);
+}
+#slide-5 .unit.esq .door{ inset:24px 24px 24px 24px; }
+#slide-5 .unit.esq .door::after{ right:auto; left:50%; transform:translateX(-50%); width:60px; height:6px; top:12px; }
+#slide-5 .unit .drawers{ position:absolute; left:24px; right:24px; bottom:24px; display:flex; flex-direction:column; gap:8px; }
+#slide-5 .unit .drawers span{ height:24px; border-radius:5px; background:rgba(30,39,35,0.12); }
+#slide-5 .caption{
+  margin-top:22px; text-align:center;
+  font-family:var(--font-body); font-weight:600; font-size:20px; color:#F7F3EC; opacity:0.85;
+}
+
+@keyframes floatY{
+  0%,100%{ transform: translateY(0); }
+  50%{ transform: translateY(-26px); }
+}
+@keyframes spinY{
+  from{ transform: rotateY(-14deg); }
+  to{ transform: rotateY(346deg); }
+}
+
+/* ===========================================================================
+   SLIDE 6 — CARRUSEL DEL PROCESO REAL (capturas/*.jpg, 13 pasos en SketchUp)
+   =========================================================================== */
+#slide-6 .kicker{ position:absolute; top:90px; left:130px; }
+#slide-6 h2{
+  position:absolute; top:130px; left:130px;
+  font-family:var(--font-display); font-weight:600; font-size:56px; color:var(--ink);
+}
+#slide-6 .carousel{
+  position:absolute; left:130px; right:130px; top:250px; bottom:150px;
+  display:flex; align-items:center; gap:28px;
+}
+#slide-6 .car-frame{
+  flex:1; height:100%; position:relative; border-radius:20px; overflow:hidden;
+  background:#12181a; box-shadow:var(--shadow); border:1px solid var(--line-strong);
+}
+#slide-6 .car-frame img{
+  width:100%; height:100%; object-fit:contain; display:block;
+  transition: opacity 0.25s ease;
+}
+#slide-6 .car-frame img.is-switching{ opacity:0; }
+#slide-6 .car-caption{
+  position:absolute; left:0; right:0; bottom:0; padding:26px 34px;
+  background:linear-gradient(0deg, rgba(10,14,13,0.82) 0%, transparent 100%);
+  font-family:var(--font-body); font-weight:600; font-size:24px; color:#F7F3EC;
+}
+#slide-6 .car-nav{
+  flex:none; width:60px; height:60px; border-radius:50%; border:none; cursor:pointer;
+  background:var(--ink); color:#F7F3EC; font-size:28px;
+  display:flex; align-items:center; justify-content:center;
+  transition: background 0.2s, transform 0.2s;
+}
+#slide-6 .car-nav:hover{ background:var(--teal-strong); transform:scale(1.06); }
+#slide-6 .car-counter{
+  position:absolute; left:0; right:0; bottom:126px; text-align:center;
+  font-family:var(--font-body); font-weight:500; font-size:20px; color:var(--ink-faint);
+}
+
+/* ===========================================================================
+   SLIDE 7 — IMPACTO EN EL NEGOCIO
+   =========================================================================== */
+#slide-7 .content{ position:absolute; left:var(--slide-padding); top:140px; right:var(--slide-padding); }
+#slide-7 h2{
+  font-family:var(--font-display); font-weight:600; font-size:68px; color:var(--ink);
+  max-width:1400px; line-height:1.15; margin-top:24px;
+}
+#slide-7 .compare{ display:flex; gap:64px; margin-top:90px; align-items:flex-end; }
+#slide-7 .bar-col{ flex:1; }
+#slide-7 .bar-col .bar-label{ font-family:var(--font-body); font-weight:600; font-size:24px; color:var(--ink-soft); margin-bottom:18px; text-transform:uppercase; letter-spacing:0.08em;}
+#slide-7 .bar-track{ background:var(--bg-alt); border-radius:16px; height:260px; display:flex; align-items:flex-end; padding:8px; }
+#slide-7 .bar-fill{ width:100%; border-radius:12px; display:flex; align-items:flex-start; justify-content:center; padding-top:20px; }
+#slide-7 .bar-fill.before{ height:94%; background:linear-gradient(180deg, #d98f78, #c97456); }
+#slide-7 .bar-fill.after{ height:12%; background:linear-gradient(180deg, var(--teal), var(--teal-strong)); }
+#slide-7 .bar-fill span{ font-family:var(--font-display); font-weight:600; font-size:34px; color:#fff; }
+#slide-7 .note{
+  margin-top:60px; font-family:var(--font-body); font-size:26px; color:var(--ink-soft);
+  border-left:4px solid var(--teal); padding-left:26px; max-width:1200px;
+}
+
+/* ===========================================================================
+   SLIDE 8 — ASPECTO TÉCNICO
+   =========================================================================== */
+#slide-8 .content{ position:absolute; left:var(--slide-padding); top:140px; right:var(--slide-padding); }
+#slide-8 h2{
+  font-family:var(--font-display); font-weight:600; font-size:68px; color:var(--ink);
+  max-width:1400px; line-height:1.15; margin-top:24px;
+}
+#slide-8 .points{ margin-top:70px; display:flex; flex-direction:column; gap:36px; max-width:1300px; }
+#slide-8 .point{ display:flex; gap:26px; align-items:flex-start; }
+#slide-8 .point .bullet{ width:14px; height:14px; border-radius:50%; background:var(--teal); margin-top:10px; flex:none; }
+#slide-8 .point p{ font-size:30px; line-height:1.5; color:var(--ink-soft); }
+#slide-8 .stat-strip{
+  position:absolute; left:130px; right:130px; bottom:90px;
+  background:var(--chrome-dark); border-radius:18px; padding:32px 44px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+#slide-8 .stat-strip .stat{ font-family:var(--font-body); font-size:24px; color:#F7F3EC; }
+#slide-8 .stat-strip .stat b{ color:var(--teal); font-weight:600; }
+
+/* ===========================================================================
+   SLIDE 9 — CIERRE
+   =========================================================================== */
+#slide-9{ display:flex; align-items:center; justify-content:center; }
+#slide-9 .center{ text-align:center; }
+#slide-9 .kicker{ display:block; margin-bottom:28px; }
+#slide-9 h2{
+  font-family:var(--font-display); font-weight:600; font-size:84px; color:var(--ink);
+  max-width:1300px; line-height:1.15; margin:0 auto 28px;
+}
+#slide-9 .logo-mark{ width:72px; height:72px; border-radius:16px; overflow:hidden; margin:56px auto 0; box-shadow:var(--shadow); }
+#slide-9 .logo-mark img{ width:100%; height:100%; object-fit:cover; }
+
+/* ===========================================================================
+   DECK CONTROLS (progress dots — outside the slide stage)
+   =========================================================================== */
+.deck-controls{
+  display:flex; align-items:center; gap:14px;
+  background:rgba(30,39,35,0.85); backdrop-filter:blur(6px);
+  padding:12px 20px; border-radius:999px;
+  font-family:'Sora', sans-serif;
+}
+.deck-controls .dot{
+  width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,0.28);
+  cursor:pointer; transition: background 0.2s, transform 0.2s;
+}
+.deck-controls .dot.active{ background:#59b4a5; transform:scale(1.3); }
+.deck-controls .nav-btn{
+  background:none; border:none; color:#F7F3EC; cursor:pointer; font-size:18px;
+  width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+}
+.deck-controls .count{ color:#cfd6d3; font-size:14px; min-width:52px; text-align:center; }
+
+/* ===========================================================================
+   INLINE EDITING (default post-draft affordance)
+   =========================================================================== */
+.edit-hotzone{ position:fixed; top:0; left:0; width:80px; height:80px; z-index:10000; cursor:pointer; }
+.edit-toggle{
+  position:fixed; top:16px; left:16px; z-index:10001;
+  width:40px; height:40px; border-radius:50%; border:none;
+  background:#1E2723; color:#fff; font-size:18px; cursor:pointer;
+  opacity:0; pointer-events:none; transition: opacity 0.3s ease;
+}
+.edit-toggle.show, .edit-toggle.active{ opacity:1; pointer-events:auto; }
+.edit-toggle.active{ background:#59b4a5; }
+[contenteditable="true"]{ outline: 2px dashed rgba(89,180,165,0.6); outline-offset:4px; cursor:text; }
+
+/* ===========================================================================
+   THEME TOGGLE (día/noche) — muy pequeño, esquina superior derecha
+   =========================================================================== */
+.theme-toggle{
+  position:fixed; top:14px; right:14px; z-index:10001;
+  width:26px; height:26px; border-radius:50%; border:1px solid rgba(127,127,127,0.35);
+  background:rgba(127,127,127,0.12); backdrop-filter:blur(4px);
+  color:inherit; cursor:pointer; font-size:13px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0.55; transition: opacity 0.2s, transform 0.2s;
+}
+.theme-toggle:hover{ opacity:1; transform:scale(1.1); }
+</style>
+</head>
+<body>
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
+
+    <!-- ============================= SLIDE 1 — PORTADA ============================= -->
+    <section class="slide active" id="slide-1">
+      <div class="blueprint">
+        <div class="blueprint-tag">Gabinete · 01</div>
+        <div class="blueprint-v bv1"></div>
+        <div class="blueprint-v bv2"></div>
+      </div>
+      <div class="dot-accent"></div>
+      <div class="kicker reveal editable">Royal Kitchens</div>
+      <div class="logo-mark reveal"><img src="assets/logo.jpg" alt="Royal Kitchens"></div>
+      <h1 class="reveal"><span class="editable">Royal Catalog</span><br><span class="accent editable">Creator</span></h1>
+      <div class="rule reveal-line"></div>
+      <p class="subtitle reveal editable">De modelado manual a cocina renderizada, sin fricción.</p>
+      <div class="footer reveal">Presentación ejecutiva · <b class="editable">Royal Kitchens</b></div>
+    </section>
+
+    <!-- ============================= SLIDE 2 — EL PROBLEMA ============================= -->
+    <section class="slide" id="slide-2">
+      <div class="content">
+        <div class="kicker reveal editable">El problema</div>
+        <h2 class="reveal editable">Hoy, cada cocina se modela desde cero en SketchUp</h2>
+        <div class="cards">
+          <div class="card reveal">
+            <span class="num">01</span>
+            <p class="editable">Cada mueble se ajusta a mano, pieza por pieza, cliente por cliente.</p>
+          </div>
+          <div class="card reveal">
+            <span class="num">02</span>
+            <p class="editable">No hay reutilización de configuraciones ya probadas.</p>
+          </div>
+          <div class="card reveal">
+            <span class="num">03</span>
+            <p class="editable">Cada cambio de cliente implica volver a tocar el modelo a mano.</p>
+          </div>
+        </div>
+      </div>
+      <p class="bridge reveal editable">Cada ajuste manual le resta minutos a la llamada de cierre.</p>
+      <div class="page-brand">Royal Catalog Creator</div>
+      <div class="page-number">02 / 09</div>
+    </section>
+
+    <!-- ============================= SLIDE 3 — LA SOLUCIÓN ============================= -->
+    <section class="slide" id="slide-3">
+      <div class="content">
+        <div class="kicker reveal editable">La solución</div>
+        <h2 class="reveal editable">Un panel visual dentro de SketchUp</h2>
+        <div class="cards">
+          <div class="card reveal">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18"></path></svg></div>
+            <h3 class="editable">Formulario guiado</h3>
+            <p class="editable">Por familia de producto: Gabinete, Alacena o Esquinero.</p>
+          </div>
+          <div class="card reveal">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div>
+            <h3 class="editable">Validación en vivo</h3>
+            <p class="editable">Bloquea la generación si algo no cabe, antes de crear el archivo.</p>
+          </div>
+          <div class="card reveal">
+            <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"></path></svg></div>
+            <h3 class="editable">Inserción directa</h3>
+            <p class="editable">En la escena que se está construyendo, o en lote con "Generar todos".</p>
+          </div>
+        </div>
+      </div>
+      <p class="bridge reveal editable">A continuación, la interfaz real — pruébala.</p>
+      <div class="page-brand">Royal Catalog Creator</div>
+      <div class="page-number">03 / 09</div>
+    </section>
+
+    <!-- ============================= SLIDE 4 — DEMO INTERACTIVA ============================= -->
+    <section class="slide" id="slide-4">
+      <div class="kicker reveal editable">Interfaz real del plugin</div>
+      <h2 class="reveal editable">Pruébala tú mismo</h2>
+      <div class="demo-window reveal">
+        <div class="demo-window__bar">
+          <span class="traffic t1"></span><span class="traffic t2"></span><span class="traffic t3"></span>
+          <span class="label">Royal Catalog Creator — royal_catalog_creator.rb</span>
+        </div>
+        <iframe class="demo-window__frame" id="pluginFrame" src="plugin-demo/dialog.html" title="Royal Catalog Creator — demo"></iframe>
+      </div>
+      <p class="caption reveal">Elige una familia, ajusta las medidas y presiona <b>Generar</b> (o <b>Generar todos</b>).</p>
+      <div class="page-number">04 / 09</div>
+    </section>
+
+    <!-- ============================= SLIDE 5 — 3 MODELOS GENERADOS ============================= -->
+    <section class="slide" id="slide-5">
+      <div class="glow"></div>
+      <div class="kicker reveal editable">Resultado</div>
+      <h2 class="reveal editable">Del clic al mueble, listo para cotizar</h2>
+      <div class="stage3d">
+        <div class="unit u1">
+          <span class="tag">Gabinete</span>
+          <div class="float-wrap">
+            <div class="spin-wrap">
+              <div class="box3d">
+                <div class="f f-front"><div class="door"></div><div class="drawers"><span></span><span></span></div></div>
+                <div class="f f-back"></div>
+                <div class="f f-left"></div>
+                <div class="f f-right"></div>
+                <div class="f f-top"></div>
+                <div class="f f-bottom"></div>
+              </div>
+            </div>
+            <div class="caption">GAB-800-2div.skp</div>
+          </div>
+        </div>
+        <div class="unit u2">
+          <span class="tag">Alacena</span>
+          <div class="float-wrap">
+            <div class="spin-wrap">
+              <div class="box3d">
+                <div class="f f-front"><div class="door"></div></div>
+                <div class="f f-back"></div>
+                <div class="f f-left"></div>
+                <div class="f f-right"></div>
+                <div class="f f-top"></div>
+                <div class="f f-bottom"></div>
+              </div>
+            </div>
+            <div class="caption">ALA-700-1div.skp</div>
+          </div>
+        </div>
+        <div class="unit u3 esq">
+          <span class="tag">Esquinero</span>
+          <div class="float-wrap">
+            <div class="spin-wrap">
+              <div class="box3d">
+                <div class="f f-front"><div class="door"></div></div>
+                <div class="f f-back"></div>
+                <div class="f f-left"></div>
+                <div class="f f-right"></div>
+                <div class="f f-top"></div>
+                <div class="f f-bottom"></div>
+              </div>
+            </div>
+            <div class="caption">ESQ-600-1div.skp</div>
+          </div>
+        </div>
+      </div>
+      <div class="page-brand" style="color:#cfd6d3;">Royal Catalog Creator</div>
+      <div class="page-number" style="color:#cfd6d3;">05 / 09</div>
+    </section>
+
+    <!-- ============================= SLIDE 6 — CARRUSEL DEL PROCESO REAL ============================= -->
+    <section class="slide" id="slide-6">
+      <div class="kicker reveal editable">Cómo se ve en la práctica</div>
+      <h2 class="reveal editable">El proceso real en SketchUp</h2>
+      <div class="carousel reveal">
+        <button class="car-nav car-prev" id="carPrev" aria-label="Captura anterior">‹</button>
+        <div class="car-frame">
+          <img id="carImg" src="capturas/01-Administrar-extensiones.jpg" alt="Captura del proceso en SketchUp">
+          <div class="car-caption" id="carCaption">01 · Administrar extensiones</div>
+        </div>
+        <button class="car-nav car-next" id="carNext" aria-label="Siguiente captura">›</button>
+      </div>
+      <div class="car-counter" id="carCounter">1 / 13</div>
+      <div class="page-brand">Royal Catalog Creator</div>
+      <div class="page-number">06 / 09</div>
+    </section>
+
+    <!-- ============================= SLIDE 7 — IMPACTO EN EL NEGOCIO ============================= -->
+    <section class="slide" id="slide-7">
+      <div class="content">
+        <div class="kicker reveal editable">Impacto en el negocio</div>
+        <h2 class="reveal editable">Menos tiempo de modelado, ciclo de venta más corto</h2>
+        <div class="compare">
+          <div class="bar-col reveal">
+            <div class="bar-label editable">Antes (modelado manual)</div>
+            <div class="bar-track"><div class="bar-fill before"><span class="editable">15–20 min</span></div></div>
+          </div>
+          <div class="bar-col reveal">
+            <div class="bar-label editable">Después (con el plugin)</div>
+            <div class="bar-track"><div class="bar-fill after"><span class="editable">40 seg</span></div></div>
+          </div>
+        </div>
+        <p class="note reveal editable">Menos ajustes manuales repetidos significa menos vueltas con el cliente antes de mostrar el render final.</p>
+      </div>
+      <div class="page-brand">Royal Catalog Creator</div>
+      <div class="page-number">07 / 09</div>
+    </section>
+
+    <!-- ============================= SLIDE 8 — ASPECTO TÉCNICO ============================= -->
+    <section class="slide" id="slide-8">
+      <div class="content">
+        <div class="kicker reveal editable">Cómo se construyó</div>
+        <h2 class="reveal editable">Construido sobre lo que ya funcionaba, no desde cero</h2>
+        <div class="points">
+          <div class="point reveal">
+            <span class="bullet"></span>
+            <p class="editable">Reutiliza el motor de generación de piezas ya validado internamente — no se reescribió lo que ya funcionaba.</p>
+          </div>
+          <div class="point reveal">
+            <span class="bullet"></span>
+            <p class="editable">Se integra dentro de SketchUp, sin instalar nada adicional para las diseñadoras.</p>
+          </div>
+          <div class="point reveal">
+            <span class="bullet"></span>
+            <p class="editable">Escalar a un nuevo tipo de mueble no requiere programar de nuevo, solo agregar su definición.</p>
+          </div>
+        </div>
+      </div>
+      <div class="stat-strip reveal">
+        <span class="stat editable">Inversión: <b>[PLACEHOLDER_COSTO_DESARROLLO]</b></span>
+        <span class="stat editable">Tiempo de desarrollo: <b>[PLACEHOLDER_TIEMPO_DESARROLLO]</b></span>
+      </div>
+      <div class="page-brand">Royal Catalog Creator</div>
+      <div class="page-number">08 / 09</div>
+    </section>
+
+    <!-- ============================= SLIDE 9 — CIERRE ============================= -->
+    <section class="slide" id="slide-9">
+      <div class="center">
+        <span class="kicker reveal editable">Siguiente paso</span>
+        <h2 class="reveal editable">Piloto con un grupo de diseñadoras</h2>
+        <div class="logo-mark reveal"><img src="assets/logo.jpg" alt="Royal Kitchens"></div>
+      </div>
+      <div class="page-number">09 / 09</div>
+    </section>
+
+  </main>
+</div>
+
+<nav class="deck-controls" id="deckControls">
+  <button class="nav-btn" id="prevBtn" aria-label="Anterior">‹</button>
+  <span class="dot" data-i="0"></span>
+  <span class="dot" data-i="1"></span>
+  <span class="dot" data-i="2"></span>
+  <span class="dot" data-i="3"></span>
+  <span class="dot" data-i="4"></span>
+  <span class="dot" data-i="5"></span>
+  <span class="dot" data-i="6"></span>
+  <span class="dot" data-i="7"></span>
+  <span class="dot" data-i="8"></span>
+  <span class="count" id="slideCount">1 / 9</span>
+  <button class="nav-btn" id="nextBtn" aria-label="Siguiente">›</button>
+</nav>
+
+<div class="edit-hotzone" id="editHotzone"></div>
+<button class="edit-toggle" id="editToggle" title="Modo edición (E)">✏️</button>
+<button class="theme-toggle" id="themeToggle" title="Cambiar a modo día/noche">🌙</button>
+
+<script>
+/* ===========================================================================
+   SLIDE PRESENTATION CONTROLLER
+   =========================================================================== */
+class SlidePresentation {
+  constructor(){
+    this.slides = Array.from(document.querySelectorAll('.slide'));
+    this.dots = Array.from(document.querySelectorAll('.deck-controls .dot'));
+    this.countEl = document.getElementById('slideCount');
+    this.currentSlide = 0;
+    this.stage = document.getElementById('deckStage');
+    this.setupStageScale();
+    this.setupKeyboardNav();
+    this.setupTouchNav();
+    this.setupWheelNav();
+    this.setupControls();
+    this.setupPluginBridge();
+    this.showSlide(0);
+  }
+
+  setupStageScale(){
+    const scale = () => {
+      const factor = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      const x = (window.innerWidth - 1920 * factor) / 2;
+      const y = (window.innerHeight - 1080 * factor) / 2;
+      this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+    };
+    scale();
+    window.addEventListener('resize', scale);
+  }
+
+  setupKeyboardNav(){
+    document.addEventListener('keydown', (e) => {
+      if (e.target.getAttribute && e.target.getAttribute('contenteditable') === 'true') return;
+      if (['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)) { this.next(); e.preventDefault(); }
+      if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key)) { this.prev(); e.preventDefault(); }
+    });
+  }
+
+  setupTouchNav(){
+    let startX = 0;
+    this.stage.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, {passive:true});
+    this.stage.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > 60) { dx < 0 ? this.next() : this.prev(); }
+    }, {passive:true});
+  }
+
+  setupWheelNav(){
+    let locked = false;
+    window.addEventListener('wheel', (e) => {
+      if (locked) return;
+      if (Math.abs(e.deltaY) < 30) return;
+      locked = true;
+      e.deltaY > 0 ? this.next() : this.prev();
+      setTimeout(() => { locked = false; }, 700);
+    }, {passive:true});
+  }
+
+  setupControls(){
+    document.getElementById('prevBtn').addEventListener('click', () => this.prev());
+    document.getElementById('nextBtn').addEventListener('click', () => this.next());
+    this.dots.forEach((d) => d.addEventListener('click', () => this.showSlide(parseInt(d.dataset.i, 10))));
+  }
+
+  // La diapositiva 4 embebe la interfaz REAL del plugin (plugin-demo/dialog.html)
+  // vía iframe. Al presionar "Generar" o "Generar todos" dentro de esa interfaz,
+  // demo-bridge.js manda un postMessage (con debounce, una sola vez por lote)
+  // que este listener usa para avanzar a la diapositiva 5.
+  setupPluginBridge(){
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.source === 'royal-catalog-creator-demo' && e.data.type === 'generar') {
+        this.showSlide(4); // diapositiva 5 (índice 0-based)
+      }
+    });
+  }
+
+  showSlide(index){
+    this.currentSlide = Math.max(0, Math.min(index, this.slides.length - 1));
+    this.slides.forEach((slide, i) => {
+      slide.classList.toggle('active', i === this.currentSlide);
+      slide.classList.toggle('visible', i === this.currentSlide);
+    });
+    this.dots.forEach((d, i) => d.classList.toggle('active', i === this.currentSlide));
+    this.countEl.textContent = `${this.currentSlide + 1} / ${this.slides.length}`;
+  }
+
+  next(){ this.showSlide(this.currentSlide + 1); }
+  prev(){ this.showSlide(this.currentSlide - 1); }
+}
+
+const presentation = new SlidePresentation();
+
+/* ===========================================================================
+   THEME TOGGLE (día/noche) — se aplica a toda la presentación vía
+   data-theme en <html>; la interfaz real del plugin embebida en la
+   diapositiva 4 sigue su propio prefers-color-scheme (no se fuerza dentro
+   del iframe, para no tocar el CSS original del plugin).
+   =========================================================================== */
+(function(){
+  const root = document.documentElement;
+  const btn = document.getElementById('themeToggle');
+  const saved = localStorage.getItem('royal-catalog-creator-pitch-theme');
+  function apply(theme){
+    root.setAttribute('data-theme', theme);
+    btn.textContent = theme === 'night' ? '☀️' : '🌙';
+    localStorage.setItem('royal-catalog-creator-pitch-theme', theme);
+  }
+  apply(saved === 'night' ? 'night' : 'day');
+  btn.addEventListener('click', () => {
+    apply(root.getAttribute('data-theme') === 'night' ? 'day' : 'night');
+  });
+})();
+
+/* ===========================================================================
+   CARRUSEL — diapositiva 6, capturas reales del proceso en SketchUp
+   =========================================================================== */
+(function(){
+  const pasos = [
+    { src: 'capturas/01-Administrar-extensiones.jpg', label: '01 · Administrar extensiones' },
+    { src: 'capturas/02-instalar-extension.jpg', label: '02 · Instalar la extensión' },
+    { src: 'capturas/03-seleccionar-pluguin.jpg', label: '03 · Seleccionar el plugin' },
+    { src: 'capturas/04-instalado-correctamente.jpg', label: '04 · Instalado correctamente' },
+    { src: 'capturas/05-abrir-pluguin.jpg', label: '05 · Abrir el plugin' },
+    { src: 'capturas/06-pagina-inicio-pluguin.jpg', label: '06 · Página de inicio del plugin' },
+    { src: 'capturas/07-crear-modulo.jpg', label: '07 · Crear módulo' },
+    { src: 'capturas/08-personalizar-modulo-manualmente.jpg', label: '08 · Personalizar el módulo' },
+    { src: 'capturas/09-resultado-generacion-individual.jpg', label: '09 · Resultado de la generación' },
+    { src: 'capturas/10-importar-excel-explorador.jpg', label: '10 · Importar el Excel' },
+    { src: 'capturas/11-tabla-importar.jpg', label: '11 · Tabla de revisión al importar' },
+    { src: 'capturas/12-piezas-importadas.jpg', label: '12 · Piezas ya importadas' },
+    { src: 'capturas/13-todas-piezas-generadas.jpg', label: '13 · Todas las piezas generadas' }
+  ];
+  let i = 0;
+  const img = document.getElementById('carImg');
+  const cap = document.getElementById('carCaption');
+  const counter = document.getElementById('carCounter');
+
+  function render(){
+    img.classList.add('is-switching');
+    setTimeout(() => {
+      img.src = pasos[i].src;
+      cap.textContent = pasos[i].label;
+      counter.textContent = `${i + 1} / ${pasos.length}`;
+      img.classList.remove('is-switching');
+    }, 150);
+  }
+  function go(delta){ i = (i + delta + pasos.length) % pasos.length; render(); }
+
+  document.getElementById('carPrev').addEventListener('click', () => go(-1));
+  document.getElementById('carNext').addEventListener('click', () => go(1));
+})();
+
+/* ===========================================================================
+   INLINE EDITING (lightweight, JS-hover with delay — see html-template.md)
+   =========================================================================== */
+const editor = {
+  isActive: false,
+  toggleEditMode(){
+    this.isActive = !this.isActive;
+    document.querySelectorAll('.editable').forEach((el) => {
+      el.setAttribute('contenteditable', this.isActive ? 'true' : 'false');
+    });
+    document.getElementById('editToggle').classList.toggle('active', this.isActive);
+  },
+  saveToStorage(){
+    const data = {};
+    document.querySelectorAll('.editable').forEach((el, i) => { data[i] = el.innerHTML; });
+    localStorage.setItem('royal-catalog-creator-pitch-edits', JSON.stringify(data));
+  },
+  loadFromStorage(){
+    const raw = localStorage.getItem('royal-catalog-creator-pitch-edits');
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      document.querySelectorAll('.editable').forEach((el, i) => { if (data[i] !== undefined) el.innerHTML = data[i]; });
+    } catch (e) {}
+  }
+};
+editor.loadFromStorage();
+
+document.getElementById('editToggle').addEventListener('click', () => editor.toggleEditMode());
+
+const hotzone = document.getElementById('editHotzone');
+const editToggle = document.getElementById('editToggle');
+let hideTimeout = null;
+hotzone.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); editToggle.classList.add('show'); });
+hotzone.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
+editToggle.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+editToggle.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!editor.isActive) editToggle.classList.remove('show'); }, 400); });
+hotzone.addEventListener('click', () => editor.toggleEditMode());
+
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'e' || e.key === 'E') && !(e.target.getAttribute && e.target.getAttribute('contenteditable') === 'true')) {
+    editor.toggleEditMode();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); editor.saveToStorage(); }
+});
+</script>
+</body>
+</html>

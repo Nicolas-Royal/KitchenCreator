@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Royal Catalog Creator</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <header class="sidebar__head">
+        <div class="brand">
+          <img class="brand__logo" src="img/logo.jpg" alt="Royal Kitchens">
+          <div>
+            <div class="brand__name">Catalog Creator</div>
+            <div class="brand__sub">Royal Kitchens</div>
+          </div>
+        </div>
+        <button id="btn-nuevo" class="btn btn--primary btn--block">+ Nuevo módulo</button>
+        <!-- El propio botón hace de barra de progreso durante el lote; «Cancelar»
+             solo aparece mientras hay una cola corriendo. -->
+        <div class="lote" id="lote-acciones" hidden>
+          <button id="btn-generar-todos" class="btn btn--ghost btn--sm btn--block">Generar todos</button>
+          <button id="btn-cancelar-lote" class="btn btn--ghost btn--sm" hidden>Cancelar</button>
+        </div>
+        <div class="side-row">
+          <button id="btn-importar" class="btn btn--ghost btn--sm btn--block"
+                  title="Carga módulos desde un .xlsx o .csv y los revisa antes de crearlos.">Importar…</button>
+          <button id="btn-plantilla" class="btn btn--ghost btn--sm btn--block"
+                  title="Genera un Excel con una columna por variable y sus desplegables.">Plantilla…</button>
+        </div>
+      </header>
+
+      <nav class="modulos" id="lista-modulos" aria-label="Módulos de la sesión">
+        <!-- tarjetas de módulos (registros) inyectadas por JS -->
+      </nav>
+
+      <div class="modulos__vacio" id="modulos-vacio">
+        <p>No hay módulos todavía.</p>
+        <p class="muted">Crea uno con <strong>+ Nuevo módulo</strong>.</p>
+      </div>
+
+      <footer class="sidebar__foot">
+        <div class="root-status" id="root-status">
+          <span class="root-status__label">Carpeta del proyecto</span>
+          <span class="root-status__path" id="root-path" title="">—</span>
+        </div>
+        <button id="btn-carpeta" class="btn btn--ghost btn--sm btn--block">Cambiar carpeta…</button>
+      </footer>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <main class="main">
+      <!-- Estado vacío -->
+      <section class="empty" id="pane-empty">
+        <div class="empty__card">
+          <h1>Genera muebles de catálogo</h1>
+          <p class="muted">Crea un módulo, ajusta sus medidas y opciones, y genera el <code>.skp</code> sin tocar la consola de Ruby.</p>
+          <button class="btn btn--primary" id="btn-nuevo-2">+ Nuevo módulo</button>
+        </div>
+      </section>
+
+      <!-- Formulario del módulo -->
+      <section class="editor" id="pane-editor" hidden>
+        <header class="editor__head">
+          <div class="editor__title">
+            <span class="chip" id="editor-familia">Gabinete</span>
+            <input type="text" id="nombre-salida" class="editor__name" placeholder="Nombre del módulo" autocomplete="off">
+          </div>
+          <div class="editor__actions">
+            <label class="toggle">
+              <input type="checkbox" id="toggle-escena">
+              <span class="toggle__track"><span class="toggle__thumb"></span></span>
+              <span class="toggle__label">Insertar en escena</span>
+            </label>
+            <!-- Apagarlo conserva el .skp reconfigurable (las variantes ocultas
+                 del componente dinámico siguen ahí). -->
+            <label class="toggle" title="Borra del .skp las variantes de puerta y cajón que el componente dejó ocultas.">
+              <input type="checkbox" id="toggle-limpiar" checked>
+              <span class="toggle__track"><span class="toggle__thumb"></span></span>
+              <span class="toggle__label">Limpiar piezas ocultas</span>
+            </label>
+            <button class="btn btn--ghost" id="btn-clonar">Clonar</button>
+            <button class="btn btn--primary" id="btn-generar">Generar</button>
+          </div>
+        </header>
+
+        <div class="editor__body" id="form-grupos">
+          <!-- grupos/campos inyectados por JS -->
+        </div>
+      </section>
+
+      <!-- Revisión de la importación -->
+      <section class="importar" id="pane-import" hidden>
+        <header class="editor__head">
+          <div class="editor__title">
+            <span class="chip">Importar</span>
+            <span id="import-resumen" class="muted"></span>
+          </div>
+          <div class="editor__actions">
+            <button class="btn btn--ghost" id="btn-import-descartar">Descartar filas con error</button>
+            <button class="btn btn--ghost" id="btn-import-cancelar">Cancelar</button>
+            <button class="btn btn--primary" id="btn-import-ok">Importar</button>
+          </div>
+        </header>
+        <p class="importar__avisos" id="import-avisos" hidden></p>
+        <div class="tabla-wrap">
+          <table class="tabla" id="import-tabla"><!-- filas inyectadas por JS --></table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ Selector de familia (modal) ============ -->
+  <div class="modal" id="modal-familia" hidden>
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="modal-familia-title">
+      <div class="modal__head">
+        <h2 id="modal-familia-title">Nuevo módulo</h2>
+        <button class="modal__x" data-close aria-label="Cerrar">×</button>
+      </div>
+      <p class="muted">Elige el tipo de módulo a crear.</p>
+      <div class="familias" id="familias-grid">
+        <!-- tarjetas de familia inyectadas por JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Confirmación genérica (modal) ============ -->
+  <div class="modal" id="modal-confirm" hidden>
+    <div class="modal__backdrop" data-confirm-close></div>
+    <div class="modal__card" role="dialog" aria-modal="true" aria-labelledby="modal-confirm-title">
+      <div class="modal__head">
+        <h2 id="modal-confirm-title">Confirmar</h2>
+        <button class="modal__x" data-confirm-close aria-label="Cerrar">×</button>
+      </div>
+      <p class="muted modal__texto" id="modal-confirm-body"></p>
+      <div class="modal__acciones">
+        <button class="btn btn--ghost" data-confirm-close>Cancelar</button>
+        <button class="btn btn--primary" id="modal-confirm-ok">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Toasts ============ -->
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- demo-bridge.js debe cargar ANTES que app.js: define window.sketchup
+       antes de que "var SU = window.sketchup || {...}" se evalúe. -->
+  <script src="js/demo-bridge.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
