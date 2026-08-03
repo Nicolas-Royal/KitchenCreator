@@ -13,13 +13,13 @@
 
 Royal Catalog Creator es una herramienta que se instala dentro de SketchUp y permite que una diseñadora genere por sí misma las variaciones del catálogo de Royal Kitchens: gabinetes, alacenas y esquineros. Se abre una ventana, se elige el tipo de mueble, se llenan medidas y opciones en un formulario, y la herramienta produce el archivo del mueble terminado y, si se pide, lo coloca en el plano que se está trabajando.
 
-El problema que resuelve es de dependencia técnica. Antes, cada variación salía de llenar una hoja de cálculo con nombres de columna crípticos y de ejecutar a mano una instrucción en una consola de programación dentro de SketchUp. Ese formato solo lo entendía quien había escrito el programa: la diseñadora no podía capturar sin ayuda y los errores se descubrían al final, con los muebles ya generados.
+El problema que resuelve es de trabajo manual repetido. Hasta ahora cada variación del catálogo se modelaba a mano: se abría el mueble base en SketchUp y se ajustaba pieza por pieza —medidas, puertas, entrepaños, cajones, nombres de componente— hasta llegar a la variante pedida. Cada mueble era un modelado completo, el tiempo se pagaba una vez por variación y el resultado dependía del criterio de quien lo hiciera, así que dos personas partiendo del mismo pedido no entregaban el mismo archivo.
 
 Hoy hay dos caminos, ambos operativos. El principal es visual: se crean los módulos en la ventana de la herramienta, con desplegables que solo ofrecen valores válidos. El segundo es masivo: la herramienta exporta una plantilla de Excel ya armada, alguien la llena fuera de línea, y al importarla el sistema revisa fila por fila y muestra el resultado en una tabla. Nada se crea hasta que quien opera confirma.
 
 El estado es de primera versión completa y en uso: las tres familias están activas, la generación individual y por lote funcionan, y el repositorio conserva evidencia de corridas reales. Sigue abierto lo relativo al esquinero —la familia más compleja, con dos alas y repisas en L— y varios valores de referencia que dependen de producción, no del programa.
 
-Lo que se gana: la captura deja de exigir perfil técnico, los errores se detectan antes de generar, agregar una variable ya no requiere reprogramar, y un lote completo corre desatendido en una sola orden.
+Lo que se gana: el mueble deja de modelarse a mano, el resultado es idéntico para el mismo pedido sin depender de quién lo capture, los errores se detectan antes de generar, agregar una variable ya no requiere reprogramar, y un lote completo corre desatendido en una sola orden.
 
 ---
 
@@ -27,28 +27,29 @@ Lo que se gana: la captura deja de exigir perfil técnico, los errores se detect
 
 El catálogo se arma sobre tres muebles base paramétricos —gabinete, alacena y esquinero—, modelos que se reconstruyen solos cuando cambian sus medidas y opciones. Producir catálogo es aplicar cientos de combinaciones de esos valores y guardar cada resultado.
 
-**Proceso anterior.** Las combinaciones se capturaban en una hoja cuyos encabezados eran los nombres internos del modelo, no palabras del oficio: el tipo de tirador vivía en una columna llamada `puerta>f21tipotirador`, y para omitir una variable había que escribir la palabra «no» en la celda, convención inventada por quien programó el script y no documentada para quien capturaba. Después había que abrir la consola de programación de SketchUp y pegar una instrucción con la ruta exacta del archivo. Cualquier falla —ruta equivocada, modelo base ausente, celda imposible— aparecía a media corrida y en lenguaje técnico.
+**Proceso anterior.** Cada variación se modelaba a mano. La diseñadora abría el mueble base en SketchUp y lo intervenía: cambiaba las medidas del cuerpo, ajustaba el zócalo, sustituía el tipo de puerta por la variante correcta, movía o eliminaba entrepaños, agregaba cajones y repartía sus alturas a ojo, colocaba el tirador y renombraba los componentes para que el archivo saliera identificable. Luego guardaba el resultado como archivo nuevo, con el nombre de catálogo, cuidando no sobrescribir el modelo base. Producir veinte variaciones era repetir ese trabajo veinte veces.
 
-**Por qué era una barrera.** El perfil que necesita el catálogo es de diseño, no de programación. Exigirle nombres de variables internas y una consola convierte una tarea de diseño en una de sistemas: en la práctica el catálogo dependía de una sola persona capaz de correrlo.
+**Por qué era una barrera.** El costo crecía en línea recta con el catálogo: no había forma de producir cincuenta módulos sin pagar cincuenta veces el modelado. Y como cada paso era una decisión manual, el resultado no era reproducible: dos diseñadoras con el mismo pedido entregaban muebles que diferían en holguras, nombres de pieza o alturas de cajón, y esas diferencias solo se notaban al comparar los archivos ya terminados. Los errores geométricos —una pila de cajones que no cabe, un entrepaño fuera del cuerpo— se descubrían viendo el modelo, no antes de construirlo.
 
-**Extensión actual.** El formulario muestra los mismos parámetros con nombres legibles —«Diseño de puerta», «Alto zócalo», «Cantidad de divisores»— y listas cerradas de opciones válidas; lo imposible se bloquea antes de generar. Para quien prefiere Excel, la herramienta produce ella misma la plantilla, de modo que la hoja encaja por construcción y no por memoria del capturista. La consola desaparece del proceso.
+**Extensión actual.** El modelado desaparece del trabajo de la diseñadora: la herramienta parte del mismo mueble base y le aplica los valores capturados, así que el resultado es idéntico para el mismo pedido. El formulario muestra los parámetros con nombres legibles —«Diseño de puerta», «Alto zócalo», «Cantidad de divisores»— y listas cerradas de opciones válidas; lo geométricamente imposible se bloquea antes de generar en lugar de aparecer en el modelo. Para volúmenes grandes, la herramienta produce ella misma una plantilla de Excel, de modo que la hoja encaja por construcción y no por memoria del capturista, y un lote completo corre en una sola orden.
 
 ---
 
 ## 3. Impacto y valor
 
-La diferencia no está en la velocidad de la máquina —el motor que aplica los valores es en esencia el mismo—, sino en quién puede operarla, cuándo se detectan los errores y qué cuesta agregar algo nuevo.
+La diferencia está en que el mueble deja de construirse a mano. El trabajo pasa de modelar cada variación a declarar sus valores: cambia cuánto cuesta el módulo número cincuenta, qué tan reproducible es el resultado y cuándo se detectan los errores.
 
 | Dimensión | Proceso anterior | Proceso actual |
 |---|---|---|
-| **Pasos del lote** | Llenar hoja técnica → verificar rutas → abrir consola → pegar instrucción → leer mensajes | Abrir la herramienta → capturar → revisar tabla de validación → confirmar → generar todos |
-| **Perfil requerido** | Convención interna de variables y consola de programación | Diseño; sin conocimientos técnicos |
-| **Detección de errores** | Durante o después de la corrida | Antes de generar: por campo y fila por fila |
-| **Puntos de falla** | Ruta a mano, archivo base equivocado, convención oculta, cero validación de captura | Carpeta del proyecto mal configurada (con aviso); mueble base ausente o alterado |
-| **Variable nueva** | Columna en la hoja más cambio de programa | Se declara en la configuración de su familia; aparece sola en formulario y plantilla |
-| **Escalabilidad** | Una corrida por archivo, sin avance visible ni recuperación | Lote secuencial con avance, cancelación entre unidades y fallas que no abortan el resto |
+| **Trabajo por módulo** | Modelar la variante a mano sobre el mueble base: medidas, puertas, entrepaños, cajones, tiradores, nombres de pieza | Capturar los valores en un formulario; la herramienta arma el mueble |
+| **Costo de veinte variaciones** | Veinte modelados completos, uno por uno | Una captura por módulo —o una hoja de Excel— y un solo lote desatendido |
+| **Reproducibilidad** | Depende del criterio de quien modela; el mismo pedido produce archivos distintos | El mismo pedido produce el mismo archivo, sin importar quién capture |
+| **Detección de errores** | Al revisar el modelo terminado | Antes de generar: por campo y fila por fila |
+| **Puntos de falla** | Sobrescribir el mueble base, pieza olvidada, holguras inconsistentes, nombres de componente a mano | Carpeta del proyecto mal configurada (con aviso); mueble base ausente o alterado |
+| **Variable nueva** | Rehacer el procedimiento manual y reentrenar a quien modela | Se declara en la configuración de su familia; aparece sola en formulario y plantilla |
+| **Escalabilidad** | Lineal: cada módulo cuesta un modelado completo | Lote secuencial con avance, cancelación entre unidades y fallas que no abortan el resto |
 
-<img src="capturas/12-todas-piezas-generadas.png" alt="Ventana de SketchUp con una veintena de módulos de cocina alineados en la escena y el panel de esquema listando los componentes resultantes" width="900">
+<img src="capturas/13-todas-piezas-generadas.png" alt="Ventana de SketchUp con una veintena de módulos de cocina alineados en la escena y el panel de esquema listando los componentes resultantes" width="900">
 
 *Figura 1 — Evidencia de que el lote llega hasta el final: los módulos quedan construidos en la escena y registrados como componentes con su nombre de catálogo, no como geometría suelta.*
 
@@ -133,7 +134,7 @@ Al cargar, `app.js` pide `sync` (`app.js:1668`) y Ruby responde con familias act
 
 **3 · Confirmación.** Solo al pulsar «Importar N» las filas buenas se vuelven registros. La operación es **acumulativa, no destructiva**: se agregan al final de la lista existente (`app.js:1467-1473`), así que los módulos previos —capturados a mano o importados antes— siguen ahí, en estado de borrador.
 
-<img src="capturas/tabla-importar.png" alt="Tabla de revisión de la importación con veinte filas validadas, resumen de conteo y columnas con prefijo de familia" width="900">
+<img src="capturas/11-tabla-importar.png" alt="Tabla de revisión de la importación con veinte filas validadas, resumen de conteo y columnas con prefijo de familia" width="900">
 
 *Figura 4 — La importación interpone una validación completa antes de cualquier efecto: el resumen cuenta filas listas y con error, el botón indica cuántas entrarán, y las celdas de columnas ajenas a la familia de la fila aparecen atenuadas con la marca «no aplica a esta familia».*
 
@@ -202,7 +203,7 @@ La habilitación es **por campo** y es dato del manifiesto, incluido el texto qu
 
 El código solo lo pinta (`app.js:535-537`) y una regla de estilo lo oculta cuando el campo sí está activo. La misma declaración cubre los 21 campos de espacio de las tres familias, y el predicado que la evalúa es único (`app.js:176-189`), compartido con las condiciones de las sumas. Existe además `visible_si`, que oculta en vez de deshabilitar.
 
-<img src="capturas/11-piezas-importadas.png" alt="Editor de una alacena importada con la sección de divisores abierta, mostrando campos anotados como no aplicables" width="900">
+<img src="capturas/12-piezas-importadas.png" alt="Editor de una alacena importada con la sección de divisores abierta, mostrando campos anotados como no aplicables" width="900">
 
 *Figura 5 — Las reglas del manifiesto se materializan en el formulario con su texto original: lo que la configuración desactiva queda a la vista y anotado, pero no entra en la fila que se inyecta. La barra lateral muestra además el resultado acumulativo de la importación.*
 
