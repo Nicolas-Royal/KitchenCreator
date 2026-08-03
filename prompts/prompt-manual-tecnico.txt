@@ -1,0 +1,158 @@
+<context>
+Proyecto: **KitchenCreator / Royal Catalog Creator** — extensión de SketchUp escrita en Ruby que genera masivamente variaciones de módulos de cocina paramétricos (Gabinete, Alacena, Esquinero), sustituyendo un flujo manual que se ejecutaba desde la consola de Ruby.
+
+IMPORTANTE — el sistema tiene DOS vías de entrada, ambas deben documentarse:
+- **Vía visual (principal):** interfaz HTML embebida en SketchUp donde el usuario crea módulos, llena el formulario de la familia y genera uno a uno o en lote.
+- **Vía masiva:** generación de una plantilla Excel, captura fuera de línea, importación y generación del lote.
+NO documentes el sistema como si el CSV/Excel fuera el único camino: ese era el flujo del script legado.
+
+Estado actual del repo (raíz: `c:\Users\usuario\Documents\KitchenCreator`):
+- `plugin/royal_catalog_creator/` — plugin actual: `main.rb`, `engine.rb`, `importer.rb`, `plantilla.rb`, `xlsx.rb`, `html/` (`dialog.html`, `js/app.js`, `css/style.css`), `manifest/` (`gabinete.json`, `alacena.json`, `esquinero.json`)
+- `plugin/royal_catalog_creator.rb` — loader y registro de la extensión (versión)
+- `script.rb` — script legado que se corría desde la consola Ruby de SketchUp (ver `Command.txt`)
+- `introspeccion.rb` + `introspeccion_dump.txt` — volcado de atributos de los componentes dinámicos
+- `Main Components/` — `GABINETE.skp`, `ALACENA.skp`, `ESQUINERO.skp` (componentes base)
+- `Definiciones/` — `LEEME.md`, `PLANTILLA.md`, `gabinete.csv`, `alacena.csv`, `esquinero.csv` (diccionario de variables)
+- `Input/` — capturas `.xlsx`/`.csv` (p. ej. `variaciones_20.xlsx`); `Output/` — salidas `.skp` por familia
+- `dist/royal_catalog_creator.rbz` — paquete distribuible (98 KB)
+- `Issues/` — `errors.md`, `diag_divisores.rb`, `diag_entrepanos.rb`, `diag_union.rb`, prompts de trabajo
+- `SCOPE.md` — documento de alcance (problema, as-is, dolores, hallazgos de introspección)
+- **Capturas del sistema en operación: `capturas/` (13 archivos, ya verificados — ver `<capturas_disponibles>`)**
+
+Audiencia del entregable: **ejecutivos de Royal Kitchens** (dirección general, operaciones, TI). No son programadores de Ruby ni usuarios de SketchUp. Deben entender qué hace el sistema, qué problema de negocio resuelve, cómo opera, qué riesgos tiene y qué sigue — sin perder el rigor técnico que permita a un desarrollador nuevo retomar el proyecto.
+</context>
+
+<task>
+Genera el manual técnico integral del proyecto en un único archivo nuevo: `MANUAL_TECNICO.md` en la raíz del repositorio, ilustrado **exclusivamente** con las capturas que ya existen en `capturas/`.
+
+Antes de escribir una sola línea del manual, DEBES leer y basar el contenido en el material real:
+1. **Abre las 7 imágenes que vas a usar (ver `<capturas_disponibles>`) con la herramienta de lectura** y confirma que muestran lo que la tabla declara. No infieras contenido por el nombre del archivo.
+2. Lee completos: `SCOPE.md`, `README.md`, `Command.txt`, `stepts.md`, `Definiciones/LEEME.md`, `Definiciones/PLANTILLA.md`, `Issues/errors.md`.
+3. Lee completos todos los `.rb` de `plugin/royal_catalog_creator/` (incluido `royal_catalog_creator.rb`) y los tres `manifest/*.json`.
+4. Lee `plugin/royal_catalog_creator/html/dialog.html` y `html/js/app.js` para documentar la arquitectura de la capa de interfaz y el puente Ruby↔JavaScript real, no uno supuesto.
+5. Lee `script.rb` e `introspeccion.rb`. NO leas `introspeccion_dump.txt` completo (2 MB) — inspecciona solo una muestra representativa para describir su formato y propósito.
+6. Revisa los encabezados de los CSV en `Definiciones/` y de `Input/variaciones_20.xlsx` para documentar el esquema de datos con nombres reales.
+7. Ejecuta `git log --oneline -30` para ubicar la evolución e hitos del proyecto.
+</task>
+
+<capturas_disponibles>
+La carpeta `capturas/` contiene 13 imágenes, todas ya revisadas. Este manual es técnico: las capturas son **evidencia de que el sistema opera**, no un tutorial. Usa SOLO estas 7, en estas secciones:
+
+| Archivo | Qué muestra (verificado) | Sección destino | Pie de foto propuesto |
+|---|---|---|---|
+| `12-todas-piezas-generadas.png` | SketchUp con una veintena de módulos ya generados alineados en la escena; el Esquema/Outliner lista los componentes resultantes con sus nombres (ALA-…, ESQ-…). | 3 — Impacto y valor | Lote completo generado en una sola corrida: veintiún módulos a partir de un archivo de captura. |
+| `06-pagina-inicio-pluguin.png` | La ventana del plugin recién abierta y sin módulos: barra lateral con «+ Nuevo módulo», «Importar…» y «Plantilla…»; el aviso «No hay módulos todavia.»; al pie «CARPETA DEL PROYECTO» con su ruta y «Cambiar carpeta…»; panel central «Genera muebles de catálogo». | 5 — Flujo funcional, punto de entrada | Punto de entrada del sistema: la interfaz embebida en SketchUp. |
+| `08-personalizar-modulo-manualmente.png` | Editor del módulo «GAB-01» (familia Gabinete): interruptores «Insertar en escena» y «Limpiar piezas ocultas», botones «Clonar» y «Generar»; secciones «Estructura e Interior» y «Frente y puertas»; el desplegable «Diseño de puerta» abierto mostrando sus opciones. | 5 — Flujo funcional, captura de parámetros | Formulario generado a partir del manifiesto de la familia; las opciones del desplegable provienen del archivo de manifiesto, no del código. |
+| `tabla-importar.png` | Capa de validación de la importación: encabezado con el resumen «20 filas · 20 listas · 0 con error», botones «Descartar filas con error», «Cancelar» e «Importar 20», y la tabla de las 20 filas con palomita de validación por fila, desplegable de familia, y las columnas `familia`, `nombre_salida`, `[GAB-ALA] Ancho (mm)`, `[GAB-ALA] Profundidad (mm)`, `Alto (mm)`, `[GAB-ESQ] Alto zócalo (mm)`, `Espesor estructura (mm)`, `Espesor puerta (mm)`, `Espesor fondo (mm)`, `Ancho amarres (mm)`. Las celdas de columnas que no aplican a la familia de la fila aparecen atenuadas. | 5 — Flujo funcional, vía masiva | La importación pasa por una capa de validación previa: nada se crea hasta que el usuario confirma. Los prefijos de columna declaran a qué familias aplica cada atributo. |
+| `11-piezas-importadas.png` | Barra lateral con 21 módulos y el botón «Generar todos (21)»; el editor muestra «ALA-900-LISA» con la sección «Divisores» abierta (Cantidad de divisores, Tipo de medida «Separaciones iguales», Espacios 1-3 con la nota «Solo aplica con tipo de medida «Personalizado».», Márgenes frontales 1-3). | 6 — Modelo de datos (reglas condicionales) | Las reglas condicionales del manifiesto se materializan en el formulario: los campos que no aplican al tipo de medida elegido quedan anotados y sin efecto. |
+| `04-instalado-correctamente.png` | La lista del «Administrador de extensiones» incluye «Royal Catalog Creator», autor «Royal Kitchens», con la leyenda «Sin firmar» y el estado «Activado». | 7 — Instalación y despliegue | Verificación de instalación: la extensión queda registrada como «Sin firmar», publicada por Royal Kitchens. |
+| `09-resultado-generacion-individual.png` | SketchUp mostrando un gabinete de tres cajones ya generado; el Esquema/Outliner lista el componente resultante. | 8 — Operación | Salida de una generación individual, insertada en la escena de SketchUp. |
+
+REGLAS SOBRE LAS CAPTURAS:
+- Estas 7 son las ÚNICAS imágenes permitidas en este documento. NUNCA inventes un nombre de archivo ni referencies una imagen fuera de esta tabla.
+- Cada una aparece exactamente una vez. Total: 7 figuras, sin repeticiones.
+- Las otras 6 capturas de la carpeta (`01`, `02`, `03`, `05`, `07`, `10`) pertenecen al manual de usuario y NO se usan aquí. No las menciones.
+- Secciones donde NO puede haber ninguna imagen: 1, 2, 4, 9, 10, 11, 12, 13, 14. Ahí van diagramas Mermaid, tablas y prosa.
+- **El juego de imágenes está cerrado: son estas 7 y no habrá más.** Si una sección se beneficiaría de una ilustración que no está en la tabla, redáctala sin imagen y sigue adelante. NO inventes un nombre de archivo, NO dejes marcadores, comentarios ni notas sobre capturas que faltan, y NO escribas frases como "aquí iría una imagen". Para lo que no hay foto, usa diagramas Mermaid, tablas o prosa.
+- NO edites, recortes, renombres, conviertas ni muevas ninguna imagen.
+</capturas_disponibles>
+
+<formato_de_figuras>
+Insértalas SIEMPRE con esta estructura exacta de tres líneas, para que todas se vean parejas:
+
+<img src="capturas/NOMBRE-ARCHIVO" alt="TEXTO ALTERNATIVO" width="900">
+
+*Figura N — Pie de foto.*
+
+Reglas:
+- `width="900"` en las siete.
+- Numera las figuras correlativamente desde 1, en orden de aparición.
+- El texto alternativo describe la pantalla en una frase; no repite el pie de foto.
+- El pie de foto de un manual técnico debe explicar **qué demuestra** la imagen, no narrar un paso de usuario.
+</formato_de_figuras>
+
+<hallazgos_a_verificar>
+Estos puntos salieron de revisar las capturas contra el código. Verifícalos y documenta el resultado; varios tienen peso ejecutivo.
+
+1. **La extensión se instala «Sin firmar»** (visible en `04-instalado-correctamente.png`). Verifica si el `.rbz` está firmado digitalmente por Trimble. Si no lo está, documenta la implicación real: SketchUp puede bloquear extensiones sin firma según el nivel de seguridad configurado. Esto va a la sección 11 (Riesgos) con su mitigación.
+2. **Registro del menú:** en las capturas el elemento «Royal Catalog Creator» del menú «Extensiones» aparece con flecha de submenú, pero el código lo registra como elemento simple. Verifica en `main.rb` cómo se registra realmente y documenta lo que corresponda.
+3. **Dependencia de la carpeta del proyecto:** la interfaz exige una carpeta que contenga «Main Components». Documenta qué pasa si falta, qué mensaje se emite y por qué esto es un punto único de falla operativo.
+4. **Reglas condicionales en los manifiestos:** en `11-piezas-importadas.png` se ve la nota «Solo aplica con tipo de medida «Personalizado».». Verifica de dónde sale ese texto (manifiesto o código) y documéntalo en la sección 6 como el mecanismo de reglas condicionales.
+5. **Prefijos de aplicabilidad por familia:** en `tabla-importar.png` los encabezados llevan prefijos como `[GAB-ALA]` y `[GAB-ESQ]`, y las celdas de columnas que no aplican a la familia de la fila se ven atenuadas. Verifica en `plantilla.rb`, `importer.rb` y los `manifest/*.json` cómo se declara y se aplica esa pertenencia por familia, y documéntalo en la sección 6. Es el mecanismo que permite que las tres familias compartan una sola plantilla.
+6. **La importación no es destructiva:** `tabla-importar.png` declara «20 filas» y el botón «Importar 20», mientras que `11-piezas-importadas.png` muestra «Generar todos (21)» — el módulo creado a mano antes de importar sigue en la sesión. Verifica en `app.js` e `importer.rb` si la importación acumula o reemplaza, y documenta el comportamiento real en las secciones 5 y 8.
+</hallazgos_a_verificar>
+
+<estructura_obligatoria>
+El manual DEBE tener exactamente estas secciones, en este orden:
+
+1. **Resumen ejecutivo** (máx. 400 palabras, sin jerga técnica) — qué es, qué problema de negocio resuelve, en qué estado está hoy, qué se gana al usarlo. Sin figuras.
+2. **Contexto y problema de negocio** — el proceso por consola de Ruby y CSV vs. la extensión actual; quién lo usa y por qué el formato técnico previo era una barrera. Sin figuras.
+3. **Impacto y valor** — comparativa proceso anterior vs. actual en una tabla (pasos, perfil requerido, puntos de falla, escalabilidad). Marca con `[por confirmar]` cualquier cifra de tiempo, volumen o costo que NO puedas derivar del repositorio. → figura `12`
+4. **Arquitectura del sistema** — responsabilidades de cada archivo `.rb`, la capa HTML/JS, el mecanismo de comunicación entre ambas, los manifiestos por familia y la integración con SketchUp y sus componentes dinámicos. Incluye un diagrama Mermaid (`graph TD`). Sin figuras.
+5. **Flujo funcional de punta a punta** — las dos vías (visual y masiva), desde la apertura de la herramienta hasta los `.skp` en `Output/`. La vía masiva DEBE describirse en sus tres etapas: selección del archivo, **validación previa fila por fila sin efectos secundarios**, y confirmación. Incluye un diagrama Mermaid (`sequenceDiagram`) que refleje esa etapa de validación como un punto de decisión. → figuras `06`, `08` y `tabla-importar`
+6. **Modelo de datos y diccionario de variables** — estructura de los manifiestos por familia, esquema de la plantilla de captura, notación `prefijo>atributo`, los prefijos de aplicabilidad por familia en los encabezados de columna (`[GAB-ALA]`, `[GAB-ESQ]`) y de dónde salen, manejo de unidades, convenciones especiales y reglas condicionales entre campos. Usa nombres y valores reales del repo. → figura `11`
+7. **Instalación y despliegue** — instalación del `.rbz`, requisitos de SketchUp, versión de la extensión, estado de firma, verificación, configuración de la carpeta del proyecto y qué debe contener, y cómo se reconstruye el `.rbz` para distribuir una versión nueva. → figura `04`
+8. **Operación** — paso a paso numerado del uso real por ambas vías, redactado para alguien no técnico. → figura `09`
+9. **Referencia técnica para desarrollo** — puntos de extensión (agregar una variable, un campo al manifiesto, una familia nueva), qué hay que tocar en cada caso, scripts de diagnóstico en `Issues/`, y utilidad de `introspeccion.rb`. Sin figuras.
+10. **Problemas conocidos y limitaciones** — de `Issues/errors.md`, `SCOPE.md` y de lo que veas en el código. Honesto, sin maquillar. Sin figuras.
+11. **Riesgos operativos y mitigación** — tabla: riesgo | impacto | probabilidad | mitigación propuesta. Incluye extensión sin firmar, dependencia de personal clave, dependencia de SketchUp y su versión, integridad y ausencia de versionado de los `.skp` base, dependencia de la carpeta del proyecto, y ausencia de pruebas automatizadas si aplica. Sin figuras.
+12. **Roadmap y siguientes pasos** — de `SCOPE.md` y de lo pendiente en el código. Tabla: iniciativa | beneficio de negocio | esfuerzo estimado (Alto/Medio/Bajo). Sin figuras.
+13. **Glosario** — términos SketchUp/dominio (componente dinámico, atributo, definición, instancia, módulo, tirador, entrepaño, zócalo, ceja, divisor, etc.), una línea cada uno. Sin figuras.
+14. **Anexo: mapa de archivos del repositorio** — tabla de rutas y su propósito. Sin figuras.
+</estructura_obligatoria>
+
+<constraints>
+- Idioma: **español de México**, registro profesional y directo. Sin anglicismos innecesarios.
+- Extensión: 3,000–4,500 palabras (sin contar pies de figura).
+- Formato: Markdown con encabezados jerárquicos, tabla de contenido con anclas al inicio, tablas para toda comparación o enumeración de más de 3 elementos.
+- Cada afirmación técnica DEBE ser verificable en el repositorio. Cita el archivo y la línea con formato `archivo.rb:42` cuando describas comportamiento específico.
+- **NUNCA inventes** métricas, tiempos, número de usuarios, costos, ROI, fechas, nombres de archivo de imagen ni funcionalidad que no exista. Si un dato sería valioso pero no está en el repo, escríbelo como `[por confirmar: <qué dato hace falta>]`.
+- Si el código y `SCOPE.md` (o `Definiciones/`) se contradicen, documenta **lo que hace el código** y añade `> ⚠️ Discrepancia: SCOPE.md indica X, el código en <archivo:línea> hace Y.`
+- Los diagramas DEBEN ser Mermaid en bloques ```mermaid — no ASCII art, no imágenes externas, no mockups.
+- Secciones 1–3 y 11–12 son para ejecutivos: cero código, cero rutas de archivo en el cuerpo del texto.
+- Secciones 4–9 son técnicas: ahí sí rutas, nombres de método y ejemplos.
+</constraints>
+
+<alcance_y_limites>
+PERMITIDO: leer cualquier archivo del repo (incluidas las imágenes de `capturas/`), ejecutar comandos git de solo lectura, crear `MANUAL_TECNICO.md`.
+
+PROHIBIDO — no lo hagas bajo ninguna circunstancia:
+- Modificar, refactorizar o "mejorar" cualquier archivo existente. El único archivo que escribes es `MANUAL_TECNICO.md`.
+- Editar, recortar, renombrar, convertir, mover o borrar cualquier imagen de `capturas/`.
+- Referenciar cualquier imagen fuera de las 7 asignadas a este documento.
+- Borrar o mover archivos; tocar `Main Components/`, `Input/`, `Output/` o `dist/`.
+- Instalar dependencias, ejecutar `script.rb`, `introspeccion.rb` o cualquier script de `Issues/`.
+- Hacer `git add`, `git commit` o `git push`.
+- Crear archivos adicionales (nada de READMEs auxiliares, índices, notas o versiones alternas).
+
+DETENTE Y PREGÚNTAME antes de: cualquier operación de escritura fuera de `MANUAL_TECNICO.md`, o si `MANUAL_TECNICO.md` ya existe.
+</alcance_y_limites>
+
+<checkpoints>
+Reporta avance con una línea por fase:
+- ✅ Fase 1 — 7 capturas abiertas y contrastadas contra la tabla: <n> confirmadas, <n> con diferencias.
+- ✅ Fase 2 — Lectura completa: <n> archivos leídos, hallazgos clave en 3 viñetas.
+- ✅ Fase 3 — Los 6 puntos de `<hallazgos_a_verificar>` resueltos: <veredicto de cada uno en una línea>.
+- ✅ Fase 4 — `MANUAL_TECNICO.md` escrito: <n> palabras, <n> diagramas Mermaid, 7 figuras, <n> marcadores `[por confirmar]`.
+</checkpoints>
+
+<criterios_de_aceptacion>
+Terminado cuando TODO se cumple:
+1. `MANUAL_TECNICO.md` existe en la raíz con las 14 secciones en orden.
+2. Contiene al menos 2 diagramas Mermaid sintácticamente válidos.
+3. Hay exactamente 7 figuras, una por archivo, sin repeticiones: `12` (§3), `06` (§5), `08` (§5), `tabla-importar` (§5), `11` (§6), `04` (§7), `09` (§8). Ninguna figura aparece en las secciones prohibidas. Ninguna etiqueta de imagen apunta a un archivo fuera de los 7 asignados.
+4. Todas las figuras usan la estructura de tres líneas con `width="900"`.
+5. Todo archivo `.rb` del plugin está descrito con su responsabilidad en la sección 4.
+6. Los 6 hallazgos de `<hallazgos_a_verificar>` están resueltos y reflejados en el documento; el estado de firma aparece en la sección 11.
+7. Ningún dato numérico de negocio aparece sin respaldo en el repo o sin marcador `[por confirmar]`.
+8. El documento NO contiene ningún marcador, comentario ni mención de capturas faltantes.
+9. Al final de tu respuesta entregas DOS listas:
+   (a) **Figuras insertadas** — número → archivo → sección → pie de foto final.
+   (b) **Marcadores `[por confirmar]` y discrepancias** código-vs-documentación, incluido el veredicto de los 6 hallazgos.
+
+Solo haz lo solicitado. No agregues archivos, abstracciones ni funcionalidad extra.
+</criterios_de_aceptacion>
+
+<nota_operativa>
+Este prompt es para una herramienta agéntica con acceso real al sistema. Revisa los límites de alcance, las acciones prohibidas y las condiciones de parada antes de pegarlo. Ejecútalo en una sesión nueva.
+</nota_operativa>

@@ -1,0 +1,190 @@
+<context>
+Proyecto: **Royal Catalog Creator** (repo KitchenCreator) — extensión de SketchUp que permite a las diseñadoras de Royal Kitchens crear y generar variaciones de módulos de cocina (Gabinete, Alacena, Esquinero) desde una interfaz visual, sin tocar código ni la consola de Ruby.
+
+IMPORTANTE — el flujo real tiene DOS vías de entrada, ambas deben documentarse:
+- **Vía visual (principal):** el usuario abre el diálogo, crea módulos uno por uno con «+ Nuevo módulo», llena el formulario de la familia elegida y genera con «Generar», o acumula varios en la barra lateral y usa «Generar todos».
+- **Vía masiva:** el usuario descarga una plantilla con «Plantilla…», la llena en Excel, la carga con «Importar…», revisa el resultado y genera el lote completo.
+NO redactes el manual como si Excel fuera el único camino.
+
+Rutas relevantes (raíz: `c:\Users\usuario\Documents\KitchenCreator`):
+- Interfaz: `plugin/royal_catalog_creator/html/dialog.html`, `html/js/app.js`, `html/css/style.css`
+- Campos y opciones por familia: `plugin/royal_catalog_creator/manifest/gabinete.json`, `alacena.json`, `esquinero.json`
+- Lógica: `main.rb` (menú, barra de herramientas, carpeta del proyecto), `plantilla.rb`, `importer.rb`, `xlsx.rb`, `engine.rb`
+- Loader y versión de la extensión: `plugin/royal_catalog_creator.rb`
+- Instalador: `dist/royal_catalog_creator.rbz`
+- Componentes base: `Main Components/GABINETE.skp`, `ALACENA.skp`, `ESQUINERO.skp`
+- Diccionario de variables: `Definiciones/LEEME.md`, `PLANTILLA.md`, `gabinete.csv`, `alacena.csv`, `esquinero.csv`
+- Ejemplos de captura: `Input/variaciones_20.xlsx` — Resultados: `Output/<Familia>/`
+- Problemas reportados: `Issues/errors.md` — Alcance de negocio: `SCOPE.md`
+- **Capturas de pantalla disponibles: `capturas/` (13 archivos, ya verificados — ver el bloque `<capturas_disponibles>`)**
+
+Doble audiencia del entregable:
+- **Usuario final**: diseñadoras de cocina. Usan SketchUp y Excel, NO son técnicas. Necesitan procedimientos ejecutables sin ayuda.
+- **Ejecutivos** (dirección, operaciones, TI): revisarán este documento en junta como evidencia de que la herramienta es adoptable, entrenable y de bajo riesgo operativo.
+
+El documento debe servir a ambas: apertura ejecutiva breve, cuerpo 100% operativo.
+</context>
+
+<task>
+Genera el manual de usuario del sistema en un único archivo nuevo: `MANUAL_USUARIO.md` en la raíz del repositorio, ilustrado **exclusivamente** con las 13 capturas que ya existen en `capturas/`.
+
+Antes de escribir una sola línea, DEBES derivar el contenido de la aplicación real. Obligatorio en este orden:
+
+1. **Abre las 13 imágenes de `capturas/` con la herramienta de lectura** y confirma que cada una muestra lo que declara el bloque `<capturas_disponibles>`. Si alguna NO coincide, no la insertes donde dice: repórtala y decide de nuevo. No infieras contenido por el nombre del archivo.
+2. Lee `plugin/royal_catalog_creator/html/dialog.html` y `html/js/app.js` completos. Extrae **las etiquetas literales** de cada botón, campo, sección, modal, aviso emergente y mensaje. El manual DEBE usar esos textos exactos entre comillas angulares («»).
+3. **Contrasta lo que ves en las capturas contra el código.** Ya se detectaron cuatro discrepancias que DEBES verificar y reportar (ver `<discrepancias_conocidas>`).
+4. Lee los tres archivos de `plugin/royal_catalog_creator/manifest/`. De ahí sale la lista real de campos por familia, sus opciones válidas, valores por defecto, unidades y reglas condicionales.
+5. Lee `main.rb` (cómo se abre la herramienta, cómo se configura la carpeta del proyecto y qué exige que contenga), `plantilla.rb` (qué columnas y desplegables genera), `importer.rb` (qué valida y qué rechaza) y `engine.rb` (qué genera y dónde lo escribe).
+6. Extrae de los `.rb` y de `app.js` **todos los mensajes de error, advertencia y confirmación literales** (incluye los avisos emergentes de `app.js` y los cuadros de mensaje de `main.rb`). Cada uno va a la sección de solución de problemas con su causa y su remedio.
+7. Lee `Definiciones/LEEME.md` y `PLANTILLA.md` para traducir el diccionario técnico a lenguaje de negocio.
+8. Inspecciona los encabezados de `Input/variaciones_20.xlsx` para construir el ejemplo guiado con datos reales — es el mismo archivo que aparece en la captura 10.
+9. Lee `Issues/errors.md` para las limitaciones conocidas.
+</task>
+
+<capturas_disponibles>
+Estas 12 imágenes YA fueron revisadas una por una. Su contenido está verificado. Úsalas exactamente donde se indica y con el pie de foto propuesto (puedes pulir la redacción, no el hecho).
+
+| Archivo | Qué muestra (verificado) | Sección destino | Pie de foto propuesto |
+|---|---|---|---|
+| `01-Administrar-extensiones.png` | Ventana de SketchUp con el menú «Extensiones» desplegado y el cursor sobre «Administrador de extensiones». | 5 — Instalación, paso 1 | Abra el menú «Extensiones» y elija «Administrador de extensiones». |
+| `02-instalar-extension.png` | El «Administrador de extensiones» en la pestaña «Inicio», con la lista de extensiones instaladas y el cursor sobre el botón «Instalar extensión» al pie. | 5 — Instalación, paso 2 | En el «Administrador de extensiones», presione «Instalar extensión». |
+| `03-seleccionar-pluguin.png` | Diálogo «Abrir» del explorador situado en la carpeta `dist` del proyecto, mostrando el archivo `royal_catalog_creator.rbz` de 98 KB. | 5 — Instalación, paso 3 | Seleccione el archivo `royal_catalog_creator.rbz` dentro de la carpeta `dist`. |
+| `04-instalado-correctamente.png` | La lista del administrador ya incluye «Royal Catalog Creator», autor «Royal Kitchens», con la leyenda «Sin firmar» y el estado «Activado». | 5 — Instalación, verificación | La extensión aparece instalada y activada, publicada por Royal Kitchens. |
+| `05-abrir-pluguin.png` | Menú «Extensiones» desplegado con la entrada «Royal Catalog Creator» resaltada. | 5 — Primer arranque | Abra la herramienta desde «Extensiones» → «Royal Catalog Creator». |
+| `06-pagina-inicio-pluguin.png` | La ventana del plugin recién abierta y sin módulos: barra lateral con «+ Nuevo módulo», «Importar…» y «Plantilla…»; el aviso «No hay módulos todavia.»; al pie «CARPETA DEL PROYECTO» con su ruta y «Cambiar carpeta…»; panel central «Genera muebles de catálogo». | 7 — Recorrido por la interfaz | Pantalla inicial de la herramienta, sin módulos creados. |
+| `07-crear-modulo.png` | Ventana del plugin con el fondo atenuado y el modal «Nuevo módulo» al centro: título, texto «Elige el tipo de módulo a crear.», botón de cierre, y tres tarjetas de familia — Gabinete (resaltada, con el cursor encima), Alacena y Esquinero. | 8b — Crear un módulo nuevo | Elija la familia del módulo: Gabinete, Alacena o Esquinero. |
+| `08-personalizar-modulo-manualmente.png` | Editor del módulo «GAB-01» (familia Gabinete): interruptores «Insertar en escena» y «Limpiar piezas ocultas», botones «Clonar» y «Generar»; secciones «Estructura e Interior» (Tipo de techo, Ancho amarres, Entrepaño, Ceja) y «Frente y puertas» (márgenes superior/izquierdo/derecho/inferior); el desplegable «Diseño de puerta» abierto mostrando sus opciones. Barra lateral con «Generar todos (1)». | 8c — Llenar el formulario | Formulario del módulo con el desplegable «Diseño de puerta» abierto. |
+| `09-resultado-generacion-individual.png` | SketchUp mostrando un gabinete de tres cajones ya generado; el Esquema/Outliner lista el componente resultante. | 8e — Generar un módulo individual | Resultado de generar un módulo individual, insertado en la escena. |
+| `10-importar-excel-explorador.png` | Editor de «GAB-01» con la sección «Dimensiones» visible (Ancho 800 mm, Profundidad 600 mm, Alto 600 mm, Alto cócalo 100 mm) y encima el diálogo de selección de archivo situado en la carpeta `Input`, con `variaciones_20.xlsx` seleccionado. | 8i — Importar el archivo, paso 1 | Seleccione el archivo de captura desde la carpeta `Input`. |
+| `tabla-importar.png` | Pantalla de revisión de la importación: encabezado con la etiqueta «Importar» y el resumen «20 filas · 20 listas · 0 con error»; botones «Descartar filas con error», «Cancelar» e «Importar 20»; tabla con las 20 filas del archivo, cada una con palomita verde de validación, un desplegable de familia por fila y las columnas `familia`, `nombre_salida`, `[GAB-ALA] Ancho (mm)`, `[GAB-ALA] Profundidad (mm)`, `Alto (mm)`, `[GAB-ESQ] Alto zócalo (mm)`, `Espesor estructura (mm)`, `Espesor puerta (mm)`, `Espesor fondo (mm)`, `Ancho amarres (mm)`. Las celdas de columnas que no aplican a la familia de la fila aparecen atenuadas. La barra lateral sigue vacía: los módulos aún no se han confirmado. | 8i — Importar el archivo, paso 2 | Revise la tabla de validación antes de confirmar: el resumen indica cuántas filas están listas y cuántas tienen error. |
+| `11-piezas-importadas.png` | La barra lateral con 21 módulos (GAB-01, GAB-800-LISA, GAB-900-DOBLE, GAB-450-VIDRIO, GAB-600-…, ALA-900-LISA, ALA-600-VIDRIO…) y el botón «Generar todos (21)»; el editor muestra «ALA-900-LISA» con la sección «Divisores» abierta (Cantidad de divisores, Tipo de medida «Separaciones iguales», Espacios 1-3 con la nota «Solo aplica con tipo de medida «Personalizado».», Márgenes frontales 1-3). | 8i — Importar el archivo, paso 3 | Tras confirmar, los módulos quedan cargados en la barra lateral y listos para generarse. |
+| `12-todas-piezas-generadas.png` | SketchUp con la veintena de módulos ya generados alineados en la escena; el Esquema/Outliner lista los componentes con sus nombres (ALA-…, ESQ-…). | 3 — Para la dirección · y · 8f — Generar en lote | Resultado de un lote completo: todos los módulos generados en una sola corrida. |
+
+REGLAS SOBRE ESTAS 13:
+- Son las ÚNICAS imágenes permitidas. NO existen otras. NUNCA inventes un nombre de archivo ni referencies una imagen que no esté en esta tabla.
+- Usa las 13. Ninguna debe quedar sin insertar.
+- `tabla-importar.png` es el único archivo sin prefijo numérico; su lugar en el flujo es entre `10` y `11`. Respeta ese orden: seleccionar archivo → revisar tabla → confirmar.
+- La captura `12` es la única que puede aparecer dos veces (sección 3 y sección 8f). Todas las demás aparecen exactamente una vez.
+- Todas se insertan con el mismo ancho: `width="900"` (ver `<formato_de_figuras>`). No hay excepciones.
+</capturas_disponibles>
+
+<formato_de_figuras>
+Para que todas las figuras se vean parejas en el documento, insértalas SIEMPRE con esta estructura exacta de tres líneas:
+
+<img src="capturas/NOMBRE-ARCHIVO" alt="TEXTO ALTERNATIVO" width="900">
+
+*Figura N — Pie de foto.*
+
+> 💡 **En la imagen:** qué debe mirar el usuario específicamente.
+
+Reglas:
+- `width="900"` en las trece, sin excepciones.
+- Numera las figuras correlativamente desde 1, en orden de aparición.
+- El texto alternativo describe la pantalla en una frase; no repite el pie de foto.
+- La línea «En la imagen» señala el control, campo o dato concreto que ilustra el paso. Es obligatoria en las figuras de las secciones 5, 7 y 8; opcional en las demás.
+- Coloca cada figura **inmediatamente después del paso o párrafo que ilustra**, nunca agrupadas al final de una sección.
+- **El juego de imágenes está cerrado: son estas 13 y no habrá más.** Si una sección se beneficiaría de una ilustración que no está en la tabla, redáctala sin imagen y sigue adelante. NO inventes un nombre de archivo, NO dejes marcadores, comentarios ni notas al lector sobre capturas que faltan, y NO escribas frases como "aquí iría una imagen". El texto debe sostenerse solo — describe la pantalla con palabras y con la tabla de elementos de interfaz cuando haga falta.
+- NO edites, recortes, renombres, conviertas ni muevas ninguna imagen.
+</formato_de_figuras>
+
+<discrepancias_conocidas>
+Verifica estas dos contra el código y documenta el resultado en el reporte final. Si se confirman, el manual debe describir **lo que el usuario ve**, con una nota `> ⚠️ Discrepancia detectada: <detalle>`.
+
+1. **Captura 01 vs. secuencia de instalación:** en `01-Administrar-extensiones.png` el menú «Extensiones» ya muestra la entrada «Royal Catalog Creator», es decir, la extensión ya estaba instalada cuando se tomó la foto. Redacta el paso como "abra el Administrador de extensiones" sin afirmar que la lista está vacía, y advierte al lector que en su primera instalación esa entrada todavía no aparecerá.
+2. **Captura 05 vs. `main.rb`:** la entrada «Royal Catalog Creator» del menú aparece con una flecha de submenú, pero el código la registra como elemento simple. Verifica en `main.rb` cómo se registra realmente y documenta lo que corresponda.
+3. **Nombres inconsistentes entre capturas:** el módulo del editor se llama «GAB-01» (capturas 08 y 10) pero el componente generado en la captura 09 tiene otro nombre. NO presentes las capturas 08→09 como si fueran el mismo módulo paso a paso; descríbelas como ejemplos independientes.
+4. **20 importados vs. 21 en la lista:** `tabla-importar.png` declara «20 filas» y el botón «Importar 20», pero en `11-piezas-importadas.png` el botón dice «Generar todos (21)». La explicación esperada es que el módulo «GAB-01», creado a mano antes de importar, se suma a los 20 del archivo. Verifícalo contra `Input/variaciones_20.xlsx` (cuenta sus filas) y explícalo en el texto: **importar agrega módulos a la sesión, no la reemplaza.** Es una regla de operación que el usuario debe conocer.
+</discrepancias_conocidas>
+
+<estructura_obligatoria>
+Exactamente estas secciones, en este orden:
+
+1. **Portada y control de versiones** — nombre del sistema, versión (tómala de `plugin/royal_catalog_creator.rb`; si no la encuentras, márcala `[por confirmar]`), fecha, destinatarios, tabla de historial con una fila. Sin figuras.
+2. **Tabla de contenido** con enlaces ancla.
+3. **Para la dirección — resumen en una página** (máx. 350 palabras): qué hace la herramienta, quién la usa, qué proceso manual sustituye, cuánto entrenamiento requiere y qué se necesita para ponerla en producción. Cero jerga técnica, cero rutas de archivo. Lleva la figura de la captura `12`.
+4. **Antes de empezar** — requisitos (versión de SketchUp, Excel, permisos, acceso a la carpeta del proyecto que debe contener «Main Components»), y qué NO se necesita saber. Sin figuras.
+5. **Instalación y primer arranque** — procedimiento numerado con las capturas `01`, `02`, `03`, `04` y `05` en ese orden: abrir el administrador, instalar la extensión, elegir el `.rbz`, verificar que quedó activada, y abrir la herramienta. Incluye qué hacer si no aparece.
+6. **Conceptos en 2 minutos** — 6 a 8 términos indispensables (módulo, familia, variación, plantilla, componente base, carpeta del proyecto, lote, generación), una línea cada uno. Sin figuras.
+7. **Recorrido por la interfaz** — cada zona y control visible con su etiqueta literal. Tabla: Elemento | Qué hace | Cuándo usarlo. Cubre barra lateral, panel central, editor de módulo, modales y avisos emergentes. Lleva la figura de la captura `06`.
+8. **Tareas paso a paso** — el núcleo del manual. Una subsección por tarea con: objetivo, prerrequisitos, pasos numerados en imperativo (una acción por paso), figura donde corresponda, y "Resultado esperado". Cubre en este orden:
+   a. Configurar o cambiar la carpeta del proyecto.
+   b. Crear un módulo nuevo y elegir su familia. → figura `07`
+   c. Llenar el formulario del módulo (dimensiones, estructura, frente, tirador, divisores). → figura `08`
+   d. Usar «Clonar» para variar un módulo sin volver a capturarlo.
+   e. Generar un módulo individual y entender «Insertar en escena» y «Limpiar piezas ocultas». → figura `09`
+   f. Acumular varios módulos y generarlos con «Generar todos»; cancelar un lote en curso. → figura `12`
+   g. Descargar la plantilla de Excel con «Plantilla…».
+   h. Llenar la plantilla en Excel.
+   i. Importar el archivo con «Importar…»: seleccionar el archivo, **revisar la tabla de validación** (leer el resumen de filas listas y con error, usar «Descartar filas con error» si hace falta, corregir en Excel y volver a cargar), y confirmar con el botón «Importar N». → figuras `10`, `tabla-importar` y `11`, en ese orden
+   j. Localizar y revisar los archivos generados.
+   k. Corregir un módulo y volver a generarlo.
+9. **Ejemplo guiado completo** — el caso real de `Input/variaciones_20.xlsx`: las 20 filas del archivo (8 Gabinete, 6 Alacena, 6 Esquinero según la tabla de validación), cómo se llena la captura y los archivos que resultan. Encadena la narrativa con las figuras ya insertadas en la sección 8 (refiérete a ellas por número, no las repitas).
+10. **Guía de captura — referencia de campos** — una tabla por familia (Gabinete, Alacena, Esquinero) con: Campo (nombre visible) | Qué significa en la cocina real | Valores válidos | Unidad | Obligatorio | Ejemplo. Derivada de los `manifest/*.json`. Sin figuras.
+11. **Reglas de captura que evitan errores** — convenciones no obvias. Formato: regla → por qué existe → qué pasa si se rompe. DEBE cubrir, además de lo que encuentres en el código: los prefijos de columna `[GAB-ALA]` y `[GAB-ESQ]` que indican a qué familias aplica cada columna (visibles en `tabla-importar.png`) y qué pasa si se llena una columna que no aplica a la familia de esa fila; las unidades en milímetros; los campos que solo aplican con cierto tipo de medida; los nombres de salida; y que importar **agrega** módulos a la sesión en lugar de reemplazarlos. Sin figuras.
+12. **Buenas prácticas** — 6 a 10 recomendaciones operativas. Sin figuras.
+13. **Solución de problemas** — tabla: Mensaje o síntoma (texto literal) | Causa | Solución paso a paso. Incluye TODOS los mensajes extraídos en la fase 6. Sin figuras: los mensajes se citan textualmente entre comillas, no se ilustran.
+14. **Preguntas frecuentes** — 8 a 12 preguntas reales que haría una diseñadora, respuestas de 2 a 4 líneas. Sin figuras.
+15. **Qué NO hace el sistema** — límites explícitos, de `Issues/errors.md` y `SCOPE.md`. Honesto, sin maquillar. Sin figuras.
+16. **Soporte y escalamiento** — qué revisar antes de reportar, qué incluir en el reporte, a quién escalar `[por confirmar: responsable y canal de soporte]`. Sin figuras.
+17. **Glosario** — todos los términos técnicos usados, una línea cada uno. Sin figuras.
+18. **Anexo — Guía rápida de una página** — resumen imprimible: los pasos del flujo completo + los 5 errores más comunes. Debe caber en una hoja. Sin figuras.
+</estructura_obligatoria>
+
+<constraints>
+- Idioma: **español de México**, trato de "usted", tono profesional y cordial. Instrucciones en imperativo directo ("Abra el menú…", "Seleccione…").
+- Extensión: 3,500–5,000 palabras (sin contar pies de figura).
+- **Cero código en el cuerpo del manual.** Nada de Ruby, JavaScript, nombres de método ni identificadores de HTML. Las rutas de archivo solo cuando el usuario realmente debe navegar a ellas.
+- Un paso = una acción. Nunca encadene tres acciones en un mismo numeral.
+- Toda etiqueta de interfaz DEBE coincidir carácter por carácter con `dialog.html` o `app.js`, incluidos acentos, puntos suspensivos y el signo «+». Si un control no tiene etiqueta clara, descríbalo por su posición y márquelo `[por confirmar: etiqueta exacta]`.
+- **NUNCA invente** pantallas, botones, campos, atajos, mensajes, tiempos de ejecución, nombres de archivo de imagen ni funcionalidad que no exista. Ante un hueco, escriba `[por confirmar: <qué falta>]`.
+- Use tablas para toda referencia de campos, errores y elementos de interfaz. Listas numeradas solo para procedimientos.
+- Marque advertencias con `> ⚠️ **Atención:**` y consejos con `> 💡 **Tip:**`.
+- Si el comportamiento del código contradice `Definiciones/` o `SCOPE.md`, documente **lo que hace el código** y agregue `> ⚠️ Discrepancia detectada: <detalle>`.
+</constraints>
+
+<alcance_y_limites>
+PERMITIDO: leer cualquier archivo del repo (incluidas las 13 imágenes de `capturas/`), ejecutar comandos git de solo lectura, crear `MANUAL_USUARIO.md`.
+
+PROHIBIDO — sin excepción:
+- Modificar, refactorizar o "mejorar" cualquier archivo existente. El único archivo que escribe es `MANUAL_USUARIO.md`.
+- Editar, recortar, renombrar, convertir, mover o borrar cualquier imagen de `capturas/`.
+- Crear archivos o carpetas adicionales de cualquier tipo.
+- Referenciar cualquier imagen que no sea una de las 13 listadas.
+- Borrar o mover archivos; tocar `Main Components/`, `Input/`, `Output/` o `dist/`.
+- Ejecutar SketchUp, `script.rb`, `introspeccion.rb` o cualquier script de `Issues/`.
+- Instalar dependencias o hacer `git add` / `commit` / `push`.
+- Generar imágenes, mockups o diagramas que simulen una pantalla real.
+
+DETÉNGASE Y PREGÚNTEME antes de: cualquier escritura fuera de `MANUAL_USUARIO.md`, o si ese archivo ya existe.
+</alcance_y_limites>
+
+<checkpoints>
+Reporte avance con una línea por fase:
+- ✅ Fase 1 — 13 capturas abiertas y contrastadas contra la tabla: <n> confirmadas, <n> con diferencias.
+- ✅ Fase 2 — Interfaz mapeada: <n> controles con etiqueta literal, <n> campos por familia, <n> mensajes de error extraídos. Discrepancias capturas↔código verificadas: <resultado de las 4 conocidas>.
+- ✅ Fase 3 — `MANUAL_USUARIO.md` escrito: <n> palabras, <n> procedimientos, 14 figuras insertadas, <n> marcadores `[por confirmar]`.
+</checkpoints>
+
+<criterios_de_aceptacion>
+Terminado cuando TODO se cumple:
+1. `MANUAL_USUARIO.md` existe en la raíz con las 18 secciones en orden.
+2. Las 13 capturas están insertadas; la `12` aparece dos veces (secciones 3 y 8f) y el resto una vez cada una — 14 figuras en total, numeradas correlativamente.
+3. Ninguna etiqueta de imagen apunta a un archivo fuera de las 13 listadas.
+4. En la sección 8i las figuras aparecen en el orden `10` → `tabla-importar` → `11`.
+5. Todas las figuras usan la estructura de tres líneas con `width="900"`.
+6. Cada tarea de la sección 8 tiene objetivo, prerrequisitos, pasos numerados y resultado esperado.
+7. Todos los mensajes de error hallados en el código aparecen en la sección 13 con causa y solución.
+8. Las tres familias tienen su tabla de campos completa en la sección 10, derivada de `manifest/*.json`.
+9. No aparece ni una línea de código ni un identificador de HTML en el cuerpo del manual.
+10. El anexo de la sección 18 cabe en una página.
+11. El documento NO contiene ningún marcador, comentario ni mención de capturas faltantes.
+12. Al cierre de su respuesta entrega DOS listas:
+    (a) **Figuras insertadas** — número → archivo → sección → pie de foto final.
+    (b) **Marcadores `[por confirmar]` y discrepancias** — incluye el veredicto sobre las 4 discrepancias conocidas.
+
+Haga únicamente lo solicitado. No agregue archivos, secciones ni funcionalidad extra.
+</criterios_de_aceptacion>
+
+<nota_operativa>
+Este prompt es para una herramienta agéntica con acceso real al sistema. Revise los límites de alcance, las acciones prohibidas y las condiciones de parada antes de pegarlo. Ejecútelo en una sesión nueva.
+</nota_operativa>
