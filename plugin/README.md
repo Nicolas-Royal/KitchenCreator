@@ -143,6 +143,7 @@ royal_catalog_creator/
   importer.rb                     Parseo estructural del archivo a importar (CSV/XLSX)
   manifest/gabinete.json          Manifiesto curado = única fuente de la UI
   html/dialog.html · css · js     Interfaz moderna (tema claro/oscuro)
+  images/icon.png                 Icono de la barra de herramientas (128 px, PNG con alfa)
 ```
 
 ## Empaquetar el `.rbz`
