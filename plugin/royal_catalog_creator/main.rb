@@ -17,6 +17,7 @@ module RoyalKitchen
     PREF_SECTION = 'RoyalCatalogCreator'.freeze
     HTML_DIR     = File.join(__dir__, 'html').freeze
     MANIFEST_DIR = File.join(__dir__, 'manifest').freeze
+    IMAGES_DIR   = File.join(__dir__, 'images').freeze
 
     # Familias declaradas. Las tres tienen manifiesto (manifest/<familia>.json)
     # y se muestran activas en el selector.
@@ -406,7 +407,9 @@ module RoyalKitchen
       cmd = UI::Command.new('Catalog Creator') { mostrar_dialogo }
       cmd.tooltip         = 'Royal Catalog Creator'
       cmd.status_bar_text = 'Genera variaciones de muebles de catálogo.'
-      icono = File.join(HTML_DIR, 'img', 'icon.png')
+      # icon.png es un PNG de 128 px con transparencia: SketchUp lo reduce al
+      # tamaño que pida la barra (24/32 px, más en pantallas HiDPI).
+      icono = File.join(IMAGES_DIR, 'icon.png')
       if File.exist?(icono)
         cmd.small_icon = icono
         cmd.large_icon = icono
