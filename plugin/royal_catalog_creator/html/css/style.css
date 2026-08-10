@@ -26,6 +26,8 @@
   --radius-sm: 8px;
   --shadow:    0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
   --shadow-sm: 0 1px 2px rgba(16,24,40,.08);
+  --scroll-thumb:       #c7ccd6;
+  --scroll-thumb-hover: #a2aab8;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -46,6 +48,8 @@
     --accent:    #2dd4bf;
     --shadow:    0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
     --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+    --scroll-thumb:       #3a3f4c;
+    --scroll-thumb-hover: #4c5364;
   }
 }
 
@@ -67,10 +71,38 @@ html, body {
 code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 .muted { color: var(--text-dim); }
 
+/* ---------- Barras de desplazamiento ----------
+   El CEF que embebe SketchUp pinta la barra nativa de Windows: ancha, gris
+   claro y con flechas, y se queda clara aunque el tema sea oscuro. Se repinta
+   aquí para las tres zonas que desplazan (lista de módulos, panel principal y
+   tabla de importación) y para los modales.
+   Se usa solo ::-webkit-scrollbar y no scrollbar-color: a partir de Chromium
+   121 la propiedad estándar gana e ignoraría estas reglas, así que el diálogo
+   se vería distinto según la versión de SketchUp. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 999px;
+  /* El borde transparente deja el pulgar de 6px con aire a los lados; recorta
+     el fondo del elemento, no del track, por eso hace falta background-clip. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); background-clip: padding-box; }
+/* Sin esto CEF dibuja un cuadro gris en el cruce de la barra vertical con la
+   horizontal de .tabla-wrap. */
+::-webkit-scrollbar-corner { background: transparent; }
+
 /* ---------- Layout ---------- */
 .app {
   display: grid;
   grid-template-columns: 290px 1fr;
+  /* La fila implícita es «auto»: sin acotarla crece hasta el contenido, las dos
+     columnas crecen con ella y el overflow-y de .modulos / .main nunca llega a
+     activarse — el sobrante se lo comía el overflow:hidden de aquí y no había
+     forma de alcanzarlo. minmax(0,1fr) fija la fila al alto del diálogo. */
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
 }
@@ -80,7 +112,9 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
   display: flex; flex-direction: column;
   background: var(--surface);
   border-right: 1px solid var(--border);
-  min-width: 0;
+  /* min-height:0 — el valor «auto» de un ítem de grid/flex impide encogerlo por
+     debajo de su contenido, que es justo lo que necesita .modulos para scrollar. */
+  min-width: 0; min-height: 0;
 }
 .sidebar__head { padding: 16px; border-bottom: 1px solid var(--border); }
 .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
@@ -135,7 +169,7 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 .root-status__path.is-bad { color: var(--danger); }
 
 /* ---------- Main ---------- */
-.main { overflow-y: auto; min-width: 0; }
+.main { overflow-y: auto; min-width: 0; min-height: 0; }
 
 .empty { height: 100%; display: grid; place-items: center; padding: 24px; }
 .empty__card {
@@ -318,6 +352,10 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
   position: relative; width: min(520px, 92vw);
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 22px;
+  /* El diálogo puede quedar en su alto mínimo (520 px) y el cuerpo del modal de
+     confirmación es texto libre: sin tope se saldría de la ventana y los
+     botones de la parte de abajo quedarían fuera de alcance. */
+  max-height: 88vh; overflow-y: auto;
 }
 .modal__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .modal__head h2 { margin: 0; font-size: 18px; }
