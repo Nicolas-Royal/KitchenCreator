@@ -41,6 +41,7 @@ Manager → Install Extension* en SketchUp.
 | `plugin/royal_catalog_creator/*.rb` | `main.rb`, `engine.rb`, `importer.rb`, `plantilla.rb`, `xlsx.rb` |
 | `plugin/royal_catalog_creator/manifest/*.json` | Definición de variables por familia |
 | `plugin/royal_catalog_creator/html/**` | Diálogo: `dialog.html`, `css/`, `js/`, `img/` |
+| `plugin/royal_catalog_creator/images/**` | Iconos de la barra de herramientas (`icon.png`) |
 
 Los cambios de CSS y JS cuentan: el diálogo se sirve desde dentro del paquete.
 
