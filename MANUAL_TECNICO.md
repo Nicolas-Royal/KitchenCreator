@@ -262,7 +262,7 @@ El archivo generado tiene 62 columnas. Al importar, el encabezado es la llave: c
 
 **Generación masiva.**
 
-1. Pulsar **Plantilla…** y guardar el Excel que ofrece.
+1. Pulsar **Plantilla**. El Excel se descarga solo en la carpeta **Descargas** del usuario, sin selector de ruta: el diálogo de guardado se confundía con el de **Importar…** y podía terminar sobrescribiendo el archivo que se creía estar cargando (`main.rb:162-208`).
 2. Llenar la hoja **Modulos** fuera de línea, una fila por mueble. Las tres primeras filas son ejemplos sobrescribibles. Las columnas sin prefijo aplican a las tres familias; las que empiezan con `[GAB]`, `[ALA]` o `[ESQ]`, solo a esas. Las medidas van sin unidad, las opciones se eligen del desplegable y la celda vacía toma el valor por omisión. La hoja **Instrucciones** trae esta guía dentro del archivo (`plantilla.rb:209-232`).
 3. Pulsar **Importar…** y elegir el archivo; también se acepta CSV.
 4. Revisar la tabla: cada fila muestra su estado, el resumen cuenta listas y con error, y cada celda con problema se corrige ahí mismo. **Nada se ha creado todavía**: se pueden descartar las filas con error o cancelar todo.

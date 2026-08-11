@@ -160,26 +160,59 @@ module RoyalKitchen
     end
 
     # -----------------------------------------------------------------------
-    # Exportar plantilla: escribe el .xlsx derivado de los manifiestos.
+    # Descargar plantilla: escribe el .xlsx derivado de los manifiestos
+    # directamente en la carpeta de descargas del usuario.
+    #
+    # Sin selector de ruta a propósito (DEV-28): el diálogo de guardado se
+    # confundía con el de importar, y quien creía estar cargando un archivo
+    # terminaba sobrescribiéndolo con la plantilla vacía. Un botón que descarga
+    # y ya no tiene esa ambigüedad.
     # -----------------------------------------------------------------------
+    PLANTILLA_BASE = 'plantilla_importacion_royal_catalog'.freeze
+
     def exportar_plantilla
       unless project_root_valido?
         return { 'ok' => false, 'error' => 'Configura primero la carpeta del proyecto (contiene «Main Components»).' }
       end
 
-      dir = File.join(project_root, 'Input')
-      dir = project_root unless File.directory?(dir)
-      ruta = UI.savepanel('Guardar plantilla de importación', dir, 'plantilla_catalogo.xlsx')
-      return { 'ok' => false, 'cancelado' => true } unless ruta
-
-      # Algunos diálogos de Windows devuelven la ruta sin extensión si el usuario
-      # borró la sugerida; sin .xlsx, Excel no la reconoce.
-      ruta += '.xlsx' unless ruta.downcase.end_with?('.xlsx')
-
+      ruta = ruta_libre(carpeta_descargas, PLANTILLA_BASE, '.xlsx')
       Plantilla.exportar(ruta, manifiestos_activos)
-      { 'ok' => true, 'ruta' => ruta }
+      { 'ok' => true, 'ruta' => ruta, 'carpeta' => File.dirname(ruta) }
     rescue => e
       { 'ok' => false, 'error' => e.message }
+    end
+
+    # Carpeta de descargas del usuario. En Windows la carpeta es «Downloads» en
+    # disco aunque el Explorador la muestre como «Descargas»; se comprueban las
+    # dos por si el perfil está en un idioma que sí renombra, y OneDrive porque
+    # redirige la carpeta conocida cuando está activo el respaldo de escritorio.
+    # Si no aparece ninguna, el home sirve: lo que no se puede es no escribir.
+    def carpeta_descargas
+      home = barras(Dir.home) rescue barras(ENV['USERPROFILE'] || ENV['HOME'] || '.')
+      raices = [home]
+      one = ENV['OneDrive'] || ENV['OneDriveConsumer']
+      raices << barras(one) if one && !one.empty?
+
+      candidatos = raices.product(%w[Downloads Descargas]).map { |r, n| File.join(r, n) }
+      candidatos.find { |d| File.directory?(d) } || home
+    end
+
+    # Las variables de entorno de Windows traen «\» y `File.join` no las unifica:
+    # la ruta acabaría mezclando separadores en el aviso que ve el usuario.
+    def barras(ruta)
+      ruta.to_s.tr('\\', '/')
+    end
+
+    # Nunca pisa un archivo existente: numera como lo haría el navegador, así
+    # una descarga repetida no borra la plantilla que el usuario ya llenó.
+    def ruta_libre(dir, base, ext)
+      ruta = File.join(dir, base + ext)
+      n    = 1
+      while File.exist?(ruta)
+        ruta = File.join(dir, "#{base} (#{n})#{ext}")
+        n   += 1
+      end
+      ruta
     end
 
     # -----------------------------------------------------------------------

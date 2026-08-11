@@ -1576,11 +1576,14 @@
       armarImportacion(res);
     },
 
+    /* Ya no hay selector de ruta: Ruby escribe en Descargas y devuelve dónde
+       quedó. El toast lleva la ruta completa porque es lo único que dice a
+       dónde fue el archivo. */
     onPlantilla: function (res) {
       $('#btn-plantilla').disabled = false;
-      if (!res || res.cancelado) return;
-      if (res.ok) toast('ok', 'Plantilla generada', res.ruta);
-      else        toast('error', 'No se pudo generar la plantilla', res.error || 'Desconocido');
+      if (!res) return;
+      if (res.ok) toast('ok', 'Plantilla descargada', res.ruta);
+      else        toast('error', 'No se pudo descargar la plantilla', res.error || 'Desconocido');
     },
 
     onGenerar: function (res) {
