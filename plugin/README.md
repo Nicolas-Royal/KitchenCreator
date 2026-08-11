@@ -199,14 +199,19 @@ El plugin necesita saber dónde están `Main Components/` (componente base `GABI
 5. **Clonar** duplica un módulo para variar 1–2 valores.
 6. **Generar todos** genera en lote todos los módulos de la barra izquierda (ver abajo).
 
-Para capturar muchos de golpe: **Plantilla…** → llenar en Excel → **Importar…** → revisar la tabla →
+Para capturar muchos de golpe: **Plantilla** → llenar en Excel → **Importar…** → revisar la tabla →
 **Generar todos**.
 
 ## Plantilla de Excel
 
-El botón **«Plantilla de Excel…»** de la barra izquierda escribe un `.xlsx` con una columna por
+El botón **«Plantilla»** de la barra izquierda escribe un `.xlsx` con una columna por
 variable de las tres familias y **desplegables nativos** en cada campo de lista. Se genera **desde
 los manifiestos**: agregar una variable a `manifest/*.json` la hace aparecer sola en el Excel.
+
+No abre selector de ruta: descarga en la carpeta **Descargas** del usuario como
+`plantilla_importacion_royal_catalog.xlsx`, numerando si ya existe. El selector se quitó porque se
+confundía con el de **Importar…**, y quien creía estar cargando su captura acababa reemplazándola
+por la plantilla en blanco.
 
 El diseño completo (regla de columnas, convenciones de celda, formato del archivo) está en
 [`Definiciones/PLANTILLA.md`](../Definiciones/PLANTILLA.md). Lo mínimo que hay que saber:

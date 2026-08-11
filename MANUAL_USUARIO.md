@@ -207,7 +207,7 @@ La ventana se divide en dos zonas: la **barra lateral** izquierda, que es la lis
 | «Generar todos (N)» | Genera todos los módulos de la lista, uno por uno. Solo aparece cuando hay al menos un módulo. | Cuando terminó de capturar y quiere producir todo. |
 | «Cancelar» | Detiene el lote en curso. Solo aparece mientras hay un lote corriendo. | Si se equivocó y quiere parar. |
 | «Importar…» | Abre el explorador para elegir un archivo de Excel o de texto con módulos ya capturados. | Vía masiva. |
-| «Plantilla…» | Genera y guarda el archivo de Excel en blanco con todas las columnas y sus desplegables. | Antes de capturar en Excel por primera vez. |
+| «Plantilla» | Descarga en la carpeta **Descargas** el archivo de Excel en blanco con todas las columnas y sus desplegables. No pregunta dónde guardarlo. | Antes de capturar en Excel por primera vez. |
 | Tarjeta de módulo | Muestra el nombre, la familia y el estado del módulo. Al hacer clic lo abre en el editor. | Para volver a un módulo y corregirlo. |
 | «×» en la tarjeta | Elimina ese módulo de la lista. Su descripción emergente dice «Eliminar módulo». | Para descartar un módulo que no va. |
 | «No hay módulos todavía.» / «Crea uno con + Nuevo módulo.» | Aviso que ocupa el lugar de la lista cuando está vacía. | — |
@@ -403,12 +403,11 @@ Para detener un lote en curso:
 
 **Prerrequisitos.** Carpeta del proyecto configurada.
 
-1. Presione «Plantilla…» en la barra lateral.
-2. En la ventana «Guardar plantilla de importación», elija dónde guardarla. La herramienta propone la carpeta **Input** del proyecto.
-3. Acepte o cambie el nombre propuesto `plantilla_catalogo.xlsx`.
-4. Confirme.
+1. Presione «Plantilla» en la barra lateral.
 
-**Resultado esperado.** Aparece el aviso «Plantilla generada» con la ruta del archivo. El archivo tiene tres hojas: `Modulos` para capturar, `Listas` que alimenta los desplegables, e `Instrucciones` con el resumen de llenado.
+No hay más pasos: el botón no pregunta dónde guardar. El archivo se descarga solo, en su carpeta **Descargas**, con el nombre `plantilla_importacion_royal_catalog.xlsx`. Si ya tenía uno con ese nombre, el nuevo se numera —`plantilla_importacion_royal_catalog (1).xlsx`— y el anterior no se toca.
+
+**Resultado esperado.** Aparece el aviso «Plantilla descargada» con la ruta completa del archivo. El archivo tiene tres hojas: `Modulos` para capturar, `Listas` que alimenta los desplegables, e `Instrucciones` con el resumen de llenado.
 
 > ⚠️ **Atención:** no edite ni reordene la hoja `Listas`. Es la que hace funcionar los desplegables.
 
@@ -755,10 +754,10 @@ El Esquinero tiene dos alas, así que declara un ancho y una profundidad por cad
 | «El .xlsx no contiene «nombre».» | Falta una pieza interna del archivo. | Vuelva a guardar el archivo desde Excel. Si persiste, genere una plantilla nueva. |
 | «El .xlsx no tiene hojas.» | El archivo está dañado. | Genere una plantilla nueva y vuelva a capturar. |
 | «Compresión no soportada en «nombre» (método N).» | El archivo se guardó con una compresión que la herramienta no reconoce. | Ábralo en Excel y vuelva a guardarlo como `.xlsx`, o guárdelo como CSV. |
-| «No se pudo generar la plantilla» seguido del motivo | No se pudo escribir el archivo de plantilla. | 1. Verifique que tiene permiso de escritura en la carpeta elegida. 2. Cierre el archivo si estaba abierto en Excel. 3. Repita. |
+| «No se pudo descargar la plantilla» seguido del motivo | No se pudo escribir el archivo en la carpeta **Descargas**. | 1. Verifique que tiene permiso de escritura en su carpeta **Descargas**. 2. Cierre el archivo si estaba abierto en Excel. 3. Repita. |
 | «El archivo trae más de 500 filas; solo se leyeron las primeras.» | El archivo excede el tope. | Divida la captura en varios archivos de menos de 500 filas. |
 | «Columnas que no se reconocen y se ignoran:» seguido de una lista | El archivo trae encabezados que no coinciden con ninguna columna. | 1. Compare esos encabezados con los de una plantilla recién generada. 2. Corrija la escritura o elimine la columna. |
-| «Plantilla generada» con la ruta | No es un error: la plantilla se guardó bien. | Ábrala y capture. |
+| «Plantilla descargada» con la ruta | No es un error: la plantilla quedó en su carpeta **Descargas**. | Ábrala y capture. |
 
 ### Mensajes por fila y por celda en la tabla de validación
 
@@ -939,7 +938,7 @@ Solo para que las dos mitades de cada repisa del Esquinero salgan fusionadas en 
 8. «Generar» para uno solo, o «Generar todos (N)» → «Continuar» para toda la lista.
 
 **Vía masiva — muchos módulos**
-4. «Plantilla…» → guarde el archivo de Excel.
+4. «Plantilla» → el archivo de Excel se descarga en su carpeta **Descargas**.
 5. Llene la hoja `Modulos` en Excel: una fila por mueble, medidas en milímetros sin unidad.
 6. «Importar…» → elija su archivo.
 7. Revise el resumen: «N filas · N listas · N con error». Corrija o use «Descartar filas con error».
