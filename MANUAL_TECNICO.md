@@ -190,7 +190,7 @@ Debajo van los `grupos` —Dimensiones, Espesores, Estructura e interior, Frente
 
 Un atributo sin prefijo se escribe en la raíz del módulo; con `>` se escribe en todas las piezas hijas cuyo nombre contenga el prefijo (`engine.rb:91-100`). Así `LenX` es el ancho del mueble y `divisor>f03espacio1` la altura del primer espacio interior.
 
-La unidad del campo se concatena en la interfaz (`app.js:65-82`) y el motor convierte `mm`, `cm`, `m` e `in` a pulgadas, unidad nativa de SketchUp (`engine.rb:36-53`). Se conservan dos convenciones heredadas: celda vacía significa «no tocar la variable» y el texto `no` significa «omitir explícitamente» (`engine.rb:33-34`). Convención propia de esta versión: **el formulario captura la medida del cuerpo, no la total**; el manifiesto declara qué se suma antes de inyectar —zócalo al alto, espesor de puerta a la profundidad y solo con puerta exterior— y la interfaz muestra el total resultante (`gabinete.json:33-41`, `app.js:89-118`).
+La unidad del campo se concatena en la interfaz (`app.js:65-82`) y el motor convierte `mm`, `cm`, `m` e `in` a pulgadas, unidad nativa de SketchUp (`engine.rb:36-53`). Se conserva una convención heredada: celda vacía significa «no tocar la variable». La de escribir `no` para omitir una variable se retiró en DEV-21 (R-24): era inalcanzable desde el formulario, donde el campo concatena su unidad y producía `"nomm"`. Convención propia de esta versión: **el formulario captura la medida del cuerpo, no la total**; el manifiesto declara qué se suma antes de inyectar —zócalo al alto, espesor de puerta a la profundidad y solo con puerta exterior— y la interfaz muestra el total resultante (`gabinete.json:33-41`, `app.js:89-118`).
 
 ### 6.3 Reglas condicionales
 
@@ -201,7 +201,21 @@ La habilitación es **por campo** y es dato del manifiesto, incluido el texto qu
                    "mensaje": "Solo aplica con tipo de medida «Personalizado»." }
 ```
 
-El código solo lo pinta (`app.js:535-537`) y una regla de estilo lo oculta cuando el campo sí está activo. La misma declaración cubre los 21 campos de espacio de las tres familias, y el predicado que la evalúa es único (`app.js:176-189`), compartido con las condiciones de las sumas. Existe además `visible_si`, que oculta en vez de deshabilitar.
+El código solo lo pinta y una regla de estilo lo oculta cuando el campo sí está activo. La misma declaración cubre los campos de espacio de las tres familias, y el predicado que la evalúa es único, compartido con las condiciones de las sumas. Existe además `visible_si`, que oculta en vez de deshabilitar.
+
+Con DEV-21 el manifiesto declara además el resto de las restricciones lógicas, que también son dato:
+
+| Clave | Dónde va | Qué hace |
+|---|---|---|
+| `condicion` | grupo | Apaga la sección entera (Cajones solo con puerta de cajones, Tirador solo con puerta, Divisores solo con «Entrepaño: Sí»). Usa el mismo predicado que `habilitado_si`. |
+| `forzar` | campo | Impone un valor cuando otra elección ya lo decidió, apaga el control y explica por qué. El valor forzado **sí** se inyecta (Avento ⇒ una sola puerta; puerta de cajones ⇒ «Entrepaño: No»). |
+| `reglas_geometria` | manifiesto | Imposibles geométricos: la suma de unos atributos contra la dimensión de la que se descuentan (`menor_que`, `modo: "<="`). Impide generar. |
+| `positivo` | campo | La medida tiene que ser mayor que cero; sin la clave, basta con que no sea negativa. |
+| `auto` | campo | El vacío es legítimo («Automático», «Entrepaño»). Todo campo visible, activo y sin `auto` es obligatorio antes de generar. |
+| `placeholder` | campo | Valor de ejemplo en la unidad del campo. |
+| `reglas_divisores.presupuesto` | manifiesto | Resumen del reparto de los espacios contra el alto interior. Advierte, no bloquea. |
+
+La capa que evalúa todo esto es una sola (`erroresConfig` / `avisosConfig` en `app.js`) y la comparten los tres caminos que producen un `.skp`: «Generar», el pre-vuelo de «Generar todos» y la revisión de la importación. `test/reglas.test.js` la corre contra los manifiestos reales sin navegador (`node test/reglas.test.js`).
 
 <img src="capturas/12-piezas-importadas.png" alt="Editor de una alacena importada con la sección de divisores abierta, mostrando campos anotados como no aplicables" width="900">
 
