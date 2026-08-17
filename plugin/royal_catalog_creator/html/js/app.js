@@ -108,7 +108,7 @@
       if (!aplica) return;
       var f = fieldByAttr(manifest, s.attr);
       // Lo que no se inyecta tampoco existe en el modelo, así que no se suma.
-      if (!f || !fieldVisible(f, manifest, valores) || !fieldEnabled(f, manifest, valores)) return;
+      if (!f || !fieldInyecta(f, manifest, valores)) return;
       // Sin manifiesto: el sumando se lee crudo, para que un ajuste no pueda
       // encadenarse con otro (ni entrar en recursión).
       var mm = parseMm(valorCapturado(f, valores));
@@ -119,15 +119,17 @@
 
   /* Valor numérico simple de un attr (para visible_si / patrón de nombre). */
   function attrNumber(manifest, valores, attr) {
-    var f = fieldByAttr(manifest, attr);
-    if (!f) return NaN;
-    var v = valores[f.id];
-    var n = parseInt(v, 10);
+    var n = parseInt(attrRaw(manifest, valores, attr), 10);
     return isNaN(n) ? NaN : n;
   }
+  /* Un valor forzado por el manifiesto manda sobre lo capturado aunque todavía
+     no se haya escrito en el registro: así ninguna lectura puede resolverse con
+     el valor viejo según en qué orden se llame. */
   function attrRaw(manifest, valores, attr) {
     var f = fieldByAttr(manifest, attr);
-    return f ? valores[f.id] : undefined;
+    if (!f) return undefined;
+    var forz = valorForzado(f, manifest, valores);
+    return forz != null ? forz : valores[f.id];
   }
 
   /* "190mm" / "25cm" / "600" -> milímetros. NaN si está vacío o no es medida. */
@@ -155,18 +157,23 @@
   function fieldVisible(field, manifest, valores) {
     if (!field.visible_si) return true;
     if (field.visible_si.min_cajones != null) {
-      // En modo uniforme el componente hace los cajones copia del primero: un
-      // solo alto manda sobre todos, así que los demás campos no se muestran.
-      if (indiceAlto(manifest, field.attr) > 0 && cajonesUniformes(manifest, valores)) return false;
+      // En modo uniforme el alto no se captura: los n cajones son copias del
+      // primero y miden lo mismo, así que sale de la resta (alto útil menos
+      // márgenes y separaciones) y el presupuesto lo enseña. Ningún campo.
+      if (indiceAlto(manifest, field.attr) >= 0 && cajonesUniformes(manifest, valores)) return false;
       return cajonesEfectivos(manifest, valores) >= field.visible_si.min_cajones;
     }
+    // Sin `min` es el predicado normal del manifiesto: así un campo puede
+    // aparecer solo con ciertos diseños de puerta, no solo por encima de un
+    // número (Avento S trae dirección y tipo de apertura; Avento D, abatible).
+    if (field.visible_si.min == null) return condicionCumple(manifest, valores, field.visible_si);
     var n = attrNumber(manifest, valores, field.visible_si.attr);
     if (isNaN(n)) return true;
     return n >= field.visible_si.min;
   }
   function groupEnabled(group, manifest, valores) {
     if (!group.condicion) return true;
-    return String(attrRaw(manifest, valores, group.condicion.attr)) === String(group.condicion.valor);
+    return condicionCumple(manifest, valores, group.condicion);
   }
   /* Predicado de condición del manifiesto, en una sola implementación para que
      habilitado_si y los sumandos de `suma` no puedan divergir:
@@ -182,10 +189,69 @@
     return esperado.some(function (v) { return String(v) === actual; });
   }
   /* Habilitación por campo: el control queda activo solo si el attr de referencia
-     cumple la condición declarada. */
+     cumple la condición declarada. Un campo forzado nunca está activo: su valor
+     ya no lo elige quien captura. */
   function fieldEnabled(field, manifest, valores) {
+    if (valorForzado(field, manifest, valores) != null) return false;
     if (!field.habilitado_si) return true;
     return condicionCumple(manifest, valores, field.habilitado_si);
+  }
+
+  /* Valor que el manifiesto impone al campo cuando otra elección ya lo decidió
+     (un Avento es de una sola puerta; con puerta de cajones no hay entrepaños).
+     Gana la primera entrada de `forzar` cuyas condiciones se cumplan. */
+  function valorForzado(field, manifest, valores) {
+    var hit = null;
+    (field.forzar || []).forEach(function (e) {
+      if (hit != null) return;
+      if ((e.si || []).every(function (c) { return condicionCumple(manifest, valores, c); })) hit = e.valor;
+    });
+    return hit;
+  }
+
+  /* Escribe los valores forzados en el registro. Se llama antes de leer la
+     configuración (formulario, aplanado, validación) para que forzado y
+     capturado no puedan discrepar: lo que se ve es lo que se inyecta. */
+  function aplicarForzados(manifest, valores) {
+    manifest.grupos.forEach(function (g) {
+      g.campos.forEach(function (f) {
+        var v = valorForzado(f, manifest, valores);
+        if (v != null && valores[f.id] !== v) valores[f.id] = v;
+      });
+    });
+  }
+
+  /* Un campo llega al .skp si está visible y activo. Un valor forzado también
+     viaja: el control se apaga, pero el atributo tiene que quedar escrito. */
+  function fieldInyecta(field, manifest, valores) {
+    return fieldVisible(field, manifest, valores) &&
+           (fieldEnabled(field, manifest, valores) || valorForzado(field, manifest, valores) != null);
+  }
+
+  /* ¿El attr existe y está activo en esta configuración? (grupo habilitado +
+     campo visible y activo). Es lo que decide si una regla que lo menciona
+     aplica: un margen apagado no puede invalidar nada. */
+  function attrActivo(manifest, valores, attr) {
+    var res = false;
+    manifest.grupos.forEach(function (g) {
+      if (res || !groupEnabled(g, manifest, valores)) return;
+      g.campos.forEach(function (f) {
+        if (!res && f.attr === attr && fieldInyecta(f, manifest, valores)) res = true;
+      });
+    });
+    return res;
+  }
+
+  /* Campo que puede quedarse vacío legítimamente: «Automático» reparte, y en un
+     preset el valor vacío es una opción de la lista (Entrepaño). */
+  function esAuto(field) { return !!field.auto; }
+
+  /* Medida capturada, SIN el ajuste `suma` del manifiesto: las reglas
+     geométricas comparan piezas del cuerpo entre sí (el zócalo contra el alto
+     del cuerpo, no contra el alto ya compensado que ve SketchUp). */
+  function attrMmCrudo(manifest, valores, attr) {
+    var f = fieldByAttr(manifest, attr);
+    return f ? parseMm(valorCapturado(f, valores)) : NaN;
   }
 
   // =========================================================================
@@ -254,40 +320,30 @@
     var uniforme   = cajonesUniformes(manifest, valores);
 
     // Altos que la diseñadora fijó; los que están en «Automático» van vacíos.
-    // En modo uniforme solo existe el primero y aplica a los n cajones. Si no,
-    // y n supera la cantidad de campos, esos cajones también quedan automáticos
-    // (los reparte la fórmula del componente).
+    // En modo uniforme no se fija ninguno: el alto de cada cajón es la resta, y
+    // solo queda el primer attr porque el componente copia los demás de él. Si
+    // no, y n supera la cantidad de campos, esos cajones también quedan
+    // automáticos (los reparte la fórmula del componente).
     var attrsAlto = (R.attrs_alto || []).slice(0, uniforme ? 1 : n);
-    var altos     = attrsAlto.map(function (a) { return attrMm(manifest, valores, a); });
+    var altos     = uniforme ? [NaN]
+                  : attrsAlto.map(function (a) { return attrMm(manifest, valores, a); });
 
-    var fijos = [], libresIdx = [], libres, asignado;
-    if (uniforme) {
-      if (isNaN(altos[0])) {
-        libres = n; libresIdx = [0]; asignado = 0;
-      } else {
-        libres = 0; fijos = [{ mm: altos[0], i: 0 }]; asignado = altos[0] * n;
-      }
-    } else {
-      altos.forEach(function (v, i) {
-        if (isNaN(v)) libresIdx.push(i); else fijos.push({ mm: v, i: i });
-      });
-      libres   = n - fijos.length;
-      asignado = fijos.reduce(function (s, f) { return s + f.mm; }, 0);
-    }
+    var fijos = [], libresIdx = [];
+    altos.forEach(function (v, i) {
+      if (isNaN(v)) libresIdx.push(i); else fijos.push({ mm: v, i: i });
+    });
+    var libres   = n - fijos.length;
+    var asignado = fijos.reduce(function (s, f) { return s + f.mm; }, 0);
     var restante = disponible - asignado;
-    var porCajon = libres > 0 ? restante / libres : (uniforme ? altos[0] : NaN);
+    var porCajon = libres > 0 ? restante / libres : NaN;
     var paso     = altoMin + sep;
     // nMax = tope geométrico del mueble (todos los cajones al mínimo). No depende
     // de n ni de los altos fijados, así que sirve de tope estable del contador.
     var nMax     = paso > 0 ? Math.floor((util + sep) / paso) : n;
     // cabenTotal = cuántos caben respetando los altos que ya fijó la diseñadora.
-    var cabenTotal;
-    if (uniforme) {
-      var pasoU  = (fijos.length ? altos[0] : altoMin) + sep;
-      cabenTotal = pasoU > 0 ? Math.floor((util + sep) / pasoU) : n;
-    } else {
-      cabenTotal = paso > 0 ? fijos.length + Math.max(0, Math.floor((restante + sep) / paso)) : n;
-    }
+    // En modo uniforme no hay ninguno fijado, así que manda el tope geométrico.
+    var cabenTotal = uniforme ? nMax
+                   : (paso > 0 ? fijos.length + Math.max(0, Math.floor((restante + sep) / paso)) : n);
 
     var ok = true, mensaje = '';
     var chico = fijos.filter(function (f) { return f.mm < altoMin; })[0];
@@ -341,6 +397,149 @@
     return p.disponible - otrosFijos - p.altoMin * otrosLibres;
   }
 
+  // =========================================================================
+  //  Presupuesto de alto de divisores  (R-14)
+  // -------------------------------------------------------------------------
+  //  A diferencia de los cajones, esto NO bloquea: los espacios personalizados
+  //  que no llenan el alto pueden ser una variante legítima. Solo tienen que
+  //  verse, con el mismo resumen que la pila de cajones.
+  // =========================================================================
+  function presupuestoDivisores(manifest, valores) {
+    var D = manifest.reglas_divisores;
+    var R = D && D.presupuesto;
+    if (!R || !attrActivo(manifest, valores, D.attr_cantidad)) return { aplica: false };
+    if (R.solo_si && !condicionCumple(manifest, valores, R.solo_si)) return { aplica: false };
+
+    var n = attrNumber(manifest, valores, D.attr_cantidad);
+    if (isNaN(n) || n < 1) return { aplica: false };
+
+    // Crudo a propósito: el alto interior se mide contra el CUERPO, no contra el
+    // alto ya compensado con el zócalo que se le manda a SketchUp.
+    var util = attrMmCrudo(manifest, valores, R.attr_alto_util);
+    if (isNaN(util)) return { aplica: false };
+    (R.attr_restar || []).forEach(function (a) {
+      var v = attrMmCrudo(manifest, valores, a);
+      if (!isNaN(v)) util -= v;
+    });
+
+    var suma = 0, puestos = 0;
+    (R.attrs_espacio || []).slice(0, n).forEach(function (a) {
+      var v = attrMmCrudo(manifest, valores, a);
+      if (!isNaN(v)) { suma += v; puestos++; }
+    });
+
+    return {
+      aplica: true, n: n, util: util, suma: suma, puestos: puestos,
+      exceso: suma - util, ok: suma - util <= 1
+    };
+  }
+
+  // =========================================================================
+  //  Validación de la configuración — una sola capa (DEV-21)
+  // -------------------------------------------------------------------------
+  //  La usan los tres caminos que pueden producir un .skp: el botón «Generar»,
+  //  el pre-vuelo de «Generar todos» y la revisión de la importación. Tener una
+  //  sola implementación es el punto de R-32: dos caminos que generan el mismo
+  //  archivo no pueden aceptar cosas distintas.
+  //
+  //  Devuelve [{ ids, label, msg }]; `ids` son los campos que hay que marcar.
+  // =========================================================================
+  function erroresConfig(manifest, valores) {
+    aplicarForzados(manifest, valores);
+    var errs = [];
+
+    // Campo por campo: requerido (R-27/R-20), medida válida (R-09/R-22) y signo
+    // (R-08). Un campo apagado no se valida: no va a llegar al modelo.
+    manifest.grupos.forEach(function (g) {
+      var gOn = groupEnabled(g, manifest, valores);
+      g.campos.forEach(function (f) {
+        if (!gOn || !fieldVisible(f, manifest, valores) || !fieldEnabled(f, manifest, valores)) return;
+        var v = valorCapturado(f, valores);
+        if (v === '') {
+          if (!esAuto(f)) errs.push({ ids: [f.id], label: f.label, msg: 'Falta el valor.' });
+          return;
+        }
+        if (f.tipo !== 'numero' && f.tipo !== 'preset') return;
+        var mm = parseMm(v);
+        if (isNaN(mm))          errs.push({ ids: [f.id], label: f.label, msg: 'No es una medida válida: «' + v + '».' });
+        else if (mm < 0)        errs.push({ ids: [f.id], label: f.label, msg: 'No puede ser negativo.' });
+        else if (f.positivo && mm === 0) errs.push({ ids: [f.id], label: f.label, msg: 'Tiene que ser mayor que cero.' });
+      });
+    });
+
+    // Imposibles geométricos declarados en el manifiesto (R-10/R-11/R-12/R-25):
+    // la suma de unas piezas contra la dimensión de la que se descuentan.
+    (manifest.reglas_geometria || []).forEach(function (r) {
+      if (!attrActivo(manifest, valores, r.menor_que)) return;
+      var objetivo = attrMmCrudo(manifest, valores, r.menor_que);
+      if (isNaN(objetivo)) return;
+
+      var suma = 0, hay = false, ids = [];
+      (r.attrs || []).forEach(function (a) {
+        if (!attrActivo(manifest, valores, a)) return;
+        var v = attrMmCrudo(manifest, valores, a);
+        if (isNaN(v)) return;
+        var f = fieldByAttr(manifest, a);
+        if (f) ids.push(f.id);
+        suma += v; hay = true;
+      });
+      if (!hay) return;
+
+      var mal = (r.modo === '<=') ? (suma > objetivo + 0.01) : (suma >= objetivo - 0.01);
+      if (mal) errs.push({ ids: ids, label: '', msg: r.mensaje + ' (' + fmt(suma) + ' mm contra ' + fmt(objetivo) + ' mm).' });
+    });
+
+    var p = presupuestoCajones(manifest, valores);
+    if (p.aplica && !p.ok) errs.push({ ids: p.attrsAlto.slice(), label: 'Cajones', msg: p.mensaje });
+
+    return errs;
+  }
+
+  /* Lo que debe verse pero no bloquea (R-14 y R-17). */
+  function avisosConfig(manifest, valores) {
+    var out = [];
+    var p = presupuestoCajones(manifest, valores);
+    if (p.aplica && p.ok && p.libres === 0 && p.restante > 1) {
+      out.push('Sobran ' + fmt(p.restante) + ' mm de alto sin usar bajo la pila de cajones.');
+    }
+    var d = presupuestoDivisores(manifest, valores);
+    if (d.aplica && !d.ok) {
+      out.push('Los espacios de los divisores suman ' + fmt(d.suma) + ' mm y el alto interior es ' + fmt(d.util) + ' mm.');
+    }
+    return out;
+  }
+
+  var RE_NOMBRE_INVALIDO = /[\\\/:*?"<>|]/;
+
+  /* Todo lo que impide generar un registro, en texto listo para mostrar.
+     Incluye el nombre de archivo (R-28), que no es parte del manifiesto. */
+  function problemasRegistro(r) {
+    var manifest = findManifest(r.familia);
+    if (!manifest) return ['No se cargó el manifiesto de ' + r.titulo + '.'];
+
+    var msgs = erroresConfig(manifest, r.valores).map(function (e) {
+      return e.label ? e.label + ': ' + e.msg : e.msg;
+    });
+    var n = (r.nombre_salida || '').trim();
+    if (!n) msgs.push('Falta el nombre del módulo.');
+    else if (RE_NOMBRE_INVALIDO.test(n)) {
+      msgs.push('El nombre no puede llevar \\ / : * ? " < > |');
+    }
+    return msgs;
+  }
+
+  /* Nombre libre en la sesión: al repetirse se numera en vez de sobrescribir el
+     .skp del módulo anterior (R-29). */
+  function nombreUnico(base, idPropio) {
+    var usados = {};
+    state.registros.forEach(function (r) {
+      if (r.id !== idPropio && r.nombre_salida) usados[normTexto(r.nombre_salida)] = true;
+    });
+    var nombre = base, n = 2;
+    while (usados[normTexto(nombre)]) { nombre = base + '-' + n; n++; }
+    return nombre;
+  }
+
   // ---- Defaults / registro nuevo ------------------------------------------
   function defaultValores(manifest) {
     var v = {};
@@ -366,6 +565,16 @@
       var r = attrRaw(manifest, valores, attr);
       return (r == null || r === '') ? '0' : String(r);
     });
+  }
+
+  /* El nombre del archivo describe la configuración, así que se recalcula en
+     cada cambio mientras nadie haya escrito uno propio (R-30), y se numera si
+     ya existe en la sesión (R-29). */
+  function refrescarAutoNombre(manifest, registro) {
+    if (registro.nombreManual) return;
+    registro.nombre_salida = nombreUnico(autoNombre(manifest, registro.valores), registro.id);
+    var input = $('#nombre-salida');
+    if (input && state.activeId === registro.id && !state.importar) input.value = registro.nombre_salida;
   }
 
   // =========================================================================
@@ -431,6 +640,11 @@
 
     var body = $('#form-grupos');
     body.innerHTML = '';
+    // Lista de lo que impide generar; refreshErrores() la llena y la muestra.
+    var errores = el('p', 'budget');
+    errores.id = 'form-errores';
+    errores.hidden = true;
+    body.appendChild(errores);
     manifest.grupos.forEach(function (g) {
       body.appendChild(renderGroup(g, manifest, r));
     });
@@ -460,9 +674,9 @@
     if (group.condicion && group.condicion.mensaje) {
       bodyEl.appendChild(el('p', 'group__note', group.condicion.mensaje));
     }
-    if (group.presupuesto === 'cajones') {
+    if (group.presupuesto) {
       var pres = el('p', 'budget');
-      pres.dataset.budget = 'cajones';
+      pres.dataset.budget = group.presupuesto;   // "cajones" | "divisores"
       pres.hidden = true;            // updateConditionals() lo llena y lo muestra
       bodyEl.appendChild(pres);
     }
@@ -519,7 +733,6 @@
 
     // Dentro del editor de caja la posición ya dice de qué margen se trata.
     var texto = (corto && field.label_corto) ? field.label_corto : field.label;
-    wrap.dataset.labelBase = texto;          // updateConditionals() puede sustituirlo
     var label = el('label', 'field__label', texto);
     wrap.appendChild(label);
 
@@ -534,6 +747,13 @@
 
     if (field.habilitado_si && field.habilitado_si.mensaje) {
       wrap.appendChild(el('span', 'field__hint field__hint--cond', field.habilitado_si.mensaje));
+    }
+    if (field.forzar) {
+      // El motivo depende de qué entrada de `forzar` aplicó: lo rellena
+      // updateConditionals(), igual que el total de la suma.
+      var hf = el('span', 'field__hint field__hint--cond');
+      hf.dataset.hintForzar = '1';
+      wrap.appendChild(hf);
     }
     if (field.nota) wrap.appendChild(el('span', 'field__hint', field.nota));
     // El campo captura la medida del cuerpo: sin este total la suma declarada en
@@ -560,6 +780,7 @@
   function onValueChange(manifest, registro) {
     updateConditionals(manifest, registro);
     // refresca meta/estado (auto-nombre no se pisa si el usuario ya lo editó)
+    refrescarAutoNombre(manifest, registro);
     registro.estado = 'borrador';
     registro.error  = null;   // tocar el módulo invalida el fallo anterior
     renderSidebar();
@@ -571,7 +792,8 @@
     input.type = 'text';
     input.inputMode = 'decimal';
     input.value = registro.valores[field.id] != null ? registro.valores[field.id] : '';
-    if (field.auto) { input.placeholder = 'Automático'; }
+    // Un ejemplo en la unidad del campo dice más que la palabra «Automático».
+    input.placeholder = field.placeholder || (field.auto ? 'Automático' : '');
     input.addEventListener('input', function () {
       registro.valores[field.id] = input.value.trim();
       onValueChange(findManifest(registro.familia), registro);
@@ -704,32 +926,83 @@
     return step;
   }
 
-  /* Pinta el resumen de alto de cajones del grupo con `presupuesto: "cajones"`. */
+  /* Pinta los resúmenes de los grupos con `presupuesto`. El de cajones bloquea
+     (rojo) y el de divisores solo advierte (ámbar), igual que R-14/R-17. */
   function refreshBudget(manifest, valores) {
     var box = document.querySelector('.budget[data-budget="cajones"]');
-    if (!box) return;
-
-    var p = presupuestoCajones(manifest, valores);
-    box.hidden = !p.aplica;
-    if (!p.aplica) return;
-
-    box.classList.toggle('budget--bad', !p.ok);
-    var partes = [
-      'Alto útil ' + fmt(p.util) + ' mm',
-      p.n + (p.n === 1 ? ' cajón' : ' cajones' + (p.uniforme ? ' iguales' : '')),
-      'asignado ' + fmt(p.asignado) + ' mm'
-    ];
-    if (p.libres > 0) {
-      partes.push('restante ' + fmt(p.restante) + ' mm → ' + fmt(p.porCajon) + ' mm c/u');
-    } else if (p.restante > 1) {
-      partes.push('sobran ' + fmt(p.restante) + ' mm sin usar');
+    if (box) {
+      var p = presupuestoCajones(manifest, valores);
+      box.hidden = !p.aplica;
+      if (p.aplica) {
+        var sobra = p.ok && p.libres === 0 && p.restante > 1;
+        box.classList.toggle('budget--bad', !p.ok);
+        box.classList.toggle('budget--warn', sobra);
+        var partes = [
+          'Alto útil ' + fmt(p.util) + ' mm',
+          p.n + (p.n === 1 ? ' cajón' : ' cajones' + (p.uniforme ? ' iguales' : '')),
+          'asignado ' + fmt(p.asignado) + ' mm'
+        ];
+        if (p.libres > 0) {
+          partes.push('restante ' + fmt(p.restante) + ' mm → ' + fmt(p.porCajon) + ' mm c/u');
+        } else if (p.restante > 1) {
+          partes.push('sobran ' + fmt(p.restante) + ' mm sin usar');
+        }
+        box.textContent = partes.join(' · ') + (p.ok ? '' : ' — ' + p.mensaje);
+      }
     }
-    box.textContent = partes.join(' · ') + (p.ok ? '' : ' — ' + p.mensaje);
+
+    var caja = document.querySelector('.budget[data-budget="divisores"]');
+    if (!caja) return;
+    var d = presupuestoDivisores(manifest, valores);
+    caja.hidden = !d.aplica;
+    if (!d.aplica) return;
+    caja.classList.toggle('budget--warn', !d.ok);
+    caja.textContent = 'Alto interior ' + fmt(d.util) + ' mm · ' + d.n +
+      (d.n === 1 ? ' espacio' : ' espacios') + ' · asignado ' + fmt(d.suma) + ' mm' +
+      (d.ok ? '' : ' — se pasan ' + fmt(d.exceso) + ' mm del alto interior; se genera igual.');
+  }
+
+  /* Panel de errores del editor: la lista de lo que impide generar. Vive arriba
+     del formulario porque el botón «Generar» queda apagado y sin la lista no se
+     sabría por qué. */
+  function refreshErrores(manifest, registro) {
+    var cont = $('#form-errores');
+    if (!cont) return;
+    var errs   = erroresConfig(manifest, registro.valores);
+    var avisos = avisosConfig(manifest, registro.valores);
+
+    var malos = {};
+    errs.forEach(function (e) { (e.ids || []).forEach(function (id) { malos[id] = true; }); });
+    Array.prototype.forEach.call(document.querySelectorAll('.field[data-field-id]'), function (w) {
+      w.classList.toggle('is-bad', !!malos[w.dataset.fieldId]);
+    });
+
+    var lineas = problemasRegistro(registro);
+    cont.hidden = lineas.length === 0 && avisos.length === 0;
+    cont.classList.toggle('budget--bad', lineas.length > 0);
+    cont.classList.toggle('budget--warn', lineas.length === 0 && avisos.length > 0);
+    cont.textContent = lineas.length
+      ? 'No se puede generar:\n· ' + lineas.join('\n· ')
+      : (avisos.length ? 'Avisos:\n· ' + avisos.join('\n· ') : '');
+    return lineas.length;
+  }
+
+  /* «Generar» solo se puede pulsar con una configuración válida (R-31). */
+  function refrescarGenerar() {
+    var btn = $('#btn-generar');
+    if (!btn) return;
+    var r = activeRegistro();
+    var malo = !r || !findManifest(r.familia) || problemasRegistro(r).length > 0;
+    btn.disabled = !!state.lote || malo;
+    btn.title = malo ? 'Hay datos por corregir; la lista está arriba del formulario.' : '';
   }
 
   /* Recorre el DOM aplicando visible_si, habilitado_si y condicion de grupo. */
   function updateConditionals(manifest, registro) {
     var valores = registro.valores;
+    // Primero lo impuesto por el manifiesto: lo demás se resuelve leyendo
+    // `valores`, así que el forzado tiene que estar puesto antes de mirar nada.
+    aplicarForzados(manifest, valores);
 
     // grupos condicionales
     manifest.grupos.forEach(function (g) {
@@ -757,14 +1030,20 @@
         if (!wrap) return;
         if (f.visible_si) wrap.hidden = !fieldVisible(f, manifest, valores);
         if (f.suma) refrescarHintSuma(wrap, f, manifest, valores);
-        // El primer alto pasa a mandar sobre todos los cajones: se renombra para
-        // que la etiqueta no siga prometiendo un control por cajón.
-        if (indiceAlto(manifest, f.attr) === 0) {
-          var lbl = wrap.querySelector('.field__label');
-          var alt = manifest.reglas_cajones.label_uniforme;
-          if (lbl && alt) lbl.textContent = uniforme ? alt : wrap.dataset.labelBase;
+        var forz = valorForzado(f, manifest, valores);
+        if (forz != null) {
+          // El control tiene que MOSTRAR lo que se va a inyectar, no lo último
+          // que se eligió a mano antes de que la otra opción lo decidiera.
+          Array.prototype.forEach.call(wrap.querySelectorAll('input, select'), function (ctrl) {
+            ctrl.value = forz;
+          });
+          var hf = wrap.querySelector('[data-hint-forzar]');
+          if (hf) {
+            var ent = (f.forzar || []).filter(function (e) { return e.valor === forz; })[0];
+            hf.textContent = (ent && ent.mensaje) || '';
+          }
         }
-        if (f.habilitado_si) {
+        if (f.habilitado_si || f.forzar) {
           var on = fieldEnabled(f, manifest, valores);
           wrap.classList.toggle('is-disabled', !on);
           // Solo input/select: los botones del stepper gestionan su propio disabled
@@ -777,6 +1056,8 @@
     });
 
     refreshBudget(manifest, valores);
+    refreshErrores(manifest, registro);
+    refrescarGenerar();
   }
 
   // =========================================================================
@@ -826,7 +1107,7 @@
       id: id, familia: fam.id, titulo: fam.titulo,
       valores: valores, estado: 'borrador', nombre_salida: ''
     };
-    reg.nombre_salida = autoNombre(manifest, valores);
+    reg.nombre_salida = nombreUnico(autoNombre(manifest, valores), id);
     state.registros.push(reg);
     state.activeId = id;
     renderSidebar();
@@ -853,8 +1134,8 @@
     var copia = {
       id: id, familia: r.familia, titulo: r.titulo,
       valores: JSON.parse(JSON.stringify(r.valores)),
-      estado: 'borrador',
-      nombre_salida: (r.nombre_salida || 'modulo') + '-copia'
+      estado: 'borrador', nombreManual: true,
+      nombre_salida: nombreUnico((r.nombre_salida || 'modulo') + '-copia', id)
     };
     state.registros.push(copia);
     state.activeId = id;
@@ -866,11 +1147,11 @@
   /* Aplana el registro activo a { attr: valorEfectivo } respetando visibilidad. */
   function flatten(manifest, registro) {
     var flat = {};
+    aplicarForzados(manifest, registro.valores);
     manifest.grupos.forEach(function (g) {
       if (!groupEnabled(g, manifest, registro.valores)) return;
       g.campos.forEach(function (f) {
-        if (!fieldVisible(f, manifest, registro.valores)) return;
-        if (!fieldEnabled(f, manifest, registro.valores)) return;
+        if (!fieldInyecta(f, manifest, registro.valores)) return;
         var v = effectiveValue(f, registro.valores, manifest);
         if (v === '' || v == null) return;
         flat[f.attr] = v;   // duplicados de attr: gana el último (quirk conocido de la definición)
@@ -889,13 +1170,17 @@
   function nombresDivisores(manifest, registro) {
     var R = manifest.reglas_divisores;
     if (!R) return null;
+    // Con la sección apagada («Entrepaño: No», o puerta de cajones) no hay
+    // divisiones que nombrar: no se manda ninguna instrucción.
+    if (!attrActivo(manifest, registro.valores, R.attr_cantidad)) return null;
     var n = attrNumber(manifest, registro.valores, R.attr_cantidad);
     if (isNaN(n) || n < 1) return null;
 
     var mapa = R.nombres_por_modo || {};
     var nombres = [];
     for (var i = 1; i <= n; i++) {
-      var f = fieldByAttr(manifest, R.attr_modo.replace('{i}', i));
+      // Sin `attr_modo` (Esquinero) no hay modo que elegir: van todas al default.
+      var f = R.attr_modo ? fieldByAttr(manifest, R.attr_modo.replace('{i}', i)) : null;
       // Campo ausente, oculto o deshabilitado: no hay modo elegido, va el default.
       var modo = (f && fieldVisible(f, manifest, registro.valores) &&
                        fieldEnabled(f, manifest, registro.valores))
@@ -911,11 +1196,11 @@
   function aplicarAltosAutomaticos(manifest, registro, flat) {
     var p = presupuestoCajones(manifest, registro.valores);
     if (!p.aplica || !p.ok || p.libres <= 0) return;
+    // `attrsAlto` ya viene recortado a los cajones que existen, así que no hace
+    // falta volver a filtrar por visibilidad: en modo uniforme el campo está
+    // oculto pero el alto calculado sí tiene que llegar al .skp.
     p.libresIdx.forEach(function (i) {
-      var attr = p.attrsAlto[i];
-      var f = fieldByAttr(manifest, attr);
-      if (!f || !fieldVisible(f, manifest, registro.valores)) return;
-      flat[attr] = (Math.round(p.porCajon * 100) / 100) + 'mm';
+      flat[p.attrsAlto[i]] = (Math.round(p.porCajon * 100) / 100) + 'mm';
     });
   }
 
@@ -935,13 +1220,17 @@
     if (!manifest) {
       return { ok: false, titulo: 'Falta el manifiesto', error: 'No se cargó el manifiesto de ' + r.titulo + '.' };
     }
-    // Sin esto el componente recorta los cajones y la pila traspasa el mueble.
-    var presupuesto = presupuestoCajones(manifest, r.valores);
-    if (presupuesto.aplica && !presupuesto.ok) {
-      return { ok: false, titulo: 'Los cajones no caben', error: presupuesto.mensaje };
+    // Una sola capa de validación para los tres caminos (R-31/R-32): lo que el
+    // formulario rechaza también lo rechazan el lote y la importación. Incluye
+    // el presupuesto de cajones, que es lo que evita que la pila traspase el
+    // mueble cuando el componente recorta sin piso.
+    var problemas = problemasRegistro(r);
+    if (problemas.length) {
+      return { ok: false, titulo: 'Configuración inválida', error: problemas.join('\n') };
     }
 
-    r.nombre_salida = (r.nombre_salida || 'modulo').trim();
+    // Repetir un nombre numera (-2, -3) en vez de sobrescribir el .skp anterior.
+    r.nombre_salida = nombreUnico((r.nombre_salida || 'modulo').trim(), r.id);
     var payload = {
       // Vuelve en la respuesta: en lote el registro activo no es el que se generó.
       registro_id: r.id,
@@ -985,16 +1274,11 @@
   //  onGenerar, que es la única señal de que una unidad terminó.
   // =========================================================================
 
-  /* Registros que el motor rechazaría por presupuesto de cajones. Se detectan
-     antes de arrancar para poder advertirlo en la confirmación en vez de a
-     media cola. */
+  /* Registros que no van a pasar la validación. El pre-vuelo corre TODAS las
+     reglas, no solo el presupuesto de cajones (R-31): así el lote no da por
+     buenos módulos sin medidas o con el nombre repetido. */
   function invalidosDelLote() {
-    return state.registros.filter(function (r) {
-      var m = findManifest(r.familia);
-      if (!m) return true;
-      var p = presupuestoCajones(m, r.valores);
-      return p.aplica && !p.ok;
-    });
+    return state.registros.filter(function (r) { return problemasRegistro(r).length > 0; });
   }
 
   function generarTodos() {
@@ -1047,7 +1331,7 @@
   function finLote() {
     var L = state.lote;
     state.lote = null;
-    $('#btn-generar').disabled = false;
+    refrescarGenerar();
     renderSidebar();
     if (!L) return;
 
@@ -1228,27 +1512,29 @@
     });
     f.valores = valores;
 
-    // Requeridos y campos apagados se resuelven con los MISMOS predicados que el
-    // formulario, ya con todos los valores puestos.
+    // Errores: la MISMA capa que el formulario (R-32), ya con todos los valores
+    // puestos. Se anclan a la celda cuando la columna existe; si no, al renglón.
+    erroresConfig(manifest, valores).forEach(function (e) {
+      var i = -1;
+      (e.ids || []).forEach(function (id) { if (i < 0) i = indiceDeCampo(imp, f.familia, id); });
+      if (i >= 0) f.errores[i] = f.errores[i] || e.msg;
+      else f.error = f.error || (e.label ? e.label + ': ' + e.msg : e.msg);
+    });
+
+    // Dato capturado sobre un campo que la propia configuración apaga: no es un
+    // error, pero conviene decir que no va a llegar al .skp.
     manifest.grupos.forEach(function (g) {
+      var gOn = groupEnabled(g, manifest, valores);
       g.campos.forEach(function (campo) {
-        var vis = fieldVisible(campo, manifest, valores);
-        var on  = fieldEnabled(campo, manifest, valores);
-        var i   = indiceDeCampo(imp, f.familia, campo.id);
-        if (campo.requerido && vis && on && valorCapturado(campo, valores) === '') {
-          if (i >= 0) f.errores[i] = 'Requerido.';
-          else f.error = f.error || 'Falta «' + campo.label + '» y no viene en el archivo.';
-        }
-        // Dato capturado sobre un campo que la propia configuración apaga: no es
-        // un error, pero conviene decir que no va a llegar al .skp.
-        if ((!vis || !on) && i >= 0 && texto(i) !== '') {
+        var i = indiceDeCampo(imp, f.familia, campo.id);
+        if (i < 0 || texto(i) === '') return;
+        if (!gOn || !fieldInyecta(campo, manifest, valores)) {
           f.avisos.push('«' + campo.label + '» no aplica con esta configuración: se ignora.');
         }
       });
     });
 
-    var p = presupuestoCajones(manifest, valores);
-    if (p.aplica && !p.ok) f.error = f.error || p.mensaje;
+    avisosConfig(manifest, valores).forEach(function (a) { f.avisos.push(a); });
 
     var hayErr = f.error || Object.keys(f.errores).length > 0;
     f.estado = hayErr ? 'error' : (f.avisos.length ? 'aviso' : 'ok');
@@ -1468,7 +1754,8 @@
       var manifest = findManifest(f.familia);
       state.registros.push({
         id: 'r' + (state.seq++), familia: f.familia, titulo: manifest.titulo,
-        valores: f.valores, estado: 'borrador', nombre_salida: f.nombre
+        valores: f.valores, estado: 'borrador', nombre_salida: f.nombre,
+        nombreManual: true   // el nombre vino del archivo: no lo pisa el patrón
       });
     });
 
@@ -1562,7 +1849,7 @@
         var reg = state.registros.filter(function (r) { return r.id === p.registroId; })[0];
         if (reg && !reg.valores) {
           reg.valores = defaultValores(manifest);
-          reg.nombre_salida = autoNombre(manifest, reg.valores);
+          reg.nombre_salida = nombreUnico(autoNombre(manifest, reg.valores), reg.id);
         }
       }
       renderSidebar();
@@ -1617,10 +1904,28 @@
         renderSidebar();
         siguienteDelLote();
       } else {
-        $('#btn-generar').disabled = false;
+        refrescarGenerar();
         renderSidebar();
       }
     }
+  };
+
+  /* Superficie mínima para el arnés de pruebas (test/reglas.test.js): la capa de
+     validación es pura y se puede correr con los manifiestos reales sin DOM. */
+  window.RCC_TEST = {
+    defaultValores:       defaultValores,
+    erroresConfig:        erroresConfig,
+    avisosConfig:         avisosConfig,
+    flatten:              flatten,
+    presupuestoCajones:   presupuestoCajones,
+    presupuestoDivisores: presupuestoDivisores,
+    fieldByAttr:          fieldByAttr,
+    fieldVisible:         fieldVisible,
+    nombresDivisores:     nombresDivisores,
+    autoNombre:           autoNombre,
+    problemasRegistro:    problemasRegistro,
+    nombreUnico:          nombreUnico,
+    state:                state
   };
 
   // =========================================================================
@@ -1649,9 +1954,16 @@
     $('#btn-import-descartar').addEventListener('click', importarDescartarMalas);
     $('#btn-import-cancelar').addEventListener('click', importarCancelar);
 
+    // Escribir un nombre lo vuelve propio: a partir de ahí el patrón ya no lo
+    // recalcula (R-30). Vaciarlo devuelve el módulo al auto-nombre.
     $('#nombre-salida').addEventListener('input', function () {
       var r = activeRegistro();
-      if (r) { r.nombre_salida = this.value; renderSidebar(); }
+      if (!r) return;
+      r.nombre_salida = this.value;
+      r.nombreManual  = this.value.trim() !== '';
+      if (!r.nombreManual) refrescarAutoNombre(findManifest(r.familia), r);
+      renderSidebar();
+      refrescarGenerar();
     });
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function (b) {

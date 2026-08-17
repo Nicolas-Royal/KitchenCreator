@@ -28,7 +28,7 @@ Columnas como `puerta>f21tipotirador` o valores como `"no"` para omitir un atrib
      - Si el header tiene `>` (ej. `puerta>f21tipotirador`): busca recursivamente instancias/grupos hijos cuyo nombre contenga el prefijo (`puerta`, `estructura`, `divisor`) y les inyecta el atributo.
      - Si no tiene `>`: el atributo se inyecta en la raíz del módulo (aplica a variables "estándar" tipo `LenX/LenY/LenZ` y a variables propias como `a02zocalo`, `c01espestr`, etc.)
    - Convierte valores con unidad (`mm`, `cm`, `m`, `in`/`pulg`) a pulgadas (unidad nativa de SketchUp), o los deja como texto si no matchean el patrón numérico.
-   - `"no"` (case-insensitive) significa "omitir esta variable" — no se toca el atributo.
+   - `"no"` (case-insensitive) significa "omitir esta variable" — no se toca el atributo. *(Convención del script original; retirada del motor en DEV-21.)*
    - Escribe dos claves por atributo: el valor (`key`) y su versión "nominal" (`_key_nominal`), y borra cualquier fórmula previa (`_key_formula`) para las variables estándar de tamaño — esto **fija** el valor en vez de dejarlo paramétrico.
 4. Fuerza el redibujado del componente dinámico (`redraw_with_undo`).
 5. Guarda la instancia como `.skp` individual en `Output/<Familia>/<nombre_salida>.skp`.

@@ -10,12 +10,19 @@
     "attr_cantidad": "divisor>f01cantdiv",
     "attr_modo": "divisor>g01margenf{i}",
     "nombres_por_modo": { "0mm": "Divisor" },
-    "nombre_default": "Entrepaño"
+    "nombre_default": "Entrepaño",
+    "presupuesto": {
+      "attr_alto_util": "LenZ",
+      "solo_si": { "attr": "divisor>f02tipomedida", "valor": "2" },
+      "attrs_espacio": [
+        "divisor>f03espacio1", "divisor>f03espacio2", "divisor>f03espacio3",
+        "divisor>f03espacio4", "divisor>f03espacio5", "divisor>f03espacio6"
+      ]
+    }
   },
   "reglas_cajones": {
     "alto_min_mm": 100,
     "uniforme_si_n": true,
-    "label_uniforme": "Alto de cada cajón (todos iguales)",
     "attr_alto_util": "LenZ",
     "attr_restar": ["a02zocalo", "f11margsupcaj", "f12marginfcaj"],
     "attr_separacion": "f02sepcajtirad",
@@ -24,34 +31,45 @@
     "estilos_con_cajones": { "6": "n", "7": 2, "8": 3, "9": 4 },
     "attrs_alto": ["b11altocaj1", "b12altocaj2", "b13altocaj3", "b14altocaj4"]
   },
+  "reglas_geometria": [
+    { "attrs": ["a02zocalo"], "menor_que": "LenZ", "mensaje": "El zócalo no puede alcanzar el alto del cuerpo." },
+    { "attrs": ["f11margsupcaj", "f12marginfcaj"], "menor_que": "LenZ", "mensaje": "Los márgenes superior e inferior no dejan frente: suman más que el alto." },
+    { "attrs": ["f13margizqcaj", "f14margdercaj"], "menor_que": "LenX", "mensaje": "Los márgenes izquierdo y derecho no dejan frente: suman más que el ancho." },
+    { "attrs": ["c01espestr"], "menor_que": "LenX", "mensaje": "El espesor de estructura no puede alcanzar el ancho." },
+    { "attrs": ["c01espestr"], "menor_que": "LenY", "mensaje": "El espesor de estructura no puede alcanzar la profundidad." },
+    { "attrs": ["c01espestr"], "menor_que": "LenZ", "mensaje": "El espesor de estructura no puede alcanzar el alto." },
+    { "attrs": ["c02esppuerta"], "menor_que": "LenY", "mensaje": "El espesor de puerta no puede alcanzar la profundidad." },
+    { "attrs": ["c03espfondo"], "menor_que": "LenY", "mensaje": "El espesor de fondo no puede alcanzar la profundidad." },
+    { "attrs": ["cajon>n02corredpers"], "menor_que": "LenY", "modo": "<=", "mensaje": "La corredera no entra: es más larga que la profundidad." }
+  ],
   "grupos": [
     {
       "id": "dimensiones",
       "titulo": "Dimensiones",
       "campos": [
-        { "id": "LenX", "attr": "LenX", "label": "Ancho", "tipo": "numero", "unidad": "mm", "default": "800", "requerido": true },
-        { "id": "LenY", "attr": "LenY", "label": "Profundidad", "tipo": "numero", "unidad": "mm", "default": "600", "requerido": true, "nota": "Profundidad del cuerpo; si la puerta va por fuera se le suma su espesor.", "suma": [
+        { "id": "LenX", "attr": "LenX", "label": "Ancho", "tipo": "numero", "unidad": "mm", "default": "800", "placeholder": "800", "positivo": true, "requerido": true },
+        { "id": "LenY", "attr": "LenY", "label": "Profundidad", "tipo": "numero", "unidad": "mm", "default": "600", "placeholder": "600", "positivo": true, "requerido": true, "nota": "Profundidad del cuerpo; si la puerta va por fuera se le suma su espesor.", "suma": [
           { "attr": "c02esppuerta", "si": [
             { "attr": "EstiloPuerta", "excepto": ["0"] },
             { "attr": "puerta>f01posextintpu", "valor": "1" }
           ] }
         ] },
-        { "id": "LenZ", "attr": "LenZ", "label": "Alto", "tipo": "numero", "unidad": "mm", "default": "600", "requerido": true, "nota": "Alto del cuerpo; el zócalo se suma aparte.", "suma": [
+        { "id": "LenZ", "attr": "LenZ", "label": "Alto", "tipo": "numero", "unidad": "mm", "default": "600", "placeholder": "600", "positivo": true, "requerido": true, "nota": "Alto del cuerpo; el zócalo se suma aparte.", "suma": [
           { "attr": "a02zocalo" }
         ] },
-        { "id": "a02zocalo", "attr": "a02zocalo", "label": "Alto zócalo", "tipo": "numero", "unidad": "mm", "default": "100" }
+        { "id": "a02zocalo", "attr": "a02zocalo", "label": "Alto zócalo", "tipo": "numero", "unidad": "mm", "default": "100", "placeholder": "100" }
       ]
     },
     {
       "id": "espesores",
       "titulo": "Espesores",
       "campos": [
-        { "id": "c01espestr", "attr": "c01espestr", "label": "Espesor estructura", "tipo": "numero", "unidad": "mm", "default": "18" },
-        { "id": "c02esppuerta", "attr": "c02esppuerta", "label": "Espesor puerta", "tipo": "numero", "unidad": "mm", "default": "18" },
-        { "id": "c03espfondo", "attr": "c03espfondo", "label": "Espesor fondo", "tipo": "numero", "unidad": "mm", "default": "12" },
-        { "id": "c05espestrpe", "attr": "cajon>c05espestrpe", "label": "Espesor estructura cajones", "tipo": "numero", "unidad": "mm", "default": "" },
-        { "id": "c06esppuertape", "attr": "cajon>c06esppuertape", "label": "Espesor puerta cajones", "tipo": "numero", "unidad": "mm", "default": "" },
-        { "id": "c07espfondope", "attr": "cajon>c07espfondope", "label": "Espesor fondo cajones", "tipo": "numero", "unidad": "mm", "default": "" }
+        { "id": "c01espestr", "attr": "c01espestr", "label": "Espesor estructura", "tipo": "numero", "unidad": "mm", "default": "18", "placeholder": "18", "positivo": true },
+        { "id": "c02esppuerta", "attr": "c02esppuerta", "label": "Espesor puerta", "tipo": "numero", "unidad": "mm", "default": "18", "placeholder": "18", "positivo": true },
+        { "id": "c03espfondo", "attr": "c03espfondo", "label": "Espesor fondo", "tipo": "numero", "unidad": "mm", "default": "12", "placeholder": "12", "positivo": true },
+        { "id": "c05espestrpe", "attr": "cajon>c05espestrpe", "label": "Espesor estructura cajones", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "18", "auto": true, "positivo": true },
+        { "id": "c06esppuertape", "attr": "cajon>c06esppuertape", "label": "Espesor puerta cajones", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "18", "auto": true, "positivo": true },
+        { "id": "c07espfondope", "attr": "cajon>c07espfondope", "label": "Espesor fondo cajones", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "12", "auto": true, "positivo": true }
       ]
     },
     {
@@ -65,11 +83,16 @@
           { "label": "Amarre frontal + posterior", "valor": "4" },
           { "label": "Techo completo", "valor": "5" }
         ] },
-        { "id": "e23ancamtecho", "attr": "estructura>e23ancamtecho", "label": "Ancho amarres", "tipo": "numero", "unidad": "mm", "default": "" },
-        { "id": "c24entrepano", "attr": "c24entrepano", "label": "Entrepaño", "tipo": "select", "default": "1", "opciones": [
+        { "id": "e23ancamtecho", "attr": "estructura>e23ancamtecho", "label": "Ancho amarres", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "80", "positivo": true,
+          "habilitado_si": { "attr": "estructura>e22tipotecho", "valores": ["2", "3", "4"], "mensaje": "Solo aplica con amarre frontal o posterior." } },
+        { "id": "c24entrepano", "attr": "c24entrepano", "label": "Entrepaño", "tipo": "select", "default": "1", "nota": "Interruptor maestro de la sección Divisores.", "opciones": [
           { "label": "Sí", "valor": "0" },
           { "label": "No", "valor": "1" }
-        ] },
+        ],
+          "forzar": [
+            { "valor": "1", "si": [{ "attr": "EstiloPuerta", "valores": ["6", "7", "8", "9"] }],
+              "mensaje": "Con puerta de cajones el interior lo ocupa la pila: no lleva entrepaños." }
+          ] },
         { "id": "cejaselect", "attr": "cejaselect", "label": "Ceja", "tipo": "select", "default": "1", "opciones": [
           { "label": "Con ceja", "valor": "1" },
           { "label": "Sin ceja", "valor": "2" }
@@ -100,7 +123,8 @@
           { "label": "3 cajones", "valor": "8" },
           { "label": "4 cajones", "valor": "9" }
         ] },
-        { "id": "e07cantpuerta", "attr": "puerta>e07cantpuerta", "label": "Cantidad de puertas", "tipo": "select", "default": "1", "opciones": [
+        { "id": "e07cantpuerta", "attr": "puerta>e07cantpuerta", "label": "Cantidad de puertas", "tipo": "select", "default": "1",
+          "habilitado_si": { "attr": "EstiloPuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay nada que contar." }, "opciones": [
           { "label": "Puerta simple - IZQ", "valor": "1" },
           { "label": "Puerta simple - DER", "valor": "2" },
           { "label": "Puerta doble", "valor": "3" },
@@ -113,20 +137,27 @@
           { "label": "Puerta - 9", "valor": "10" },
           { "label": "Puerta - 10", "valor": "11" }
         ] },
-        { "id": "f01posextintpu", "attr": "puerta>f01posextintpu", "label": "Posición de puertas", "tipo": "select", "default": "1", "opciones": [
+        { "id": "f01posextintpu", "attr": "puerta>f01posextintpu", "label": "Posición de puertas", "tipo": "select", "default": "1",
+          "habilitado_si": { "attr": "EstiloPuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay nada que posicionar." }, "opciones": [
           { "label": "Puerta/Cajón exterior", "valor": "1" },
           { "label": "Puerta/Cajón interior", "valor": "2" }
         ] },
-        { "id": "f04seppuertas", "attr": "f04seppuertas", "label": "Separación entre puertas", "tipo": "numero", "unidad": "mm", "default": "3" },
-        { "id": "f11margsupcaj", "attr": "f11margsupcaj", "label": "Margen superior", "label_corto": "Superior", "tipo": "numero", "unidad": "mm", "default": "0" },
-        { "id": "f12marginfcaj", "attr": "f12marginfcaj", "label": "Margen inferior", "label_corto": "Inferior", "tipo": "numero", "unidad": "mm", "default": "0" },
-        { "id": "f13margizqcaj", "attr": "f13margizqcaj", "label": "Margen izquierdo", "label_corto": "Izquierdo", "tipo": "numero", "unidad": "mm", "default": "2" },
-        { "id": "f14margdercaj", "attr": "f14margdercaj", "label": "Margen derecho", "label_corto": "Derecho", "tipo": "numero", "unidad": "mm", "default": "2" }
+        { "id": "f04seppuertas", "attr": "f04seppuertas", "label": "Separación entre puertas", "tipo": "numero", "unidad": "mm", "default": "3", "placeholder": "3",
+          "habilitado_si": { "attr": "EstiloPuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay separación que aplicar." } },
+        { "id": "f11margsupcaj", "attr": "f11margsupcaj", "label": "Margen superior", "label_corto": "Superior", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
+          "habilitado_si": { "attr": "EstiloPuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay frente que margenar." } },
+        { "id": "f12marginfcaj", "attr": "f12marginfcaj", "label": "Margen inferior", "label_corto": "Inferior", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
+          "habilitado_si": { "attr": "EstiloPuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay frente que margenar." } },
+        { "id": "f13margizqcaj", "attr": "f13margizqcaj", "label": "Margen izquierdo", "label_corto": "Izquierdo", "tipo": "numero", "unidad": "mm", "default": "2", "placeholder": "2",
+          "habilitado_si": { "attr": "EstiloPuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay frente que margenar." } },
+        { "id": "f14margdercaj", "attr": "f14margdercaj", "label": "Margen derecho", "label_corto": "Derecho", "tipo": "numero", "unidad": "mm", "default": "2", "placeholder": "2",
+          "habilitado_si": { "attr": "EstiloPuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay frente que margenar." } }
       ]
     },
     {
       "id": "tirador",
       "titulo": "Tirador",
+      "condicion": { "attr": "EstiloPuerta", "excepto": ["0", "3", "5"], "mensaje": "Sin puerta, con vidrio completo o con uñero no hay dónde montar un tirador." },
       "campos": [
         { "id": "f21tipotirador", "attr": "puerta>f21tipotirador", "label": "Tipo de tirador", "tipo": "select", "default": "1", "opciones": [
           { "label": "Sin tirador", "valor": "1" },
@@ -137,7 +168,8 @@
           { "label": "Tirador botón circular", "valor": "6" },
           { "label": "Tirador CLE", "valor": "7" }
         ] },
-        { "id": "f22postirador", "attr": "puerta>f22postirador", "label": "Posición de tirador", "tipo": "select", "default": "3", "opciones": [
+        { "id": "f22postirador", "attr": "puerta>f22postirador", "label": "Posición de tirador", "tipo": "select", "default": "3",
+          "habilitado_si": { "attr": "puerta>f21tipotirador", "excepto": ["1"], "mensaje": "Sin tirador no hay pieza que posicionar." }, "opciones": [
           { "label": "Arriba - Izquierda", "valor": "1" },
           { "label": "Arriba - Centro", "valor": "2" },
           { "label": "Arriba - Derecha", "valor": "3" },
@@ -148,7 +180,8 @@
           { "label": "Abajo - Centro", "valor": "8" },
           { "label": "Abajo - Derecha", "valor": "9" }
         ] },
-        { "id": "f23orienttirador", "attr": "puerta>f23orienttirador", "label": "Orientación de tirador", "tipo": "select", "default": "2", "opciones": [
+        { "id": "f23orienttirador", "attr": "puerta>f23orienttirador", "label": "Orientación de tirador", "tipo": "select", "default": "2",
+          "habilitado_si": { "attr": "puerta>f21tipotirador", "excepto": ["1"], "mensaje": "Sin tirador no hay pieza que orientar." }, "opciones": [
           { "label": "Tirador horizontal", "valor": "1" },
           { "label": "Tirador vertical", "valor": "2" }
         ] }
@@ -158,6 +191,7 @@
       "id": "cajones",
       "titulo": "Cajones",
       "presupuesto": "cajones",
+      "condicion": { "attr": "EstiloPuerta", "valores": ["6", "7", "8", "9"], "mensaje": "Solo aplica con un diseño de puerta de cajones." },
       "campos": [
         { "id": "b03tipocajon", "attr": "b03tipocajon", "label": "Estilo cajones", "tipo": "select", "default": "1", "opciones": [
           { "label": "Tandem", "valor": "1" },
@@ -165,70 +199,71 @@
         ] },
         { "id": "a21cantcajon", "attr": "cajon>a21cantcajon", "label": "Cantidad de cajones", "tipo": "derivado", "default": "1", "min": 1, "max": 6, "max_regla": "cajones", "controla": [],
           "habilitado_si": { "attr": "EstiloPuerta", "valor": "6", "mensaje": "Solo aplica con diseño de puerta «N cajones»." } },
-        { "id": "b11altocaj1", "attr": "b11altocaj1", "label": "Alto cajón 1 (superior)", "tipo": "preset", "unidad": "mm", "default": "190mm", "permite_personalizado": true, "visible_si": { "min_cajones": 1 }, "presets": [
+        { "id": "b11altocaj1", "attr": "b11altocaj1", "label": "Alto cajón 1 (superior)", "tipo": "preset", "unidad": "mm", "default": "190mm", "auto": true, "permite_personalizado": true, "visible_si": { "min_cajones": 1 }, "presets": [
           { "label": "Automático (restante)", "valor": "" },
           { "label": "CH (190 mm)", "valor": "190mm" },
           { "label": "G (383 mm)", "valor": "383mm" }
         ] },
-        { "id": "b12altocaj2", "attr": "b12altocaj2", "label": "Alto cajón 2", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "min_cajones": 2 }, "presets": [
+        { "id": "b12altocaj2", "attr": "b12altocaj2", "label": "Alto cajón 2", "tipo": "preset", "unidad": "mm", "default": "", "auto": true, "permite_personalizado": true, "visible_si": { "min_cajones": 2 }, "presets": [
           { "label": "Automático (restante)", "valor": "" },
           { "label": "CH (190 mm)", "valor": "190mm" },
           { "label": "G (383 mm)", "valor": "383mm" }
         ] },
-        { "id": "b13altocaj3", "attr": "b13altocaj3", "label": "Alto cajón 3", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "min_cajones": 3 }, "presets": [
+        { "id": "b13altocaj3", "attr": "b13altocaj3", "label": "Alto cajón 3", "tipo": "preset", "unidad": "mm", "default": "", "auto": true, "permite_personalizado": true, "visible_si": { "min_cajones": 3 }, "presets": [
           { "label": "Automático (restante)", "valor": "" },
           { "label": "CH (190 mm)", "valor": "190mm" },
           { "label": "G (383 mm)", "valor": "383mm" }
         ] },
-        { "id": "b14altocaj4", "attr": "b14altocaj4", "label": "Alto cajón 4 (inferior)", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "min_cajones": 4 }, "nota": "«Automático» reparte el alto restante con base en las alturas anteriores.", "presets": [
+        { "id": "b14altocaj4", "attr": "b14altocaj4", "label": "Alto cajón 4 (inferior)", "tipo": "preset", "unidad": "mm", "default": "", "auto": true, "permite_personalizado": true, "visible_si": { "min_cajones": 4 }, "nota": "«Automático» reparte el alto restante con base en las alturas anteriores.", "presets": [
           { "label": "Automático (restante)", "valor": "" },
           { "label": "CH (190 mm)", "valor": "190mm" },
           { "label": "G (383 mm)", "valor": "383mm" }
         ] },
-        { "id": "f02sepcajtirad", "attr": "f02sepcajtirad", "label": "Separación entre cajones", "tipo": "numero", "unidad": "mm", "default": "" },
-        { "id": "n02corredpers", "attr": "cajon>n02corredpers", "label": "Corredera cajón", "tipo": "numero", "unidad": "cm", "default": "" }
+        { "id": "f02sepcajtirad", "attr": "f02sepcajtirad", "label": "Separación entre cajones", "tipo": "numero", "unidad": "mm", "default": "3", "placeholder": "3", "nota": "Estándar: 3 mm. El presupuesto de alto cuenta con este valor." },
+        { "id": "n02corredpers", "attr": "cajon>n02corredpers", "label": "Corredera cajón", "tipo": "numero", "unidad": "cm", "default": "50", "placeholder": "50", "positivo": true, "nota": "Estándar: 50 cm. No puede pasar de la profundidad del cuerpo." }
       ]
     },
     {
       "id": "divisores",
       "titulo": "Divisores",
+      "presupuesto": "divisores",
+      "condicion": { "attr": "c24entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí» y sin puerta de cajones." },
       "campos": [
         { "id": "f01cantdiv", "attr": "divisor>f01cantdiv", "label": "Cantidad de divisores", "tipo": "derivado", "default": "1", "min": 1, "max": 6, "controla": ["divisor>f03espacio", "divisor>g01margenf"] },
         { "id": "f02tipomedida", "attr": "divisor>f02tipomedida", "label": "Tipo de medida", "tipo": "select", "default": "1", "opciones": [
           { "label": "Separaciones iguales", "valor": "1" },
           { "label": "Personalizado", "valor": "2" }
         ] },
-        { "id": "f03espacio1", "attr": "divisor>f03espacio1", "label": "Espacio 1 (inferior)", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 1 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
-        { "id": "g01margenf1", "attr": "divisor>g01margenf1", "label": "Margen frontal 1", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 1 }, "presets": [
+        { "id": "f03espacio1", "attr": "divisor>f03espacio1", "label": "Espacio 1 (inferior)", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "150", "positivo": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 1 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
+        { "id": "g01margenf1", "attr": "divisor>g01margenf1", "label": "Margen frontal 1", "tipo": "preset", "unidad": "mm", "default": "", "auto": true, "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 1 }, "presets": [
           { "label": "Entrepaño", "valor": "" },
           { "label": "Divisor", "valor": "0mm" }
         ] },
-        { "id": "f03espacio2", "attr": "divisor>f03espacio2", "label": "Espacio 2", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 2 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
-        { "id": "g01margenf2", "attr": "divisor>g01margenf2", "label": "Margen frontal 2", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 2 }, "presets": [
+        { "id": "f03espacio2", "attr": "divisor>f03espacio2", "label": "Espacio 2", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "150", "positivo": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 2 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
+        { "id": "g01margenf2", "attr": "divisor>g01margenf2", "label": "Margen frontal 2", "tipo": "preset", "unidad": "mm", "default": "", "auto": true, "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 2 }, "presets": [
           { "label": "Entrepaño", "valor": "" },
           { "label": "Divisor", "valor": "0mm" }
         ] },
-        { "id": "f03espacio3", "attr": "divisor>f03espacio3", "label": "Espacio 3", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 3 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
-        { "id": "g01margenf3", "attr": "divisor>g01margenf3", "label": "Margen frontal 3", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 3 }, "presets": [
+        { "id": "f03espacio3", "attr": "divisor>f03espacio3", "label": "Espacio 3", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "150", "positivo": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 3 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
+        { "id": "g01margenf3", "attr": "divisor>g01margenf3", "label": "Margen frontal 3", "tipo": "preset", "unidad": "mm", "default": "", "auto": true, "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 3 }, "presets": [
           { "label": "Entrepaño", "valor": "" },
           { "label": "Divisor", "valor": "0mm" }
         ] },
-        { "id": "f03espacio4", "attr": "divisor>f03espacio4", "label": "Espacio 4", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 4 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
-        { "id": "g01margenf4", "attr": "divisor>g01margenf4", "label": "Margen frontal 4", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 4 }, "presets": [
+        { "id": "f03espacio4", "attr": "divisor>f03espacio4", "label": "Espacio 4", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "150", "positivo": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 4 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
+        { "id": "g01margenf4", "attr": "divisor>g01margenf4", "label": "Margen frontal 4", "tipo": "preset", "unidad": "mm", "default": "", "auto": true, "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 4 }, "presets": [
           { "label": "Entrepaño", "valor": "" },
           { "label": "Divisor", "valor": "0mm" }
         ] },
-        { "id": "f03espacio5", "attr": "divisor>f03espacio5", "label": "Espacio 5", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 5 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
-        { "id": "g01margenf5", "attr": "divisor>g01margenf5", "label": "Margen frontal 5", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 5 }, "presets": [
+        { "id": "f03espacio5", "attr": "divisor>f03espacio5", "label": "Espacio 5", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "150", "positivo": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 5 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
+        { "id": "g01margenf5", "attr": "divisor>g01margenf5", "label": "Margen frontal 5", "tipo": "preset", "unidad": "mm", "default": "", "auto": true, "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 5 }, "presets": [
           { "label": "Entrepaño", "valor": "" },
           { "label": "Divisor", "valor": "0mm" }
         ] },
-        { "id": "f03espacio6", "attr": "divisor>f03espacio6", "label": "Espacio 6", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 6 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
-        { "id": "g01margenf6", "attr": "divisor>g01margenf6", "label": "Margen frontal 6", "tipo": "preset", "unidad": "mm", "default": "", "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 6 }, "presets": [
+        { "id": "f03espacio6", "attr": "divisor>f03espacio6", "label": "Espacio 6", "tipo": "numero", "unidad": "mm", "default": "", "placeholder": "150", "positivo": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 6 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } },
+        { "id": "g01margenf6", "attr": "divisor>g01margenf6", "label": "Margen frontal 6", "tipo": "preset", "unidad": "mm", "default": "", "auto": true, "permite_personalizado": true, "visible_si": { "attr": "divisor>f01cantdiv", "min": 6 }, "presets": [
           { "label": "Entrepaño", "valor": "" },
           { "label": "Divisor", "valor": "0mm" }
-        ] },
-        { "id": "f03espacio7", "attr": "divisor>f03espacio7", "label": "Espacio 7", "tipo": "numero", "unidad": "mm", "default": "", "visible_si": { "attr": "divisor>f01cantdiv", "min": 7 }, "habilitado_si": { "attr": "divisor>f02tipomedida", "valor": "2", "mensaje": "Solo aplica con tipo de medida «Personalizado»." } }
+        ] }
       ]
     }
   ]

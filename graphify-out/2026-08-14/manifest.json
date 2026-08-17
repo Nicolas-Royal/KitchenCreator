@@ -1,44 +1,44 @@
 {
   "introspeccion.rb": {
     "mtime": 1785170487.9256802,
-    "seen": 1786749444.428859,
+    "seen": 1786734732.1931295,
     "ast_hash": "f8b9d99608ed11a6a930b15d9f28f50b",
     "semantic_hash": "f8b9d99608ed11a6a930b15d9f28f50b"
   },
   "plugin/build.ps1": {
     "mtime": 1785172132.1424606,
-    "seen": 1786749444.428861,
+    "seen": 1786734732.1931312,
     "ast_hash": "8259cbc4ca591d14ec2067a62b4287ff",
     "semantic_hash": "8259cbc4ca591d14ec2067a62b4287ff"
   },
   "plugin/royal_catalog_creator.rb": {
     "mtime": 1784841867.1196313,
-    "seen": 1786749444.4288626,
+    "seen": 1786734732.1931453,
     "ast_hash": "848f5665686f7c2778859e63d2e19c5d",
     "semantic_hash": "848f5665686f7c2778859e63d2e19c5d"
   },
   "plugin/royal_catalog_creator/engine.rb": {
     "mtime": 1786661864.8924093,
-    "seen": 1786749444.4288642,
+    "seen": 1786734732.1931467,
     "ast_hash": "a141a30d62b5d7f304b3cbe2e4c4cd23",
     "semantic_hash": ""
   },
   "plugin/royal_catalog_creator/html/js/app.js": {
-    "mtime": 1786748785.0573456,
-    "seen": 1786749444.4288664,
-    "ast_hash": "0d71fda545ad48baded756ade8438620",
+    "mtime": 1786733590.7705262,
+    "seen": 1786734732.193148,
+    "ast_hash": "a077a148a9641bdb419a0275cd837376",
     "semantic_hash": ""
   },
   "plugin/royal_catalog_creator/importer.rb": {
     "mtime": 1785463909.9239407,
-    "seen": 1786749444.4288678,
+    "seen": 1786734732.193149,
     "ast_hash": "4a05f956f2b63071b538229ef0fb3be3",
     "semantic_hash": "4a05f956f2b63071b538229ef0fb3be3"
   },
   "plugin/royal_catalog_creator/main.rb": {
-    "mtime": 1786748727.0467775,
-    "seen": 1786749444.428869,
-    "ast_hash": "0341ef829dadb30f48f76d115b1588f8",
+    "mtime": 1786661885.4113529,
+    "seen": 1786734732.1931505,
+    "ast_hash": "d6a034a7dc5ab678a428681e42c9c6be",
     "semantic_hash": ""
   },
   "plugin/royal_catalog_creator/manifest/alacena.json": {
@@ -61,439 +61,439 @@
   },
   "plugin/royal_catalog_creator/plantilla.rb": {
     "mtime": 1785464094.1008139,
-    "seen": 1786749444.4288704,
+    "seen": 1786734732.1931515,
     "ast_hash": "0758b51295179893f92f99b340540782",
     "semantic_hash": "0758b51295179893f92f99b340540782"
   },
   "plugin/royal_catalog_creator/xlsx.rb": {
     "mtime": 1785464154.5414877,
-    "seen": 1786749444.4288719,
+    "seen": 1786734732.1931531,
     "ast_hash": "a50f57463972ed9d9052daaf34f1f43a",
     "semantic_hash": "a50f57463972ed9d9052daaf34f1f43a"
   },
   "script.rb": {
     "mtime": 1784306455.5496507,
-    "seen": 1786749444.4288764,
+    "seen": 1786734732.1931572,
     "ast_hash": "b339aa64c7b95624abeae4627f429d96",
     "semantic_hash": "b339aa64c7b95624abeae4627f429d96"
   },
   "CLAUDE.md": {
     "mtime": 1786660227.029152,
-    "seen": 1786749444.4288826,
+    "seen": 1786734732.1931632,
     "ast_hash": "13c2d1fb5c5782c2f426d08c8d6d350b",
     "semantic_hash": ""
   },
   "Command.txt": {
     "mtime": 1784306789.8250039,
-    "seen": 1786749444.4288843,
+    "seen": 1786734732.1931646,
     "ast_hash": "4033ffdc69d3fa4fd77c843598908d54",
     "semantic_hash": "4033ffdc69d3fa4fd77c843598908d54"
   },
   "MANUAL_TECNICO.md": {
     "mtime": 1786733709.6148045,
-    "seen": 1786749444.4288938,
+    "seen": 1786734732.193173,
     "ast_hash": "90ae89878c53aa0351a88777b3dd0b84",
     "semantic_hash": ""
   },
   "MANUAL_USUARIO.md": {
-    "mtime": 1786749415.6840687,
-    "seen": 1786749444.4288952,
-    "ast_hash": "62affb96d77578152bc16025c25b180e",
+    "mtime": 1786734707.054211,
+    "seen": 1786734732.1931741,
+    "ast_hash": "e67a13bfafa32a86d5fd58d543c60587",
     "semantic_hash": ""
   },
   "README.md": {
     "mtime": 1785164060.726828,
-    "seen": 1786749444.4288964,
+    "seen": 1786734732.1931753,
     "ast_hash": "3128764308f21913b55d4bb1a3d87c7f",
     "semantic_hash": "3128764308f21913b55d4bb1a3d87c7f"
   },
   "SCOPE.md": {
     "mtime": 1786662053.4974515,
-    "seen": 1786749444.4288979,
+    "seen": 1786734732.1931763,
     "ast_hash": "606bfbb0eaa9bda069b4c77215a0979b",
     "semantic_hash": ""
   },
   "plugin/README.md": {
-    "mtime": 1786749426.011852,
-    "seen": 1786749444.4289007,
-    "ast_hash": "a5cd2093f1d9293abdd8e38f2a3b6d03",
-    "semantic_hash": ""
+    "mtime": 1786458649.3088565,
+    "seen": 1786734732.193179,
+    "ast_hash": "d15f936adee25d9c2d93d22143297d87",
+    "semantic_hash": "d15f936adee25d9c2d93d22143297d87"
   },
   "plugin/royal_catalog_creator/html/dialog.html": {
     "mtime": 1786458511.188171,
-    "seen": 1786749444.4289017,
+    "seen": 1786734732.19318,
     "ast_hash": "9714583f0174394a4c5c776a32883114",
     "semantic_hash": "9714583f0174394a4c5c776a32883114"
   },
   "stepts.md": {
     "mtime": 1784745665.1324568,
-    "seen": 1786749444.4289098,
+    "seen": 1786734732.1931894,
     "ast_hash": "cf8169545df678b9848b9429c0bc9f6e",
     "semantic_hash": "cf8169545df678b9848b9429c0bc9f6e"
   },
   "plugin/royal_catalog_creator/html/img/logo.jpg": {
     "mtime": 1785168060.204523,
-    "seen": 1786749444.4289398,
+    "seen": 1786734732.1932445,
     "ast_hash": "3a3b6d2dc4de6c9275fe78989327b863",
     "semantic_hash": "3a3b6d2dc4de6c9275fe78989327b863"
   },
   "plugin/royal_catalog_creator/images/icon.png": {
     "mtime": 1786406164.137531,
-    "seen": 1786749444.4289412,
+    "seen": 1786734732.1932583,
     "ast_hash": "db5f483bb7f3a5b5ebdeb8147f94d6ef",
     "semantic_hash": "db5f483bb7f3a5b5ebdeb8147f94d6ef"
   },
   "Issues/diag_divisores.rb": {
     "mtime": 1785363274.4606295,
-    "seen": 1786749444.428847,
+    "seen": 1786734732.1931195,
     "ast_hash": "6217c35846308769a77c7c914a79984a",
     "semantic_hash": ""
   },
   "Issues/diag_entrepanos.rb": {
     "mtime": 1785431153.2984889,
-    "seen": 1786749444.4288533,
+    "seen": 1786734732.1931248,
     "ast_hash": "c49febb6194427c5d938c3072655a08d",
     "semantic_hash": ""
   },
   "Issues/diag_union.rb": {
     "mtime": 1785436176.6820638,
-    "seen": 1786749444.4288566,
+    "seen": 1786734732.1931276,
     "ast_hash": "2ce069cd5becf04f85d2c216ee2f449c",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/plugin-demo/js/app.js": {
     "mtime": 1785776241.9556763,
-    "seen": 1786749444.4288733,
+    "seen": 1786734732.1931543,
     "ast_hash": "ecd9770c0a9ed915489e4bc9455f2de5",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/plugin-demo/js/demo-bridge.js": {
     "mtime": 1785776241.9676437,
-    "seen": 1786749444.428875,
+    "seen": 1786734732.1931555,
     "ast_hash": "59ce2c01617526e32a1ac6116d554568",
     "semantic_hash": ""
   },
   "test/reglas.test.js": {
-    "mtime": 1786749396.797254,
-    "seen": 1786749444.4288778,
-    "ast_hash": "8f4cfa7aa83214ca2ff4b05f8034b3fd",
+    "mtime": 1786734683.117057,
+    "seen": 1786734732.1931584,
+    "ast_hash": "dd6aed629e2a8fb630fe4fe836296a4f",
     "semantic_hash": ""
   },
   ".claude/skills/prompt-master/SKILL.md": {
     "mtime": 1784655915.7113502,
-    "seen": 1786749444.428879,
+    "seen": 1786734732.1931596,
     "ast_hash": "572f0b8a586f637d114a9823bafe96a9",
     "semantic_hash": ""
   },
   ".claude/skills/prompt-master/references/patterns.md": {
     "mtime": 1784655915.633243,
-    "seen": 1786749444.4288805,
+    "seen": 1786734732.1931608,
     "ast_hash": "86071182d3e71750079aa74fab13c79f",
     "semantic_hash": ""
   },
   ".claude/skills/prompt-master/references/templates.md": {
     "mtime": 1784655915.6801078,
-    "seen": 1786749444.4288816,
+    "seen": 1786734732.193162,
     "ast_hash": "f5a59d89b1937d65eaa686cb0ea6a305",
     "semantic_hash": ""
   },
   "Definiciones/LEEME.md": {
     "mtime": 1784663711.7030013,
-    "seen": 1786749444.4288855,
+    "seen": 1786734732.1931655,
     "ast_hash": "4666b6366b04d2af01142907e85fc0a5",
     "semantic_hash": ""
   },
   "Definiciones/PLANTILLA.md": {
     "mtime": 1786734718.995154,
-    "seen": 1786749444.428887,
+    "seen": 1786734732.1931665,
     "ast_hash": "90476dddc34ede4b7de4dce1736d1344",
     "semantic_hash": ""
   },
   "Issues/errors.md": {
     "mtime": 1785433648.876462,
-    "seen": 1786749444.4288883,
+    "seen": 1786734732.193168,
     "ast_hash": "1bdac89779f251a10f673dd48a8a562a",
     "semantic_hash": ""
   },
   "Issues/prompt-30.md": {
     "mtime": 1785427822.284508,
-    "seen": 1786749444.4288898,
+    "seen": 1786734732.1931694,
     "ast_hash": "bb818c1fc334d1dcf5fa07ec69c9dd18",
     "semantic_hash": ""
   },
   "Issues/prompt-31.md": {
     "mtime": 1785460009.572289,
-    "seen": 1786749444.4288912,
+    "seen": 1786734732.1931705,
     "ast_hash": "cf5686ec7df3bde5b191639e0b36ff58",
     "semantic_hash": ""
   },
   "Issues/prompt.md": {
     "mtime": 1785342424.224921,
-    "seen": 1786749444.4288924,
+    "seen": 1786734732.1931717,
     "ast_hash": "d78a1203cc008495108e36eef523bd69",
     "semantic_hash": ""
   },
   "introspeccion_dump.txt": {
     "mtime": 1784654536.03361,
-    "seen": 1786749444.4288993,
+    "seen": 1786734732.1931777,
     "ast_hash": "7e35a708db65fd8a5400af24dd68d153",
     "semantic_hash": ""
   },
   "prompts/prompt-manual-tecnico.txt": {
     "mtime": 1785525809.0560343,
-    "seen": 1786749444.4289033,
+    "seen": 1786734732.1931813,
     "ast_hash": "636a8429e22510a3411b41229b14c745",
     "semantic_hash": ""
   },
   "prompts/prompt-manual-usuario.txt": {
     "mtime": 1785525833.4281883,
-    "seen": 1786749444.4289048,
+    "seen": 1786734732.1931825,
     "ast_hash": "f1ecb6cbbbcf716a348d4eb66b63f7ca",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/index.html": {
     "mtime": 1785776241.9407158,
-    "seen": 1786749444.428906,
+    "seen": 1786734732.1931834,
     "ast_hash": "909cdec88486fc9b4224ceee3b01c945",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/plugin-demo/dialog.html": {
     "mtime": 1785776241.9536808,
-    "seen": 1786749444.4289076,
+    "seen": 1786734732.193187,
     "ast_hash": "fc8f9df1ca62bd0e7aae819f3c0e1535",
     "semantic_hash": ""
   },
   "script.txt": {
     "mtime": 1782494285.1700385,
-    "seen": 1786749444.4289086,
+    "seen": 1786734732.1931882,
     "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
     "semantic_hash": ""
   },
   "MANUAL_USUARIO.pdf": {
     "mtime": 1785776241.7611957,
-    "seen": 1786749444.4289112,
+    "seen": 1786734732.1931903,
     "ast_hash": "7170242fc5ad73c0caa6f9411021ecfc",
     "semantic_hash": ""
   },
   "3D/ALACENA/ALACENA/TEKA_ARTICO_VESTO1.png": {
     "mtime": 1785776704.7999337,
-    "seen": 1786749444.4289124,
+    "seen": 1786734732.1931918,
     "ast_hash": "d9ac7a554e9259a06ad9ef2d8053f2d9",
     "semantic_hash": ""
   },
   "3D/ESQUINERO/ESQUINERO/FRESNO_EUROPEO_VESTO.png": {
     "mtime": 1785776746.6382718,
-    "seen": 1786749444.4289136,
+    "seen": 1786734732.193193,
     "ast_hash": "0871f0c542333dedceec28b615ef3ca9",
     "semantic_hash": ""
   },
   "3D/ESQUINERO/ESQUINERO/TEKA_ARTICO_VESTO1.png": {
     "mtime": 1785776746.4378068,
-    "seen": 1786749444.428915,
+    "seen": 1786734732.193194,
     "ast_hash": "d9ac7a554e9259a06ad9ef2d8053f2d9",
     "semantic_hash": ""
   },
   "3D/GABINETE/GABINETE/FRESNO_EUROPEO_VESTO.png": {
     "mtime": 1785776812.986224,
-    "seen": 1786749444.4289162,
+    "seen": 1786734732.193195,
     "ast_hash": "0871f0c542333dedceec28b615ef3ca9",
     "semantic_hash": ""
   },
   "3D/GABINETE/GABINETE/TEKA_ARTICO_VESTO1.png": {
     "mtime": 1785776811.8291845,
-    "seen": 1786749444.4289174,
+    "seen": 1786734732.1931963,
     "ast_hash": "d9ac7a554e9259a06ad9ef2d8053f2d9",
     "semantic_hash": ""
   },
   "Issues/image-1.png": {
     "mtime": 1785427811.9113774,
-    "seen": 1786749444.4289188,
+    "seen": 1786734732.1931973,
     "ast_hash": "b4bbcbb0100a3aa6b8ad1de2f2c35729",
     "semantic_hash": ""
   },
   "Issues/image-3.png": {
     "mtime": 1785254045.1572738,
-    "seen": 1786749444.4289198,
+    "seen": 1786734732.1931987,
     "ast_hash": "4de7c3ae05672b86c2e07c3d41016c0c",
     "semantic_hash": ""
   },
   "Issues/image.png": {
     "mtime": 1785427693.8690276,
-    "seen": 1786749444.4289207,
+    "seen": 1786734732.1931996,
     "ast_hash": "702ef4d29adcd3fc3cd4e40035071f86",
     "semantic_hash": ""
   },
   "capturas/01-Administrar-extensiones.png": {
     "mtime": 1785519080.0488336,
-    "seen": 1786749444.4289222,
+    "seen": 1786734732.1932132,
     "ast_hash": "b128d1d8ab91a5c7c8b8aab12b69b6ea",
     "semantic_hash": ""
   },
   "capturas/02-instalar-extension.png": {
     "mtime": 1785522369.0012083,
-    "seen": 1786749444.4289236,
+    "seen": 1786734732.1932142,
     "ast_hash": "d741eb2f9cf45fac2f3963bddd5fddb0",
     "semantic_hash": ""
   },
   "capturas/03-seleccionar-pluguin.png": {
     "mtime": 1785518273.696863,
-    "seen": 1786749444.428925,
+    "seen": 1786734732.1932154,
     "ast_hash": "14dd8265f408f6a2b95c02980ae0c4b8",
     "semantic_hash": ""
   },
   "capturas/04-instalado-correctamente.png": {
     "mtime": 1785518569.4491508,
-    "seen": 1786749444.428926,
+    "seen": 1786734732.1932168,
     "ast_hash": "8caed4cc5a0ac5b26bb58222fddaac80",
     "semantic_hash": ""
   },
   "capturas/05-abrir-pluguin.png": {
     "mtime": 1785518741.4234214,
-    "seen": 1786749444.4289272,
+    "seen": 1786734732.1932178,
     "ast_hash": "cb3a4494ac56f0f742ec19e98e1aad2f",
     "semantic_hash": ""
   },
   "capturas/06-pagina-inicio-pluguin.png": {
     "mtime": 1785523774.8789454,
-    "seen": 1786749444.4289289,
+    "seen": 1786734732.1932192,
     "ast_hash": "f28fe6cd554acb3a20381ba94f8ec2e4",
     "semantic_hash": ""
   },
   "capturas/07-crear-modulo.png": {
     "mtime": 1785525548.1003256,
-    "seen": 1786749444.4289298,
+    "seen": 1786734732.1932201,
     "ast_hash": "8ad890cba228754079b570029c5eeb2e",
     "semantic_hash": ""
   },
   "capturas/08-personalizar-modulo-manualmente.png": {
     "mtime": 1785523805.2026017,
-    "seen": 1786749444.428931,
+    "seen": 1786734732.1932213,
     "ast_hash": "05d739ea5666ee9f16436b300b6e3967",
     "semantic_hash": ""
   },
   "capturas/09-resultado-generacion-individual.png": {
     "mtime": 1785523352.4996054,
-    "seen": 1786749444.4289322,
+    "seen": 1786734732.1932366,
     "ast_hash": "7986a43bfff237b61ce3f8990370da65",
     "semantic_hash": ""
   },
   "capturas/10-importar-excel-explorador.png": {
     "mtime": 1785523826.5304313,
-    "seen": 1786749444.4289334,
+    "seen": 1786734732.193238,
     "ast_hash": "17757a9b1515b4b66b3dedf894042570",
     "semantic_hash": ""
   },
   "capturas/11-tabla-importar.png": {
     "mtime": 1785525242.5993774,
-    "seen": 1786749444.4289346,
+    "seen": 1786734732.1932392,
     "ast_hash": "a992ac0c85c0a2c172d0b587ef65c366",
     "semantic_hash": ""
   },
   "capturas/12-piezas-importadas.png": {
     "mtime": 1785523836.4032135,
-    "seen": 1786749444.428936,
+    "seen": 1786734732.1932406,
     "ast_hash": "998d35cafe0c3d349d1b691eb89832ab",
     "semantic_hash": ""
   },
   "capturas/13-todas-piezas-generadas.png": {
     "mtime": 1785521885.6433368,
-    "seen": 1786749444.4289374,
+    "seen": 1786734732.1932416,
     "ast_hash": "3cf76347b2e8619d9a380380f1f10e0f",
     "semantic_hash": ""
   },
   "img/logo.jpg": {
     "mtime": 1785168060.204523,
-    "seen": 1786749444.4289389,
+    "seen": 1786734732.1932428,
     "ast_hash": "3a3b6d2dc4de6c9275fe78989327b863",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/assets/logo.jpg": {
     "mtime": 1785776241.7651856,
-    "seen": 1786749444.4289427,
+    "seen": 1786734732.1932595,
     "ast_hash": "3a3b6d2dc4de6c9275fe78989327b863",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/01-Administrar-extensiones.jpg": {
     "mtime": 1785776241.7771533,
-    "seen": 1786749444.4289439,
+    "seen": 1786734732.193261,
     "ast_hash": "cba3a7cc21ed57f153b9a3ba9eb4e491",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/02-instalar-extension.jpg": {
     "mtime": 1785776241.8010893,
-    "seen": 1786749444.428945,
+    "seen": 1786734732.1932619,
     "ast_hash": "a4a464140e8556d61c2d2fe5936e125c",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/03-seleccionar-pluguin.jpg": {
     "mtime": 1785776241.813057,
-    "seen": 1786749444.4289467,
+    "seen": 1786734732.193263,
     "ast_hash": "2455979c9f12b66cc8990ac9aee649e8",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/04-instalado-correctamente.jpg": {
     "mtime": 1785776241.8240275,
-    "seen": 1786749444.4289482,
+    "seen": 1786734732.1932642,
     "ast_hash": "46020c2c31c66469e0a03e3babbff4bd",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/05-abrir-pluguin.jpg": {
     "mtime": 1785776241.8349981,
-    "seen": 1786749444.42895,
+    "seen": 1786734732.1932657,
     "ast_hash": "eadc2fcb9f69d2f2cbf0aeeb46428166",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/06-pagina-inicio-pluguin.jpg": {
     "mtime": 1785776241.846967,
-    "seen": 1786749444.4289515,
+    "seen": 1786734732.1932666,
     "ast_hash": "3ec78561fdd5944d7ed3bae2f8cfbf6c",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/07-crear-modulo.jpg": {
     "mtime": 1785776241.8579376,
-    "seen": 1786749444.4289532,
+    "seen": 1786734732.1932824,
     "ast_hash": "6005a85514e3da747a8bebbf4563689f",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/08-personalizar-modulo-manualmente.jpg": {
     "mtime": 1785776241.8689072,
-    "seen": 1786749444.4289541,
+    "seen": 1786734732.1932836,
     "ast_hash": "8e85463ae5a86d0f976df15c873497e6",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/09-resultado-generacion-individual.jpg": {
     "mtime": 1785776241.882871,
-    "seen": 1786749444.4289556,
+    "seen": 1786734732.1932847,
     "ast_hash": "8cf9fdbde1b2206cb7089f9146909ec0",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/10-importar-excel-explorador.jpg": {
     "mtime": 1785776241.8938408,
-    "seen": 1786749444.428957,
+    "seen": 1786734732.193286,
     "ast_hash": "1e6a2bc57f11c04e44fe3b47dd1e14a9",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/11-tabla-importar.jpg": {
     "mtime": 1785776241.9058094,
-    "seen": 1786749444.4289584,
+    "seen": 1786734732.1932874,
     "ast_hash": "a2a344b4daadcffdc6cd09f8f606a1b7",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/12-piezas-importadas.jpg": {
     "mtime": 1785776241.9197717,
-    "seen": 1786749444.428975,
+    "seen": 1786734732.1932888,
     "ast_hash": "e5ba4e3009ddc16e8e69835f382b8e05",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/capturas/13-todas-piezas-generadas.jpg": {
     "mtime": 1785776241.9307425,
-    "seen": 1786749444.4289763,
+    "seen": 1786734732.19329,
     "ast_hash": "c4ca70991f866a892ddaa9b8ec0bddd7",
     "semantic_hash": ""
   },
   "royal-catalog-creator-pitch/plugin-demo/img/logo.jpg": {
     "mtime": 1785776241.9546783,
-    "seen": 1786749444.4289782,
+    "seen": 1786734732.1933043,
     "ast_hash": "3a3b6d2dc4de6c9275fe78989327b863",
     "semantic_hash": ""
   }

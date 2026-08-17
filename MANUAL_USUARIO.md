@@ -574,7 +574,7 @@ Las medidas van siempre en milímetros, salvo la corredera de cajón, que va en 
 | Posición de puertas | Si la puerta monta por fuera o por dentro del cuerpo. | Puerta/Cajón exterior · Puerta/Cajón interior | — | No | Puerta/Cajón exterior |
 | Separación entre puertas | Junta entre hoja y hoja. | Cualquier medida | mm | No | 3 |
 | Margen superior / inferior / izquierdo / derecho | Holgura del frente contra el cuerpo por cada lado. | Cualquier medida | mm | No | 0 / 0 / 2 / 2 |
-| Tipo de tirador | Herraje del frente. | Sin tirador · Tirador secc. circular · Tirador secc. cuadrada · Tirador arco · Tirador botón cuadrado · Tirador botón circular · Tirador CLE | — | No | Tirador arco |
+| Tipo de tirador | Herraje del frente. La sección entera se apaga sin puerta, con «Puerta vidrio» y con «Puerta uñero»: no hay dónde montarlo. En la Alacena aplica igual a «Avento S vidrio» y «Avento D vidrio»; los vidrio-madera sí lo admiten. | Sin tirador · Tirador secc. circular · Tirador secc. cuadrada · Tirador arco · Tirador botón cuadrado · Tirador botón circular · Tirador CLE | — | No | Tirador arco |
 | Posición de tirador | Dónde va el tirador sobre el frente. | Nueve combinaciones de Arriba/Centro/Abajo con Izquierda/Centro/Derecha | — | No | Arriba - Derecha |
 | Orientación de tirador | Cómo se monta el tirador. | Tirador horizontal · Tirador vertical | — | No | Tirador vertical |
 | Estilo cajones | Sistema de corredera del cajón. | Tandem · Antaro | — | No | Tandem |
@@ -584,7 +584,7 @@ Las medidas van siempre en milímetros, salvo la corredera de cajón, que va en 
 | Corredera cajón | Longitud de la corredera. | Cualquier medida | cm | No | 50 |
 | Cantidad de divisores | Cuántas divisiones horizontales lleva el interior. | 1 a 6 | — | No | 2 |
 | Tipo de medida | Cómo se reparte la altura entre las divisiones. | Separaciones iguales · Personalizado | — | No | Separaciones iguales |
-| Espacio 1 (inferior) … Espacio 7 | Altura de cada división, contando desde abajo. Solo se activan con tipo de medida «Personalizado». | Cualquier medida | mm | No | 140 |
+| Espacio 1 (inferior) … Espacio 6 | Altura de cada división, contando desde abajo. Solo se activan con tipo de medida «Personalizado». | Cualquier medida | mm | No | 140 |
 | Margen frontal 1 … Margen frontal 6 | Si esa división es un entrepaño o un divisor, y con qué retranqueo. | Entrepaño · Divisor · Personalizado… | mm | No | Entrepaño |
 
 ### Alacena
@@ -597,18 +597,19 @@ La Alacena no lleva zócalo, ni ceja, ni tipo de techo, ni cajones. Comparte con
 | Profundidad | Fondo del cuerpo. Si la puerta va por fuera, su espesor se suma aparte. | Cualquier medida | mm | Sí | 350 |
 | Alto | Alto del cuerpo. | Cualquier medida | mm | Sí | 700 |
 | Espesor estructura / puerta / fondo | Grueso de cada tablero. | Cualquier medida | mm | No | 18 / 18 / 12 |
-| Ancho amarres | Ancho de los travesaños de amarre. | Cualquier medida | mm | No | 80 |
-| Entrepaño | Si el interior lleva repisa. | Sí · No | — | No | No |
+| Entrepaño | Si el interior lleva repisa. Es el interruptor de la sección Divisores. | Sí · No | — | No | No |
 | Diseño de puerta | Tipo de frente, incluidas las variantes abatibles Avento. | Ninguna · Puerta lisa · Puerta italiana · Puerta vidrio · Puerta vidrio-madera · Puerta uñero · Avento S lisa · Avento S italiana · Avento S vidrio · Avento S vidrio-madera · Avento D lisa · Avento D italiana · Avento D vidrio · Avento D vidrio-madera | — | No | Puerta lisa |
-| Cantidad de puertas | Cuántas hojas lleva el frente. | Puerta - 1 … Puerta - 10 | — | No | Puerta - 2 |
-| Tipo de puerta abatible | Cómo se comportan las hojas de una abatible. | Puerta simple · Puerta doble - individual · Puerta doble - unidas | — | No | Puerta doble - unidas |
+| Cantidad de puertas | Cuántas hojas lleva el frente. Solo con puerta normal. | Puerta simple - IZQ · Puerta simple - DER · Puerta doble · Puerta - 3 … Puerta - 10 | — | No | Puerta simple - IZQ |
+| Cantidad de puertas (Avento) | Lo mismo, pero con la numeración del herraje Avento. Solo con Avento. | Puerta - 1 … Puerta - 10 | — | No | Puerta - 1 |
+| Tipo de puerta abatible | Cómo se comportan las hojas. Solo con Avento D. | Puerta simple · Puerta doble - individual · Puerta doble - unidas | — | No | Puerta simple |
+| Tipo de apertura | Por dónde abre el herraje. Solo con Avento S. | Apertura superior · Apertura inferior | — | No | Apertura inferior |
 | Posición de puertas | Si la puerta monta por fuera o por dentro. | Puerta/Cajón exterior · Puerta/Cajón interior | — | No | Puerta/Cajón exterior |
 | Separación entre puertas | Junta entre hoja y hoja. | Cualquier medida | mm | No | 3 |
 | Margen superior / inferior / izquierdo / derecho | Holgura del frente por cada lado. | Cualquier medida | mm | No | 0 / 0 / 2 / 2 |
 | Tipo / Posición / Orientación de tirador | Herraje del frente. | Mismos valores que en Gabinete | — | No | Tirador arco |
 | Cantidad de divisores | Cuántas divisiones lleva el interior. | 1 a 6 | — | No | 2 |
 | Tipo de medida | Cómo se reparte la altura. | Separaciones iguales · Personalizado | — | No | Personalizado |
-| Espacio 1 (inferior) … Espacio 7 | Altura de cada división. Solo con tipo de medida «Personalizado». | Cualquier medida | mm | No | 330 |
+| Espacio 1 (inferior) … Espacio 6 | Altura de cada división. Solo con tipo de medida «Personalizado». | Cualquier medida | mm | No | 330 |
 | Margen frontal 1 … Margen frontal 6 | Si esa división es entrepaño o divisor. | Entrepaño · Divisor · Personalizado… | mm | No | Divisor |
 
 ### Esquinero
@@ -624,17 +625,15 @@ El Esquinero tiene dos alas, así que declara un ancho y una profundidad por cad
 | Profundidad derecha | Fondo del ala derecha. Mismo criterio. | Cualquier medida | mm | Sí | 600 |
 | Alto zócalo | Altura de la base. | Cualquier medida | mm | No | 100 |
 | Espesor estructura / puerta / fondo | Grueso de cada tablero. | Cualquier medida | mm | No | 18 / 18 / 12 |
-| Ancho amarres | Ancho de los travesaños de amarre. | Cualquier medida | mm | No | 80 |
-| Entrepaño | Si el interior lleva repisa en L. | Sí · No | — | No | No |
+| Entrepaño | Si el interior lleva repisa en L. Es el interruptor de la sección Divisores. | Sí · No | — | No | No |
 | Diseño de puerta | Tipo de frente. La lista es más corta que la del Gabinete: el esquinero no arma cajones. | Ninguna · Puerta lisa · Puerta italiana · Puerta vidrio · Puerta vidrio-madera · Puerta uñero | — | No | Puerta lisa |
 | Posición de puertas | Si la puerta monta por fuera o por dentro. | Puerta/Cajón exterior · Puerta/Cajón interior | — | No | Puerta/Cajón exterior |
-| Separación entre puertas | Junta entre hoja y hoja. | Cualquier medida | mm | No | 3 |
 | Margen superior / inferior / izquierdo / derecho | Holgura del frente por cada lado. | Cualquier medida | mm | No | 0 / 0 / 2 / 2 |
 | Tipo / Posición / Orientación de tirador | Herraje del frente. | Mismos valores que en Gabinete | — | No | Tirador secc. circular |
 | Cantidad de divisores | Cuántas repisas lleva el interior. | 1 a 6 | — | No | 2 |
 | Tipo de medida | Cómo se reparte la altura. | Separaciones iguales · Personalizado | — | No | Personalizado |
 | Margen frontal / posterior / izquierdo / derecho | Retranqueo de la repisa vista en planta, por cada lado. | Cualquier medida | mm | No | 20 / 0 / 10 / 10 |
-| Espacio 1 (inferior) … Espacio 7 | Altura de cada división. Solo con tipo de medida «Personalizado». | Cualquier medida | mm | No | 300 |
+| Espacio 1 (inferior) … Espacio 6 | Altura de cada división. Solo con tipo de medida «Personalizado». | Cualquier medida | mm | No | 300 |
 
 ---
 
@@ -661,7 +660,7 @@ El Esquinero tiene dos alas, así que declara un ancho y una profundidad por cad
 
 **5. Con el diseño «N cajones» todos los cajones miden lo mismo.**
 *Por qué existe:* en ese modo el modelo hace los cajones copia del primero.
-*Qué pasa si se rompe:* solo se ofrece un campo de altura, renombrado a «Alto de cada cajón (todos iguales)». Capturar alturas distintas en Excel no cambia nada.
+*Qué pasa si se rompe:* no se ofrece ningún campo de altura. El alto sale de la resta —alto útil menos zócalo, márgenes y separaciones, repartido entre los cajones— y el resumen de la sección dice cuánto mide cada uno. Capturar alturas en Excel no cambia nada.
 
 **6. El alto de un frente de cajón no baja de 100 mm.**
 *Por qué existe:* por debajo de esa medida el mueble no cierra y la pila de cajones se desborda.
@@ -855,7 +854,7 @@ Solo para que las dos mitades de cada repisa del Esquinero salgan fusionadas en 
 - **No fusiona las repisas del Esquinero sin SketchUp Pro.** Sin Pro cada repisa en L queda como dos tableros, con aviso.
 - **Deja el archivo no reconfigurable cuando limpia las piezas ocultas.** Es el comportamiento de origen y es intencional para catálogo, pero es irreversible sobre ese archivo.
 - **No valida contra el catálogo comercial.** Puede generar un mueble con medidas que la fábrica no produce. La herramienta solo verifica que sea geométricamente posible.
-- **Puntos aún abiertos del diseño:** el alto mínimo del frente de cajón está fijado en 100 mm y falta confirmarlo contra la ficha del herraje, y falta definir si difiere entre los sistemas Tandem y Antaro. El campo «Espacio 7» de los divisores es hoy inalcanzable, porque el contador de divisores tope en 6.
+- **Puntos aún abiertos del diseño:** el alto mínimo del frente de cajón está fijado en 100 mm y falta confirmarlo contra la ficha del herraje, y falta definir si difiere entre los sistemas Tandem y Antaro. (El campo «Espacio 7» de los divisores, que era inalcanzable porque el contador tope en 6, se retiró en DEV-21.)
 
 ---
 

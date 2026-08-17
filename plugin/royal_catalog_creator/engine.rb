@@ -25,13 +25,15 @@ module RoyalKitchen
       # ---------------------------------------------------------------------
       # Convierte un valor crudo del formulario/CSV a un valor listo para el
       # atributo dinámico. mm/cm/m/in -> pulgadas (unidad nativa de SketchUp).
-      #   nil   -> celda vacía (ignorar)
-      #   :skip -> "no" (omitir explícitamente esta variable)
+      #   nil -> celda vacía (ignorar)
+      #
+      # La convención heredada de escribir «no» para omitir una variable se
+      # retiró (DEV-21, R-24): era inalcanzable desde el formulario, donde el
+      # campo concatena su unidad y producía "nomm".
       # ---------------------------------------------------------------------
       def interpret(raw)
         s = raw.to_s.strip
-        return nil   if s.empty?
-        return :skip if s.downcase == 'no'
+        return nil if s.empty?
 
         m = s.match(/\A(-?[\d.,]+)\s*(mm|cm|cms|m|in|"|pulg)?\z/i)
         if m
@@ -86,7 +88,7 @@ module RoyalKitchen
       # ---------------------------------------------------------------------
       def inyectar_atributo(inst, col, valor_raw)
         valor_math = interpret(valor_raw)
-        return nil if valor_math.nil? || valor_math == :skip
+        return nil if valor_math.nil?
 
         if col.include?('>')
           partes          = col.split('>')

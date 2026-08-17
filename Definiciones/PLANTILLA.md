@@ -46,7 +46,13 @@ Por qué importa, con los tres casos reales:
    (dimensiones → espesores → estructura → frente → tirador → divisores).
 3. **Bloques por familia** — lo exclusivo de Gabinete, luego Alacena, luego Esquinero.
 
-Estado al 2026-07-30: **62 columnas**, 17 listas distintas.
+Estado al 2026-08-14: **62 columnas**.
+
+Ojo con `Cantidad de puertas`: desde que la alacena adoptó la lista del gabinete para sus puertas
+normales, ambas familias comparten una sola columna `[GAB·ALA]`. El Avento usa el mismo atributo con
+otra numeración (1–10, sin IZQ/DER), así que viaja en su propia columna `[ALA] Cantidad de puertas
+(Avento)` — dos columnas para un atributo es lo que evita que un encabezado repetido deje la segunda
+inalcanzable al importar.
 
 «Insertar en escena» y «Limpiar piezas ocultas» **no son columnas**: son estado de sesión (viven en
 los toggles del editor y aplican a todo lo que se genere). Exportarlas prometería un control por fila

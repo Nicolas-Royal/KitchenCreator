@@ -1,11 +1,11 @@
 # Graph Report - KitchenCreator  (2026-08-14)
 
 ## Corpus Check
-- 37 files · ~2,661,607 words
+- 37 files · ~2,661,274 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 512 nodes · 1095 edges · 34 communities (31 shown, 3 thin omitted)
+- 512 nodes · 1098 edges · 34 communities (31 shown, 3 thin omitted)
 - Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 46 edges (avg confidence: 0.69)
 - Token cost: 0 input · 0 output
 
@@ -22,9 +22,9 @@
 - engine.rb — motor de inyección y post-procesos geométricos
 - RoyalKitchen::CatalogCreator::Engine
 - RoyalKitchen::CatalogCreator::Plantilla
-- importer.rb — parseo estructural de CSV/XLSX
+- Validación previa de importación sin efectos secundarios
 - Manifiesto por familia — fuente única de la UI
-- Auto-tiling: el mapa de cocina es la escena nativa de SketchUp
+- Presupuesto de alto de cajones
 - introspeccion.rb
 - «Generar todos» — cola secuencial con cancelación por unidad
 - Prompt Templates Reference
@@ -41,7 +41,7 @@
 - prompt.md
 - prompt-31.md
 - Plantilla de importación — diseño
-- Presupuesto de alto de cajones
+- importer.rb — parseo estructural de CSV/XLSX
 - reglas.test.js
 - Definición de variables por módulo
 - errors.md
@@ -60,9 +60,9 @@
 10. `DiagEntrepanos` - 14 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Limpieza de piezas ocultas (Engine.eliminar_ocultos)` --semantically_similar_to--> `Eliminar piezas ocultas al generar`  [INFERRED] [semantically similar]
-  plugin/README.md → MANUAL_TECNICO.md
 - `Presupuesto de alto de cajones (implementación en el plugin)` --semantically_similar_to--> `Presupuesto de alto de cajones`  [INFERRED] [semantically similar]
+  plugin/README.md → MANUAL_TECNICO.md
+- `Limpieza de piezas ocultas (Engine.eliminar_ocultos)` --semantically_similar_to--> `Eliminar piezas ocultas al generar`  [INFERRED] [semantically similar]
   plugin/README.md → MANUAL_TECNICO.md
 - `El diálogo corre sobre el CEF de SketchUp` --rationale_for--> `Barra lateral del diálogo (lista de módulos y acciones)`  [INFERRED]
   CLAUDE.md → plugin/royal_catalog_creator/html/dialog.html
@@ -111,25 +111,25 @@ Nodes (4): DiagDivisores, RoyalKitchen, RoyalKitchen::CatalogCreator, RoyalKitch
 Cohesion: 0.23
 Nodes (3): RoyalKitchen, RoyalKitchen::CatalogCreator, RoyalKitchen::CatalogCreator::Plantilla
 
-### Community 7 - "importer.rb — parseo estructural de CSV/XLSX"
-Cohesion: 0.20
-Nodes (10): El diálogo corre sobre el CEF de SketchUp, importer.rb — parseo estructural de CSV/XLSX, xlsx.rb — lector/escritor mínimo de .xlsx sin gems, Tope de 500 filas por importación, La tabla de revisión usa controles propios, Escritura de .xlsx sin gems (zip sin comprimir, cadenas inline), Modal de confirmación genérico (#modal-confirm), Panel de revisión de importación (#pane-import) (+2 more)
+### Community 7 - "Validación previa de importación sin efectos secundarios"
+Cohesion: 0.29
+Nodes (7): El diálogo corre sobre el CEF de SketchUp, Validación previa de importación sin efectos secundarios, Importar agrega módulos a la sesión, no la reemplaza, La tabla de revisión usa controles propios, Modal de confirmación genérico (#modal-confirm), Panel de revisión de importación (#pane-import), Modal propio en vez de window.confirm()
 
 ### Community 8 - "Manifiesto por familia — fuente única de la UI"
 Cohesion: 0.24
 Nodes (10): app.js — render, reglas condicionales, validación y lote, Familias: Gabinete, Alacena, Esquinero, Manifiesto por familia — fuente única de la UI, Motor agnóstico a la familia, Guía de captura — referencia de campos por familia, Editor de caja (box_model) para los márgenes del frente, Ruby parsea, JavaScript valida (importación), Panel editor del módulo (#pane-editor) (+2 more)
 
-### Community 9 - "Auto-tiling: el mapa de cocina es la escena nativa de SketchUp"
+### Community 9 - "Presupuesto de alto de cajones"
 Cohesion: 0.25
-Nodes (8): introspeccion.rb — volcado de atributos y fórmulas, Lote estrictamente secuencial, Alto mínimo de frente de cajón = 100 mm, Notas de la definición pendientes con el mantenedor, Auto-tiling: el mapa de cocina es la escena nativa de SketchUp, Hallazgo de introspección: componentes melaminapro sin curación nativa, Preguntas abiertas del alcance, Salida doble: archivo en carpeta + inserción en la escena
+Nodes (8): introspeccion.rb — volcado de atributos y fórmulas, El formulario captura la medida del cuerpo, no la total (bloque «suma»), Presupuesto de alto de cajones, Alto mínimo de frente de cajón = 100 mm, Notas de la definición pendientes con el mantenedor, Presupuesto de alto de cajones (implementación en el plugin), Hallazgo de introspección: componentes melaminapro sin curación nativa, Preguntas abiertas del alcance
 
 ### Community 10 - "introspeccion.rb"
 Cohesion: 0.52
 Nodes (6): etiqueta_entidad(), in_meta_key?(), introspeccionar(), leer_meta(), variables_reales(), volcar_entidad()
 
 ### Community 11 - "«Generar todos» — cola secuencial con cancelación por unidad"
-Cohesion: 0.40
-Nodes (5): Clonar módulo para producir variaciones, Vía visual — captura módulo por módulo, «Generar todos» — cola secuencial con cancelación por unidad, registro_id en el payload y en todas las respuestas de generar, Modelo de sesión: lista de registros y aceleradores
+Cohesion: 0.25
+Nodes (8): Lote estrictamente secuencial, Clonar módulo para producir variaciones, Vía visual — captura módulo por módulo, «Generar todos» — cola secuencial con cancelación por unidad, registro_id en el payload y en todas las respuestas de generar, Auto-tiling: el mapa de cocina es la escena nativa de SketchUp, Modelo de sesión: lista de registros y aceleradores, Salida doble: archivo en carpeta + inserción en la escena
 
 ### Community 12 - "Prompt Templates Reference"
 Cohesion: 0.05
@@ -175,9 +175,9 @@ Nodes (12): Alcance, Condiciones de paro — detente y pregúntame antes de:, Co
 Cohesion: 0.22
 Nodes (8): Convenciones de celda, Formato del archivo, Hojas, Importación, Orden de las columnas, Pendientes conocidos, Plantilla de importación — diseño, Regla de columnas (lo único que hay que entender)
 
-### Community 27 - "Presupuesto de alto de cajones"
+### Community 27 - "importer.rb — parseo estructural de CSV/XLSX"
 Cohesion: 0.40
-Nodes (5): El formulario captura la medida del cuerpo, no la total (bloque «suma»), Presupuesto de alto de cajones, Validación previa de importación sin efectos secundarios, Importar agrega módulos a la sesión, no la reemplaza, Presupuesto de alto de cajones (implementación en el plugin)
+Nodes (5): importer.rb — parseo estructural de CSV/XLSX, xlsx.rb — lector/escritor mínimo de .xlsx sin gems, Tope de 500 filas por importación, Escritura de .xlsx sin gems (zip sin comprimir, cadenas inline), Bitácora de decisiones fechadas
 
 ### Community 28 - "reglas.test.js"
 Cohesion: 0.47
@@ -220,4 +220,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **What connects `RoyalKitchen::CatalogCreator`, `PRIMACY ZONE — Identity, Hard Rules, Output Lock`, `Intent Extraction` to the rest of the system?**
   _77 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `html/js/app.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.0703030303030303 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07090909090909091 - nodes in this community are weakly interconnected._

@@ -283,6 +283,23 @@ module RoyalKitchen
       (reglas['estilos_con_cajones'] || {})[estilo] == 'n'
     end
 
+    # -----------------------------------------------------------------------
+    # Espejo de la validación de medidas del diálogo (DEV-21, R-08/R-09).
+    #
+    # Un atributo de tamaño con texto dentro no es una medida: el componente lo
+    # escribiría tal cual y el mueble saldría con la medida del .skp base. El
+    # formulario ya lo bloquea; esto atrapa lo que no pasó por él.
+    # -----------------------------------------------------------------------
+    def validar_medidas(valores)
+      malos = valores.select { |_k, v| Engine.interpret(v).is_a?(String) }.keys
+      return "No son medidas válidas: #{malos.join(', ')}." unless malos.empty?
+
+      negativos = valores.select { |_k, v| (n = Engine.interpret(v)).is_a?(Numeric) && n < 0 }.keys
+      return "No pueden ser negativos: #{negativos.join(', ')}." unless negativos.empty?
+
+      nil
+    end
+
     def validar_cajones(manifest, valores)
       reglas = manifest['reglas_cajones']
       return nil unless reglas
@@ -309,18 +326,14 @@ module RoyalKitchen
 
       return "El alto útil del mueble quedó en #{a_mm(util)} mm. Revisa alto, zócalo y márgenes." if disp <= 0
 
+      # En modo uniforme no se captura ningún alto: los n cajones son copias del
+      # primero y su alto sale de la resta, así que no hay nada fijado que
+      # revalidar. Espejo de presupuestoCajones en app.js.
       uniforme = cajones_uniformes?(reglas, valores)
-      altos    = Array(reglas['attrs_alto']).first(uniforme ? 1 : n).map { |attr| medida_in(valores, attr) }
+      altos    = uniforme ? [] : Array(reglas['attrs_alto']).first(n).map { |attr| medida_in(valores, attr) }
       fijos    = altos.compact
-
-      if uniforme
-        # El único alto capturado se multiplica por los n cajones.
-        libres   = fijos.empty? ? n : 0
-        restante = disp - (fijos.empty? ? 0.0 : fijos[0] * n)
-      else
-        libres   = n - fijos.size
-        restante = disp - fijos.inject(0.0) { |s, v| s + v }
-      end
+      libres   = n - fijos.size
+      restante = disp - fijos.inject(0.0) { |s, v| s + v }
 
       bajo = fijos.find { |v| v < alto_min - TOL_IN }
       return "El alto de un cajón (#{a_mm(bajo)} mm) es menor al mínimo de #{minimo} mm." if bajo
@@ -365,6 +378,9 @@ module RoyalKitchen
       manifest_wrap = cargar_manifest(familia)
       return manifest_wrap.merge('registro_id' => reg_id) unless manifest_wrap['ok']
       manifest = manifest_wrap['manifest']
+
+      error_medidas = validar_medidas(valores)
+      return { 'ok' => false, 'registro_id' => reg_id, 'error' => error_medidas } if error_medidas
 
       error_cajones = validar_cajones(manifest, valores)
       if error_cajones

@@ -233,6 +233,13 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
   color: var(--danger); border-left-color: var(--danger);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
+/* Aviso: la configuración se genera igual, pero tiene que verse (R-14/R-17). */
+.budget--warn {
+  color: var(--warn); border-left-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+/* Lista de lo que impide generar, arriba del formulario: un renglón por regla. */
+#form-errores { white-space: pre-line; }
 
 /* Editor de caja: los cuatro márgenes se capturan en su posición real, con un
    rectángulo al centro que representa la pieza (frente o planta). */
@@ -282,6 +289,8 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
    campo ya está activo la explicación sobra y solo sería ruido en el formulario.
    Se resuelve aquí para no tener que refrescar texto desde updateConditionals(). */
 .field:not(.is-disabled) .field__hint--cond { display: none; }
+/* Campo señalado por la validación: el detalle está en la lista de arriba. */
+.field.is-bad .input, .field.is-bad .select { border-color: var(--danger); }
 
 .control { position: relative; display: flex; align-items: center; }
 .input, .select {
