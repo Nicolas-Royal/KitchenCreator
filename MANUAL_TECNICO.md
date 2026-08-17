@@ -295,7 +295,8 @@ Advertencia: regenerar un módulo **sobrescribe** su archivo de salida; la confi
 |---|---|
 | **Agregar una variable existente en el componente** | Solo el manifiesto de la familia: un objeto en `campos` con `id`, `attr`, `label`, `tipo`, `unidad`, `default`. Aparece sola en el formulario y en la plantilla. Cero código. |
 | **Agregar una opción a un desplegable** | El arreglo `opciones` (o `presets`) del campo: `label` legible más `valor` que espera el componente. |
-| **Condicionar un campo a otro** | `habilitado_si` (deshabilita y muestra su `mensaje`) o `visible_si` (oculta). El predicado admite `valor`, `valores` o `excepto` (`app.js:176-183`). |
+| **Condicionar un campo a otro** | `habilitado_si` (deshabilita y muestra su `mensaje`) o `visible_si` (oculta). El predicado admite `valor`, `valores` o `excepto` (`app.js:182-189`). |
+| **Dos listas distintas para el mismo atributo** | Dos campos con el mismo `attr`, `id` y `label` propios, y `visible_si` mutuamente excluyentes: solo el visible se inyecta. Así resuelve la alacena su «Cantidad de puertas», que numera IZQ/DER con puerta normal y 1–10 con Avento. |
 | **Compensar una medida** | Bloque `suma` en el campo, con condiciones `si` por sumando; se resuelve en `effectiveValue` (`app.js:89-99`), no en el aplanado. |
 | **Agregar una familia** | Crear `manifest/<familia>.json`, colocar su `.skp` en `Main Components/` y añadir la entrada a `FAMILIAS` (`main.rb:23-27`). |
 | **Cambiar el mínimo de alto de cajón** | `reglas_cajones` del manifiesto; es dato, pero la regla está implementada dos veces (§10). |

@@ -31,8 +31,9 @@ Los campos se agrupan por bloque temático (el manifiesto define el orden):
   **siempre activos**; únicamente «Cantidad de cajones» se habilita cuando el diseño de puerta es
   «N cajones» (habilitación **por campo** vía `habilitado_si`, no por grupo). Los «Alto cajón»
   ofrecen **Automático (restante) / CH / G / Personalizado** y solo se muestran cuando el diseño de
-  puerta implica esa cantidad de cajones (`visible_si.min_cajones`). Con **«N cajones» se muestra
-  uno solo**: el componente hace los cajones copia del primero, así que todos miden lo mismo
+  puerta implica esa cantidad de cajones (`visible_si.min_cajones`). Con **«N cajones» no se muestra
+  ninguno**: el componente hace los cajones copia del primero, así que todos miden lo mismo y ese
+  alto es la resta, no una captura. El presupuesto lo calcula, lo enseña e inyecta el resultado
   (`reglas_cajones.uniforme_si_n`).
 
 ### Editor de caja para márgenes
@@ -73,7 +74,8 @@ disponible = util − f02sepcajtirad × (n − 1)      // suma de los n frentes
   **sobre** alto no bloquea (deja hueco, no desborda).
 - Los cajones en «Automático» reciben el alto restante ya calculado, para que el `.skp` coincida
   con lo que mostró el presupuesto.
-- En modo **uniforme** («N cajones») el único alto capturado se multiplica por los n cajones.
+- En modo **uniforme** («N cajones») no hay alto capturado: todo el disponible se reparte entre los
+  n cajones y ese resultado se inyecta en el primer attr, del que el componente copia los demás.
 
 Todo se configura en `reglas_cajones` del manifiesto (`alto_min_mm`, qué attrs restar, el mapa
 `estilos_con_cajones`, `uniforme_si_n`). Es **dato, no código**: si el mínimo real del herraje no es

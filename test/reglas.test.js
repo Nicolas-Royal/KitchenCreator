@@ -100,13 +100,62 @@ prueba('R-05 · «Entrepaño» es el interruptor maestro de Divisores', function
   assert.strictEqual(plano('gabinete', { c24entrepano: '0' })['divisor>f01cantdiv'], '1');
 });
 
-prueba('R-06 · un Avento es de una sola puerta', function () {
-  var f = plano('alacena', { LenX: '800', LenY: '350', LenZ: '700',
-                             c25tipopuerta: '13', e07cantpuerta: '10', e08cantpuvert: '1' });
-  assert.strictEqual(f['puerta>e07cantpuerta'], '1');
-  assert.strictEqual(f['puerta>e08cantpuvert'], '3');   // Avento D = abatible doble
-  var s = plano('alacena', { LenX: '800', LenY: '350', LenZ: '700', c25tipopuerta: '6' });
-  assert.strictEqual(s['puerta>e08cantpuvert'], '1');   // Avento S = abatible simple
+prueba('R-06 · cada diseño de puerta de alacena trae sus propios campos', function () {
+  var ala = function (extra) {
+    var v = { LenX: '800', LenY: '350', LenZ: '700' };
+    Object.keys(extra).forEach(function (k) { v[k] = extra[k]; });
+    return plano('alacena', v);
+  };
+
+  // Puerta normal: solo la cantidad, con la lista del gabinete (11 = Puerta - 10).
+  var n = ala({ c25tipopuerta: '3', e07cantpuerta: '11' });
+  assert.strictEqual(n['puerta>e07cantpuerta'], '11');
+  ['puerta>e08cantpuvert', 'puerta>e09tipapertura']
+    .forEach(function (a) { assert.ok(!(a in n), a + ' no aplica a puerta normal'); });
+
+  // Avento S: cantidad 1-10 + tipo de apertura, sin abatible.
+  var s = ala({ c25tipopuerta: '7', e07cantpuerta_avento: '10', e09tipapertura: '1' });
+  assert.strictEqual(s['puerta>e07cantpuerta'], '10');
+  assert.strictEqual(s['puerta>e09tipapertura'], '1');
+  assert.ok(!('puerta>e08cantpuvert' in s), 'el Avento S no lleva abatible');
+
+  // Avento D: cantidad 1-10 + abatible, sin tipo de apertura.
+  var d = ala({ c25tipopuerta: '11', e07cantpuerta_avento: '2', e08cantpuvert: '3' });
+  assert.strictEqual(d['puerta>e07cantpuerta'], '2');
+  assert.strictEqual(d['puerta>e08cantpuvert'], '3');
+  assert.ok(!('puerta>e09tipapertura' in d), 'el Avento D no lleva tipo de apertura');
+
+  // Sin puerta no se cuenta nada, con cualquiera de los dos campos.
+  var cero = ala({ c25tipopuerta: '0' });
+  assert.ok(!('puerta>e07cantpuerta' in cero));
+});
+
+prueba('R-06b · el vidrio completo y el uñero no llevan tirador', function () {
+  [['gabinete', 'EstiloPuerta'], ['alacena', 'c25tipopuerta'], ['esquinero', 'EstiloPuerta']]
+    .forEach(function (par) {
+      ['3', '5'].forEach(function (diseno) {
+        var v = {}; v[par[1]] = diseno;
+        var f = plano(par[0], v);
+        ['puerta>f21tipotirador', 'puerta>f22postirador', 'puerta>f23orienttirador']
+          .forEach(function (a) {
+            assert.ok(!(a in f), par[0] + ' con diseño ' + diseno + ' no debería inyectar ' + a);
+          });
+      });
+      // Una puerta lisa sí lo lleva: la condición no puede apagar el grupo entero.
+      var w = {}; w[par[1]] = '1';
+      assert.ok('puerta>f21tipotirador' in plano(par[0], w), par[0] + ' lisa sí lleva tirador');
+    });
+
+  // La alacena repite la regla en sus Avento de vidrio (8 y 12). No hay Avento
+  // uñero; el vidrio-madera (9 y 13) sí monta tirador porque tiene madera.
+  ['8', '12'].forEach(function (d) {
+    assert.ok(!('puerta>f21tipotirador' in plano('alacena', { c25tipopuerta: d })),
+              'Avento de vidrio ' + d + ' no lleva tirador');
+  });
+  ['6', '9', '10', '13'].forEach(function (d) {
+    assert.ok('puerta>f21tipotirador' in plano('alacena', { c25tipopuerta: d }),
+              'Avento ' + d + ' sí lleva tirador');
+  });
 });
 
 prueba('R-07 · el esquinero no tiene separación entre puertas', function () {
@@ -161,9 +210,32 @@ prueba('R-15 · el séptimo espacio no existe en ningún manifiesto', function (
 });
 
 prueba('R-17 · el alto de cajones que sobra se advierte y se genera', function () {
-  var r = registro('gabinete', { EstiloPuerta: '6' });   // 1 cajón CH en 600 mm útiles
+  // 2 cajones CH fijados a mano en 600 mm útiles: sobran ~217 mm bajo la pila.
+  var r = registro('gabinete', { EstiloPuerta: '7', b11altocaj1: '190mm', b12altocaj2: '190mm' });
   assert.strictEqual(T.erroresConfig(man.gabinete, r.valores).length, 0);
   assert.ok(T.avisosConfig(man.gabinete, r.valores).join(' ').indexOf('Sobran') >= 0);
+});
+
+prueba('R-17b · con «N cajones» el alto no se captura, se calcula', function () {
+  var r = registro('gabinete', { EstiloPuerta: '6', a21cantcajon: '3', b11altocaj1: '190mm' });
+
+  // Ningún campo de alto se muestra: los tres cajones son copias del primero.
+  man.gabinete.reglas_cajones.attrs_alto.forEach(function (a) {
+    var f = T.fieldByAttr(man.gabinete, a);
+    assert.ok(!T.fieldVisible(f, man.gabinete, r.valores), a + ' no debería mostrarse');
+  });
+
+  // El 190 mm que quedó capturado se ignora: reparte el alto útil entre los 3.
+  var p = T.presupuestoCajones(man.gabinete, r.valores);
+  assert.strictEqual(p.libres, 3);
+  assert.strictEqual(p.asignado, 0);
+  assert.ok(Math.abs(p.porCajon - p.disponible / 3) < 0.01);
+
+  // Y ese alto calculado sí llega al .skp, aunque el campo esté oculto.
+  var f = plano('gabinete', { EstiloPuerta: '6', a21cantcajon: '3', b11altocaj1: '190mm' });
+  assert.strictEqual(f['b11altocaj1'], (Math.round(p.porCajon * 100) / 100) + 'mm');
+  ['b12altocaj2', 'b13altocaj3', 'b14altocaj4']
+    .forEach(function (a) { assert.ok(!(a in f), a + ' lo copia el componente'); });
 });
 
 // ---- (c) dependencias entre campos ----------------------------------------

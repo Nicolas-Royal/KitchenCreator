@@ -157,11 +157,16 @@
   function fieldVisible(field, manifest, valores) {
     if (!field.visible_si) return true;
     if (field.visible_si.min_cajones != null) {
-      // En modo uniforme el componente hace los cajones copia del primero: un
-      // solo alto manda sobre todos, así que los demás campos no se muestran.
-      if (indiceAlto(manifest, field.attr) > 0 && cajonesUniformes(manifest, valores)) return false;
+      // En modo uniforme el alto no se captura: los n cajones son copias del
+      // primero y miden lo mismo, así que sale de la resta (alto útil menos
+      // márgenes y separaciones) y el presupuesto lo enseña. Ningún campo.
+      if (indiceAlto(manifest, field.attr) >= 0 && cajonesUniformes(manifest, valores)) return false;
       return cajonesEfectivos(manifest, valores) >= field.visible_si.min_cajones;
     }
+    // Sin `min` es el predicado normal del manifiesto: así un campo puede
+    // aparecer solo con ciertos diseños de puerta, no solo por encima de un
+    // número (Avento S trae dirección y tipo de apertura; Avento D, abatible).
+    if (field.visible_si.min == null) return condicionCumple(manifest, valores, field.visible_si);
     var n = attrNumber(manifest, valores, field.visible_si.attr);
     if (isNaN(n)) return true;
     return n >= field.visible_si.min;
@@ -315,40 +320,30 @@
     var uniforme   = cajonesUniformes(manifest, valores);
 
     // Altos que la diseñadora fijó; los que están en «Automático» van vacíos.
-    // En modo uniforme solo existe el primero y aplica a los n cajones. Si no,
-    // y n supera la cantidad de campos, esos cajones también quedan automáticos
-    // (los reparte la fórmula del componente).
+    // En modo uniforme no se fija ninguno: el alto de cada cajón es la resta, y
+    // solo queda el primer attr porque el componente copia los demás de él. Si
+    // no, y n supera la cantidad de campos, esos cajones también quedan
+    // automáticos (los reparte la fórmula del componente).
     var attrsAlto = (R.attrs_alto || []).slice(0, uniforme ? 1 : n);
-    var altos     = attrsAlto.map(function (a) { return attrMm(manifest, valores, a); });
+    var altos     = uniforme ? [NaN]
+                  : attrsAlto.map(function (a) { return attrMm(manifest, valores, a); });
 
-    var fijos = [], libresIdx = [], libres, asignado;
-    if (uniforme) {
-      if (isNaN(altos[0])) {
-        libres = n; libresIdx = [0]; asignado = 0;
-      } else {
-        libres = 0; fijos = [{ mm: altos[0], i: 0 }]; asignado = altos[0] * n;
-      }
-    } else {
-      altos.forEach(function (v, i) {
-        if (isNaN(v)) libresIdx.push(i); else fijos.push({ mm: v, i: i });
-      });
-      libres   = n - fijos.length;
-      asignado = fijos.reduce(function (s, f) { return s + f.mm; }, 0);
-    }
+    var fijos = [], libresIdx = [];
+    altos.forEach(function (v, i) {
+      if (isNaN(v)) libresIdx.push(i); else fijos.push({ mm: v, i: i });
+    });
+    var libres   = n - fijos.length;
+    var asignado = fijos.reduce(function (s, f) { return s + f.mm; }, 0);
     var restante = disponible - asignado;
-    var porCajon = libres > 0 ? restante / libres : (uniforme ? altos[0] : NaN);
+    var porCajon = libres > 0 ? restante / libres : NaN;
     var paso     = altoMin + sep;
     // nMax = tope geométrico del mueble (todos los cajones al mínimo). No depende
     // de n ni de los altos fijados, así que sirve de tope estable del contador.
     var nMax     = paso > 0 ? Math.floor((util + sep) / paso) : n;
     // cabenTotal = cuántos caben respetando los altos que ya fijó la diseñadora.
-    var cabenTotal;
-    if (uniforme) {
-      var pasoU  = (fijos.length ? altos[0] : altoMin) + sep;
-      cabenTotal = pasoU > 0 ? Math.floor((util + sep) / pasoU) : n;
-    } else {
-      cabenTotal = paso > 0 ? fijos.length + Math.max(0, Math.floor((restante + sep) / paso)) : n;
-    }
+    // En modo uniforme no hay ninguno fijado, así que manda el tope geométrico.
+    var cabenTotal = uniforme ? nMax
+                   : (paso > 0 ? fijos.length + Math.max(0, Math.floor((restante + sep) / paso)) : n);
 
     var ok = true, mensaje = '';
     var chico = fijos.filter(function (f) { return f.mm < altoMin; })[0];
@@ -738,7 +733,6 @@
 
     // Dentro del editor de caja la posición ya dice de qué margen se trata.
     var texto = (corto && field.label_corto) ? field.label_corto : field.label;
-    wrap.dataset.labelBase = texto;          // updateConditionals() puede sustituirlo
     var label = el('label', 'field__label', texto);
     wrap.appendChild(label);
 
@@ -1036,13 +1030,6 @@
         if (!wrap) return;
         if (f.visible_si) wrap.hidden = !fieldVisible(f, manifest, valores);
         if (f.suma) refrescarHintSuma(wrap, f, manifest, valores);
-        // El primer alto pasa a mandar sobre todos los cajones: se renombra para
-        // que la etiqueta no siga prometiendo un control por cajón.
-        if (indiceAlto(manifest, f.attr) === 0) {
-          var lbl = wrap.querySelector('.field__label');
-          var alt = manifest.reglas_cajones.label_uniforme;
-          if (lbl && alt) lbl.textContent = uniforme ? alt : wrap.dataset.labelBase;
-        }
         var forz = valorForzado(f, manifest, valores);
         if (forz != null) {
           // El control tiene que MOSTRAR lo que se va a inyectar, no lo último
@@ -1209,11 +1196,11 @@
   function aplicarAltosAutomaticos(manifest, registro, flat) {
     var p = presupuestoCajones(manifest, registro.valores);
     if (!p.aplica || !p.ok || p.libres <= 0) return;
+    // `attrsAlto` ya viene recortado a los cajones que existen, así que no hace
+    // falta volver a filtrar por visibilidad: en modo uniforme el campo está
+    // oculto pero el alto calculado sí tiene que llegar al .skp.
     p.libresIdx.forEach(function (i) {
-      var attr = p.attrsAlto[i];
-      var f = fieldByAttr(manifest, attr);
-      if (!f || !fieldVisible(f, manifest, registro.valores)) return;
-      flat[attr] = (Math.round(p.porCajon * 100) / 100) + 'mm';
+      flat[p.attrsAlto[i]] = (Math.round(p.porCajon * 100) / 100) + 'mm';
     });
   }
 
@@ -1932,6 +1919,8 @@
     flatten:              flatten,
     presupuestoCajones:   presupuestoCajones,
     presupuestoDivisores: presupuestoDivisores,
+    fieldByAttr:          fieldByAttr,
+    fieldVisible:         fieldVisible,
     nombresDivisores:     nombresDivisores,
     autoNombre:           autoNombre,
     problemasRegistro:    problemasRegistro,

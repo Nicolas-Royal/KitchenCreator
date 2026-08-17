@@ -326,18 +326,14 @@ module RoyalKitchen
 
       return "El alto útil del mueble quedó en #{a_mm(util)} mm. Revisa alto, zócalo y márgenes." if disp <= 0
 
+      # En modo uniforme no se captura ningún alto: los n cajones son copias del
+      # primero y su alto sale de la resta, así que no hay nada fijado que
+      # revalidar. Espejo de presupuestoCajones en app.js.
       uniforme = cajones_uniformes?(reglas, valores)
-      altos    = Array(reglas['attrs_alto']).first(uniforme ? 1 : n).map { |attr| medida_in(valores, attr) }
+      altos    = uniforme ? [] : Array(reglas['attrs_alto']).first(n).map { |attr| medida_in(valores, attr) }
       fijos    = altos.compact
-
-      if uniforme
-        # El único alto capturado se multiplica por los n cajones.
-        libres   = fijos.empty? ? n : 0
-        restante = disp - (fijos.empty? ? 0.0 : fijos[0] * n)
-      else
-        libres   = n - fijos.size
-        restante = disp - fijos.inject(0.0) { |s, v| s + v }
-      end
+      libres   = n - fijos.size
+      restante = disp - fijos.inject(0.0) { |s, v| s + v }
 
       bajo = fijos.find { |v| v < alto_min - TOL_IN }
       return "El alto de un cajón (#{a_mm(bajo)} mm) es menor al mínimo de #{minimo} mm." if bajo

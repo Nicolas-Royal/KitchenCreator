@@ -92,11 +92,25 @@
           { "label": "Avento D vidrio-madera", "valor": "13" }
         ] },
         { "id": "e07cantpuerta", "attr": "puerta>e07cantpuerta", "label": "Cantidad de puertas", "tipo": "select", "default": "1",
+          "visible_si": { "attr": "c25tipopuerta", "excepto": ["6", "7", "8", "9", "10", "11", "12", "13"] },
           "habilitado_si": { "attr": "c25tipopuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay nada que contar." },
-          "forzar": [
-            { "valor": "1", "si": [{ "attr": "c25tipopuerta", "valores": ["6", "7", "8", "9", "10", "11", "12", "13"] }],
-              "mensaje": "Un Avento es un mecanismo de una sola puerta." }
-          ], "opciones": [
+          "opciones": [
+          { "label": "Puerta simple - IZQ", "valor": "1" },
+          { "label": "Puerta simple - DER", "valor": "2" },
+          { "label": "Puerta doble", "valor": "3" },
+          { "label": "Puerta - 3", "valor": "4" },
+          { "label": "Puerta - 4", "valor": "5" },
+          { "label": "Puerta - 5", "valor": "6" },
+          { "label": "Puerta - 6", "valor": "7" },
+          { "label": "Puerta - 7", "valor": "8" },
+          { "label": "Puerta - 8", "valor": "9" },
+          { "label": "Puerta - 9", "valor": "10" },
+          { "label": "Puerta - 10", "valor": "11" }
+        ] },
+        { "id": "e07cantpuerta_avento", "attr": "puerta>e07cantpuerta", "label": "Cantidad de puertas (Avento)", "tipo": "select", "default": "1",
+          "visible_si": { "attr": "c25tipopuerta", "valores": ["6", "7", "8", "9", "10", "11", "12", "13"] },
+          "nota": "El Avento numera sus puertas de 1 a 10, sin la variante IZQ/DER.",
+          "opciones": [
           { "label": "Puerta - 1", "valor": "1" },
           { "label": "Puerta - 2", "valor": "2" },
           { "label": "Puerta - 3", "valor": "3" },
@@ -109,16 +123,17 @@
           { "label": "Puerta - 10", "valor": "10" }
         ] },
         { "id": "e08cantpuvert", "attr": "puerta>e08cantpuvert", "label": "Tipo de puerta abatible", "tipo": "select", "default": "1",
-          "habilitado_si": { "attr": "c25tipopuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay abatible que elegir." },
-          "forzar": [
-            { "valor": "1", "si": [{ "attr": "c25tipopuerta", "valores": ["6", "7", "8", "9"] }],
-              "mensaje": "Avento S es abatible simple." },
-            { "valor": "3", "si": [{ "attr": "c25tipopuerta", "valores": ["10", "11", "12", "13"] }],
-              "mensaje": "Avento D es abatible doble (hojas unidas)." }
-          ], "opciones": [
+          "visible_si": { "attr": "c25tipopuerta", "valores": ["10", "11", "12", "13"] },
+          "opciones": [
           { "label": "Puerta simple", "valor": "1" },
           { "label": "Puerta doble - individual", "valor": "2" },
           { "label": "Puerta doble - unidas", "valor": "3" }
+        ] },
+        { "id": "e09tipapertura", "attr": "puerta>e09tipapertura", "label": "Tipo de apertura", "tipo": "select", "default": "2",
+          "visible_si": { "attr": "c25tipopuerta", "valores": ["6", "7", "8", "9"] },
+          "opciones": [
+          { "label": "Apertura superior", "valor": "1" },
+          { "label": "Apertura inferior", "valor": "2" }
         ] },
         { "id": "f01posextintpu", "attr": "puerta>f01posextintpu", "label": "Posición de puertas", "tipo": "select", "default": "1",
           "habilitado_si": { "attr": "c25tipopuerta", "excepto": ["0"], "mensaje": "Sin puerta no hay nada que posicionar." }, "opciones": [
@@ -140,7 +155,7 @@
     {
       "id": "tirador",
       "titulo": "Tirador",
-      "condicion": { "attr": "c25tipopuerta", "excepto": ["0"], "mensaje": "Un módulo sin puerta no lleva tirador." },
+      "condicion": { "attr": "c25tipopuerta", "excepto": ["0", "3", "5", "8", "12"], "mensaje": "Sin puerta, con vidrio completo o con uñero no hay dónde montar un tirador. Aplica también al vidrio de los Avento; el vidrio-madera sí lo admite." },
       "campos": [
         { "id": "f21tipotirador", "attr": "puerta>f21tipotirador", "label": "Tipo de tirador", "tipo": "select", "default": "1", "opciones": [
           { "label": "Sin tirador", "valor": "1" },

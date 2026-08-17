@@ -23,7 +23,6 @@
   "reglas_cajones": {
     "alto_min_mm": 100,
     "uniforme_si_n": true,
-    "label_uniforme": "Alto de cada cajón (todos iguales)",
     "attr_alto_util": "LenZ",
     "attr_restar": ["a02zocalo", "f11margsupcaj", "f12marginfcaj"],
     "attr_separacion": "f02sepcajtirad",
@@ -158,7 +157,7 @@
     {
       "id": "tirador",
       "titulo": "Tirador",
-      "condicion": { "attr": "EstiloPuerta", "excepto": ["0"], "mensaje": "Un módulo sin puerta no lleva tirador." },
+      "condicion": { "attr": "EstiloPuerta", "excepto": ["0", "3", "5"], "mensaje": "Sin puerta, con vidrio completo o con uñero no hay dónde montar un tirador." },
       "campos": [
         { "id": "f21tipotirador", "attr": "puerta>f21tipotirador", "label": "Tipo de tirador", "tipo": "select", "default": "1", "opciones": [
           { "label": "Sin tirador", "valor": "1" },
