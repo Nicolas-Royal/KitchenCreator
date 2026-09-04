@@ -1153,7 +1153,16 @@
       g.campos.forEach(function (f) {
         if (!fieldInyecta(f, manifest, registro.valores)) return;
         var v = effectiveValue(f, registro.valores, manifest);
-        if (v === '' || v == null) return;
+        if (v === '' || v == null) {
+          // Un preset vacío («Entrepaño») puede traer su propia fórmula: se
+          // inyecta explícita para no depender de que el componente base la
+          // conserve intacta.
+          if (f.tipo === 'preset') {
+            var opt = buscarOpcion(f.presets, v);
+            if (opt && opt.formula) flat[f.attr] = '=' + opt.formula;
+          }
+          return;
+        }
         flat[f.attr] = v;   // duplicados de attr: gana el último (quirk conocido de la definición)
       });
     });

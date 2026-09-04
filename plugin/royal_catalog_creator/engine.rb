@@ -103,8 +103,18 @@ module RoyalKitchen
 
         is_standard = STANDARD_KEYS.include?(key)
 
+        # Un valor "=formula" (p.ej. el preset «Entrepaño» de un margen frontal)
+        # no es una medida: es la fórmula nativa del componente, reinyectada a
+        # propósito para no depender de que el .skp base la conserve intacta.
+        es_formula = valor_math.is_a?(String) && valor_math.start_with?('=')
+
         objetivos.each do |target_inst|
           [target_inst, target_inst.definition].each do |ent|
+            if es_formula
+              ent.set_attribute(DICT, "_#{key}_formula", valor_math[1..-1])
+              next
+            end
+
             ent.delete_attribute(DICT, "_#{key}_formula") rescue nil
             ent.set_attribute(DICT, key, valor_math)
 

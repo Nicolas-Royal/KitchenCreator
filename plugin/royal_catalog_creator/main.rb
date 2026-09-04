@@ -291,7 +291,9 @@ module RoyalKitchen
     # formulario ya lo bloquea; esto atrapa lo que no pasó por él.
     # -----------------------------------------------------------------------
     def validar_medidas(valores)
-      malos = valores.select { |_k, v| Engine.interpret(v).is_a?(String) }.keys
+      # Un valor "=formula" es la fórmula nativa del componente reinyectada a
+      # propósito (p.ej. margen frontal en modo «Entrepaño»), no una medida.
+      malos = valores.select { |_k, v| (i = Engine.interpret(v)).is_a?(String) && !i.start_with?('=') }.keys
       return "No son medidas válidas: #{malos.join(', ')}." unless malos.empty?
 
       negativos = valores.select { |_k, v| (n = Engine.interpret(v)).is_a?(Numeric) && n < 0 }.keys
