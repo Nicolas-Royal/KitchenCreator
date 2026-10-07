@@ -418,6 +418,63 @@
   }
 
   // =========================================================================
+  //  Geometría de entrepaños y divisores (gráfico interactivo)
+  // -------------------------------------------------------------------------
+  //  Repite las fórmulas del divisor del componente (DIA01 bajo Estructura):
+  //    alto interior  = cuerpo − 2 × espesor de estructura
+  //    espacios       = n + 1 (uno bajo cada repisa y el de arriba)
+  //    «Iguales»      → (interior − n × espesor) / (n + 1) cada uno
+  //    «Personalizado»→ cada espacio su medida; los que van en 0 se reparten
+  //                     el resto por igual
+  //    profundidad    = interior − retiro de esa repisa (divisor = retiro 0)
+  //  Los attrs salen de `group.visual` del manifiesto (dato, no código).
+  // =========================================================================
+  function geomEntrepanos(manifest, valores, V) {
+    var num = function (a) { var v = a ? attrMmCrudo(manifest, valores, a) : NaN; return isNaN(v) ? 0 : v; };
+    var on = condicionCumple(manifest, valores, V.activo);
+    var esp    = num(V.espesor_estructura);
+    var alto   = num(V.alto) - 2 * esp;
+    var ancho  = num(V.ancho) - 2 * esp;
+    // Fondo: su espesor + lo que el componente reserva detrás (ranura), como
+    // v41tamlenyrep1 de Estructura. Lo que no es campo del formulario va fijo.
+    var prof   = num(V.profundidad) - num(V.fondo) - (V.fondo_extra_mm || 0);
+    var n      = on ? (attrNumber(manifest, valores, V.cantidad) || 0) : 0;
+    var personal = condicionCumple(manifest, valores, { attr: V.modo, valor: V.modo_personalizado });
+    var k      = n + 1;
+    var libre  = alto - n * esp;
+
+    var crudos = (V.espacios || []).slice(0, k).map(function (a) { return personal ? num(a) : 0; });
+    while (crudos.length < k) crudos.push(0);
+    var fijos  = crudos.reduce(function (s, v) { return s + (v > 0 ? v : 0); }, 0);
+    var ceros  = crudos.filter(function (v) { return !(v > 0); }).length;
+    var auto   = ceros > 0 ? (libre - fijos) / ceros : 0;
+    var espacios = crudos.map(function (v) { return v > 0 ? v : auto; });
+
+    var latIzq = num(V.lateral_izq), latDer = num(V.lateral_der);
+    var repisas = [], z = 0;
+    for (var i = 0; i < n; i++) {
+      z += espacios[i];
+      var div = String(attrRaw(manifest, valores, V.tipos[i])) === String(V.valor_divisor);
+      var retiro = div ? 0 : num(V.retiros[i]);
+      repisas.push({ i: i, z: z, divisor: div, retiro: retiro, profundidad: prof - retiro,
+                     // La holgura lateral es UNA para todas las repisas en el
+                     // componente: un divisor junto a entrepaños también la lleva.
+                     lateralIzq: latIzq, lateralDer: latDer });
+      z += esp;
+    }
+    var usado = espacios.reduce(function (s, v) { return s + v; }, 0) + n * esp;
+    return { on: on, alto: alto, ancho: ancho, prof: prof, esp: esp, n: n, personal: personal,
+             espacios: espacios, crudos: crudos, repisas: repisas, libre: libre, fijos: fijos,
+             // Lo fijado que no cabe: si hay espacios en 0, ellos absorben (y quedan
+             // negativos) en vez de que la suma total crezca.
+             exceso: Math.max(usado - alto, fijos - libre), latIzq: latIzq, latDer: latDer };
+  }
+
+  function visualesEntrepanos(manifest) {
+    return manifest.grupos.filter(function (g) { return g.visual && g.visual.tipo === 'entrepanos'; });
+  }
+
+  // =========================================================================
   //  Presupuesto de alto de divisores  (R-14)
   // -------------------------------------------------------------------------
   //  A diferencia de los cajones, esto NO bloquea: los espacios personalizados
@@ -524,6 +581,22 @@
   /* Lo que debe verse pero no bloquea (R-14 y R-17). */
   function avisosConfig(manifest, valores) {
     var out = [];
+    visualesEntrepanos(manifest).forEach(function (g) {
+      if (!groupEnabled(g, manifest, valores)) return;
+      var G = geomEntrepanos(manifest, valores, g.visual);
+      if (!G.on || !G.n) return;
+      if (G.exceso > 1) {
+        out.push('Los espacios fijados entre repisas suman ' + fmt(G.fijos) + ' mm y solo caben ' + fmt(G.libre) +
+                 ' mm: se pasan ' + fmt(G.exceso) + ' mm.');
+      } else {
+        G.espacios.forEach(function (e, i) {
+          if (e < 1) out.push('El espacio ' + (i + 1) + ' entre repisas quedó en ' + fmt(e) + ' mm.');
+        });
+      }
+      G.repisas.forEach(function (r) {
+        if (r.profundidad < 50) out.push('La repisa ' + (r.i + 1) + ' queda de ' + fmt(r.profundidad) + ' mm de profundidad: revisa su retiro.');
+      });
+    });
     var d = presupuestoDivisores(manifest, valores);
     if (d.aplica && !d.ok) {
       out.push('Los espacios de los divisores suman ' + fmt(d.suma) + ' mm y el alto interior es ' + fmt(d.util) + ' mm.');
@@ -732,6 +805,11 @@
     // sigue en el grid normal, en su orden original.
     var caja = group.box_model ? renderBoxModel(group.box_model, manifest, registro) : null;
     if (caja) bodyEl.appendChild(caja.widget);
+    // Gráfico interactivo del grupo: edita los mismos campos que siguen debajo,
+    // así que el CSV y el formulario numérico conservan toda la información.
+    if (group.visual && group.visual.tipo === 'entrepanos') {
+      bodyEl.appendChild(renderVisualEntrepanos(group.visual, manifest, registro));
+    }
 
     group.campos.forEach(function (f) {
       if (caja && caja.usados[f.attr]) return;
@@ -773,6 +851,247 @@
     return { widget: widget, usados: usados };
   }
 
+  /* Gráfico interactivo de entrepaños y divisores.
+     Dos vistas a la misma escala vertical:
+       · Alzado (de frente): arrastrar una repisa arriba/abajo cambia los altos
+         de los espacios (pasa a «Personalizado»); clic la cambia de Entrepaño a
+         Divisor y viceversa.
+       · Corte lateral: arrastrar el canto frontal de un entrepaño cambia su
+         retiro del frente. Un divisor siempre llega al frente (retiro 0).
+     No guarda estado propio: lee y escribe los mismos campos del manifiesto
+     que se ven debajo, así que formulario, plantilla y CSV dicen lo mismo. */
+  function renderVisualEntrepanos(V, manifest, registro) {
+    var NS = 'http://www.w3.org/2000/svg';
+    var wrap = el('div', 'visual visual--entrepanos');
+    var barra = el('div', 'visual__barra');
+    var vistas = el('div', 'visual__vistas');
+    var pie = el('p', 'visual__pie');
+    wrap.appendChild(barra); wrap.appendChild(vistas); wrap.appendChild(pie);
+
+    var ESC_ALTO = 260;                 // alto de dibujo del interior (px)
+    var drag = null;                    // { modo:'alto'|'retiro', i, ... }
+
+    function campo(attr) { return fieldByAttr(manifest, attr); }
+    function setValor(attr, valor) {
+      var f = campo(attr);
+      if (!f) return;
+      registro.valores[f.id] = String(valor);
+      // El control numérico de abajo no se vuelve a pintar solo: se sincroniza.
+      var w = document.querySelector('.field[data-field-id="' + f.id + '"]');
+      if (w) Array.prototype.forEach.call(w.querySelectorAll('input, select'), function (c) {
+        if (c !== document.activeElement) c.value = String(valor);
+      });
+    }
+    function cambio() { onValueChange(manifest, registro); }
+    function svg(tag, attrs, txt) {
+      var n = document.createElementNS(NS, tag);
+      Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+      if (txt != null) n.textContent = txt;
+      return n;
+    }
+    function boton(txt, title, fn) {
+      var b = el('button', 'visual__btn', txt);
+      b.type = 'button'; b.title = title;
+      b.addEventListener('click', fn);
+      return b;
+    }
+
+    // ---- barra: cantidad, modo y leyenda --------------------------------
+    var lblN = el('span', 'visual__n');
+    var bMenos = boton('−', 'Quitar repisa', function () {
+      var f = campo(V.cantidad);
+      var n = parseInt(registro.valores[f.id], 10) || 1;
+      if (n > (f.min || 1)) { setValor(V.cantidad, n - 1); cambio(); }
+    });
+    var bMas = boton('+', 'Agregar repisa', function () {
+      var f = campo(V.cantidad);
+      var n = parseInt(registro.valores[f.id], 10) || 1;
+      if (n < (f.max || 6)) { setValor(V.cantidad, n + 1); cambio(); }
+    });
+    var bIguales = boton('Repartir iguales', 'Vuelve a separaciones iguales', function () {
+      var f = campo(V.modo);
+      var iguales = (f.opciones || []).filter(function (o) { return o.valor !== V.modo_personalizado; })[0];
+      if (iguales) { setValor(V.modo, iguales.valor); cambio(); }
+    });
+    barra.appendChild(bMenos); barra.appendChild(lblN); barra.appendChild(bMas);
+    barra.appendChild(bIguales);
+    var ley = el('span', 'visual__leyenda');
+    ley.innerHTML = '<i class="sw sw--ent"></i>Entrepaño <i class="sw sw--div"></i>Divisor';
+    barra.appendChild(ley);
+
+    // ---- dibujo -----------------------------------------------------------
+    function pintar() {
+      aplicarForzados(manifest, registro.valores);
+      var G = geomEntrepanos(manifest, registro.valores, V);
+      vistas.innerHTML = '';
+      wrap.classList.toggle('is-off', !G.on);
+      var fN = campo(V.cantidad);
+      lblN.textContent = G.on ? (G.n + (G.n === 1 ? ' repisa' : ' repisas')) : 'Sin entrepaños';
+      bMenos.disabled = !G.on || G.n <= (fN.min || 1);
+      bMas.disabled   = !G.on || G.n >= (fN.max || 6);
+      bIguales.disabled = !G.on || !G.personal;
+      if (!G.on) {
+        pie.textContent = 'Activa «Entrepaño: Sí» para acomodar repisas.';
+        return;
+      }
+      if (!(G.alto > 0) || !(G.ancho > 0) || !(G.prof > 0)) {
+        pie.textContent = 'Faltan las dimensiones del cuerpo para dibujar el interior.';
+        return;
+      }
+      var s = ESC_ALTO / G.alto;                 // px por mm, común a las dos vistas
+      var M = { t: 14, b: 22, l: 46, r: 14 };      // márgenes del lienzo (cotas a la izquierda)
+      var tPx = Math.max(3, G.esp * s);
+      var yDe = function (zmm) { return M.t + (G.alto - zmm) * s; };   // z desde el piso interior
+
+      // Alzado ---------------------------------------------------------------
+      var wA = Math.max(90, G.ancho * s);
+      var A = svg('svg', { 'class': 'visual__svg', width: wA + M.l + M.r, height: ESC_ALTO + M.t + M.b,
+                           viewBox: '0 0 ' + (wA + M.l + M.r) + ' ' + (ESC_ALTO + M.t + M.b) });
+      A.appendChild(svg('rect', { 'class': 'vs-caja', x: M.l, y: M.t, width: wA, height: ESC_ALTO }));
+      // cotas de los espacios
+      var zBase = 0;
+      G.espacios.forEach(function (e, j) {
+        var y1 = yDe(zBase), y0 = yDe(zBase + e);
+        A.appendChild(svg('line', { 'class': 'vs-cota', x1: M.l - 10, y1: y0, x2: M.l - 10, y2: y1 }));
+        A.appendChild(svg('text', { 'class': 'vs-cota-txt' + (G.crudos[j] > 0 ? ' is-fijo' : ''),
+                                    x: M.l - 14, y: (y0 + y1) / 2 + 4, 'text-anchor': 'end' }, fmt(e)));
+        zBase += e + (j < G.n ? G.esp : 0);
+      });
+      G.repisas.forEach(function (r) {
+        // Holgura exagerada a 2 px mínimo para que se vea; 0 real = sin hueco.
+        var inset  = r.lateralIzq > 0 ? Math.max(2, r.lateralIzq * s) : 0;
+        var insetD = r.lateralDer > 0 ? Math.max(2, r.lateralDer * s) : 0;
+        var g = svg('g', { 'class': 'vs-repisa' + (r.divisor ? ' is-div' : ''), 'data-i': r.i });
+        var y = yDe(r.z + G.esp);
+        g.appendChild(svg('rect', { 'class': 'vs-hit', x: M.l, y: y - 6, width: wA, height: tPx + 12 }));
+        g.appendChild(svg('rect', { 'class': 'vs-tabla', x: M.l + inset, y: y, width: wA - inset - insetD, height: tPx, rx: 1.5 }));
+        g.appendChild(svg('title', {}, (r.divisor ? 'Divisor ' : 'Entrepaño ') + (r.i + 1) +
+                          ' · arrastra para mover · clic para cambiar a ' + (r.divisor ? 'entrepaño' : 'divisor')));
+        g.addEventListener('pointerdown', function (ev) { empezar(ev, 'alto', r.i, A); });
+        A.appendChild(g);
+      });
+      A.appendChild(svg('text', { 'class': 'vs-titulo', x: M.l + wA / 2, y: ESC_ALTO + M.t + 16, 'text-anchor': 'middle' },
+                        'Frente · ' + fmt(G.ancho) + ' mm'));
+
+      // Corte lateral ----------------------------------------------------------
+      var wC = Math.max(90, G.prof * s);
+      var C = svg('svg', { 'class': 'visual__svg', width: wC + M.l + M.r, height: ESC_ALTO + M.t + M.b,
+                           viewBox: '0 0 ' + (wC + M.l + M.r) + ' ' + (ESC_ALTO + M.t + M.b) });
+      C.appendChild(svg('rect', { 'class': 'vs-caja', x: M.l, y: M.t, width: wC, height: ESC_ALTO }));
+      C.appendChild(svg('line', { 'class': 'vs-frente', x1: M.l + wC, y1: M.t, x2: M.l + wC, y2: M.t + ESC_ALTO }));
+      G.repisas.forEach(function (r) {
+        var y = yDe(r.z + G.esp);
+        var largo = Math.max(4, r.profundidad * s);
+        var g = svg('g', { 'class': 'vs-repisa' + (r.divisor ? ' is-div' : ''), 'data-i': r.i });
+        g.appendChild(svg('rect', { 'class': 'vs-tabla', x: M.l, y: y, width: largo, height: tPx, rx: 1.5 }));
+        g.appendChild(svg('title', {}, (r.divisor ? 'Divisor ' : 'Entrepaño ') + (r.i + 1) + ' · ' + fmt(r.profundidad) + ' mm de fondo'));
+        g.addEventListener('click', function () { if (!drag || !drag.movio) alternarTipo(r.i); });
+        C.appendChild(g);
+        if (!r.divisor) {
+          var hx = M.l + largo;
+          var h = svg('g', { 'class': 'vs-tirador', 'data-i': r.i });
+          h.appendChild(svg('rect', { 'class': 'vs-hit', x: hx - 8, y: y - 6, width: 16, height: tPx + 12 }));
+          h.appendChild(svg('circle', { cx: hx, cy: y + tPx / 2, r: 4.5 }));
+          h.appendChild(svg('title', {}, 'Arrastra para cambiar el retiro del frente'));
+          h.addEventListener('pointerdown', function (ev) { empezar(ev, 'retiro', r.i, C, M.l + wC); });
+          C.appendChild(h);
+          if (r.retiro > 0) {
+            C.appendChild(svg('text', { 'class': 'vs-retiro', x: Math.min(hx + 6, M.l + wC - 2), y: y - 3,
+                                        'text-anchor': hx + 30 > M.l + wC ? 'end' : 'start' }, '↤ ' + fmt(r.retiro)));
+          }
+        }
+      });
+      C.appendChild(svg('text', { 'class': 'vs-titulo', x: M.l + wC / 2, y: ESC_ALTO + M.t + 16, 'text-anchor': 'middle' },
+                        'Lado · fondo ' + fmt(G.prof) + ' mm →frente'));
+
+      vistas.appendChild(A); vistas.appendChild(C);
+
+      var msg = 'Interior ' + fmt(G.ancho) + ' × ' + fmt(G.alto) + ' mm · repisas de ' + fmt(G.esp) + ' mm · ' +
+                (G.personal ? 'altos personalizados (los de 0 se reparten el resto)' : 'separaciones iguales');
+      if (G.exceso > 1) msg += ' — se pasan ' + fmt(G.exceso) + ' mm';
+      pie.textContent = msg;
+      pie.classList.toggle('is-bad', G.exceso > 1);
+
+      // contexto que necesita el arrastre
+      wrap.__geom = { G: G, s: s, M: M };
+    }
+
+    function alternarTipo(i) {
+      var f = campo(V.tipos[i]);
+      if (!f || !fieldEnabled(f, manifest, registro.valores)) return;
+      var actual = String(registro.valores[f.id]);
+      var otro = (f.opciones || []).filter(function (o) { return String(o.valor) !== actual; })[0];
+      if (!otro) return;
+      setValor(V.tipos[i], otro.valor);
+      // Al volver a entrepaño se recupera un retiro razonable si estaba en 0.
+      if (String(otro.valor) !== String(V.valor_divisor)) {
+        var fr = campo(V.retiros[i]);
+        if (fr && !(parseFloat(registro.valores[fr.id]) > 0)) setValor(V.retiros[i], fr.default || '0');
+      }
+      cambio();
+    }
+
+    function empezar(ev, modo, i, lienzo, xFrente) {
+      if (ev.button !== 0) return;
+      ev.preventDefault();
+      var r = lienzo.getBoundingClientRect();
+      drag = { modo: modo, i: i, x0: ev.clientX, y0: ev.clientY, top: r.top, left: r.left,
+               xFrente: xFrente, movio: false, base: wrap.__geom };
+      if (modo === 'alto') {
+        // Al arrastrar se fijan TODOS los espacios en su medida actual: así mover
+        // una repisa no hace saltar a las demás. El de arriba queda en 0 (resto).
+        var G = drag.base.G;
+        drag.espacios = G.espacios.slice();
+      }
+      // La captura mantiene el arrastre aunque el puntero salga del dibujo; si
+      // el navegador la rechaza, el arrastre sigue funcionando dentro del widget.
+      try { if (wrap.setPointerCapture) wrap.setPointerCapture(ev.pointerId); } catch (e) {}
+    }
+
+    wrap.addEventListener('pointermove', function (ev) {
+      if (!drag) return;
+      var dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
+      if (!drag.movio && Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+      drag.movio = true;
+      var B = drag.base, G = B.G, s = B.s;
+      if (drag.modo === 'alto') {
+        var i = drag.i, e = drag.espacios.slice();
+        var dmm = -dy / s;                                     // arriba = más espacio abajo
+        var minEsp = 10;
+        var abajo = Math.round(e[i] + dmm), arriba = e[i] + e[i + 1] - abajo;
+        if (abajo < minEsp) { arriba -= (minEsp - abajo); abajo = minEsp; }
+        if (arriba < minEsp) { abajo -= (minEsp - arriba); arriba = minEsp; }
+        e[i] = abajo; e[i + 1] = arriba;
+        setValor(V.modo, V.modo_personalizado);
+        for (var j = 0; j < G.n; j++) setValor(V.espacios[j], Math.round(e[j]));
+        setValor(V.espacios[G.n], '0');                        // el de arriba toma el resto
+      } else {
+        var xPx = ev.clientX - drag.left;
+        var retiro = Math.round((drag.xFrente - xPx) / s);
+        retiro = Math.max(0, Math.min(Math.round(G.prof - 50), retiro));
+        setValor(V.retiros[drag.i], retiro);
+      }
+      cambio();
+    });
+
+    function terminar(ev) {
+      if (!drag) return;
+      var d = drag;
+      if (wrap.releasePointerCapture && ev && ev.pointerId != null) {
+        try { wrap.releasePointerCapture(ev.pointerId); } catch (e) {}
+      }
+      // Sin movimiento sobre una repisa del alzado = clic: alterna el tipo.
+      if (!d.movio && d.modo === 'alto') alternarTipo(d.i);
+      setTimeout(function () { drag = null; }, 0);
+    }
+    wrap.addEventListener('pointerup', terminar);
+    wrap.addEventListener('pointercancel', terminar);
+
+    wrap.__refresh = pintar;
+    pintar();
+    return wrap;
+  }
+
   function renderField(field, manifest, registro, corto) {
     // `data-field-id` es el único enlace DOM↔manifiesto: updateConditionals()
     // resuelve visible_si/habilitado_si leyendo el manifiesto, no el dataset.
@@ -794,7 +1113,9 @@
     wrap.appendChild(control);
 
     if (field.habilitado_si && field.habilitado_si.mensaje) {
-      wrap.appendChild(el('span', 'field__hint field__hint--cond', field.habilitado_si.mensaje));
+      var hh = el('span', 'field__hint field__hint--cond', field.habilitado_si.mensaje);
+      hh.dataset.hintHabilitado = '1';
+      wrap.appendChild(hh);
     }
     if (field.forzar) {
       // El motivo depende de qué entrada de `forzar` aplicó: lo rellena
@@ -1086,6 +1407,12 @@
             hf.textContent = (ent && ent.mensaje) || '';
           }
         }
+        // Apagado solo por un forzado: el motivo es el del forzado, no la
+        // condición de habilitación (que sí se cumple).
+        var hh = wrap.querySelector('[data-hint-habilitado]');
+        if (hh) hh.hidden = forz != null && condicionCumple(manifest, valores, f.habilitado_si);
+        var hfz = wrap.querySelector('[data-hint-forzar]');
+        if (hfz) hfz.hidden = forz == null;
         if (f.habilitado_si || f.forzar) {
           var on = fieldEnabled(f, manifest, valores);
           wrap.classList.toggle('is-disabled', !on);
@@ -1099,6 +1426,9 @@
     });
 
     refreshBudget(manifest, valores);
+    Array.prototype.forEach.call(document.querySelectorAll('.visual'), function (v) {
+      if (typeof v.__refresh === 'function') v.__refresh();
+    });
     refreshErrores(manifest, registro);
     refrescarGenerar();
   }
@@ -1195,6 +1525,10 @@
       if (!groupEnabled(g, manifest, registro.valores)) return;
       g.campos.forEach(function (f) {
         if (!fieldInyecta(f, manifest, registro.valores)) return;
+        // Un campo `virtual` es una decisión de captura (p. ej. «Entrepaño o
+        // Divisor») que el componente no tiene como atributo: gobierna a otros
+        // campos vía `forzar`, viaja en la plantilla/CSV, pero no al .skp.
+        if (f.virtual) return;
         var v = effectiveValue(f, registro.valores, manifest);
         if (v === '' || v == null) {
           // Un preset vacío («Entrepaño») puede traer su propia fórmula: se
@@ -1957,6 +2291,7 @@
     presupuestoCajones:   presupuestoCajones,
     presupuestosCajones:  presupuestosCajones,
     altoZona:             altoZona,
+    geomEntrepanos:       geomEntrepanos,
     presupuestoDivisores: presupuestoDivisores,
     fieldByAttr:          fieldByAttr,
     fieldVisible:         fieldVisible,

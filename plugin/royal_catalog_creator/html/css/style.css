@@ -276,6 +276,55 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 .boxmodel__izquierda .field__label,
 .boxmodel__derecha .field__label { text-align: left; }
 
+/* Gráfico de entrepaños y divisores: alzado + corte lateral a la misma escala.
+   Entrepaño = teal de marca; divisor = tinta oscura, para que se distingan
+   también en escala de grises. */
+.visual {
+  grid-column: 1 / -1;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px 14px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  user-select: none;
+  touch-action: none;
+}
+.visual.is-off .visual__vistas { display: none; }
+.visual__barra { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+.visual__btn {
+  height: 28px; min-width: 28px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text); font: inherit; cursor: pointer;
+}
+.visual__btn:hover:not(:disabled) { border-color: var(--primary); }
+.visual__btn:disabled { color: var(--muted); cursor: not-allowed; }
+.visual__n { min-width: 74px; text-align: center; font-weight: 600; }
+.visual__leyenda { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); }
+.visual__leyenda .sw { display: inline-block; width: 18px; height: 6px; border-radius: 2px; margin-left: 6px; }
+.visual__leyenda .sw--ent { background: var(--primary); }
+.visual__leyenda .sw--div { background: var(--text-dim); }
+.visual__vistas { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
+.visual__svg { display: block; max-width: 100%; height: auto; overflow: visible; }
+.visual__pie { margin: 0; font-size: 12px; color: var(--text-dim); }
+.visual__pie.is-bad { color: var(--warn); }
+
+.vs-caja   { fill: var(--surface); stroke: var(--text-dim); stroke-width: 1.5; }
+.vs-frente { stroke: var(--primary); stroke-width: 3; stroke-dasharray: 4 3; }
+.vs-cota   { stroke: var(--muted); stroke-width: 1; }
+.vs-cota-txt { fill: var(--text-dim); font-size: 10px; font-variant-numeric: tabular-nums; }
+.vs-cota-txt.is-fijo { fill: var(--text); font-weight: 600; }
+.vs-titulo { fill: var(--text-dim); font-size: 10px; }
+.vs-hit    { fill: transparent; }
+.vs-repisa { cursor: ns-resize; }
+.vs-repisa .vs-tabla { fill: var(--primary); }
+.vs-repisa.is-div .vs-tabla { fill: var(--text-dim); }
+.vs-repisa:hover .vs-tabla { filter: brightness(1.12); stroke: var(--text); stroke-width: 1; }
+.visual__svg + .visual__svg .vs-repisa { cursor: pointer; }
+.vs-tirador { cursor: ew-resize; }
+.vs-tirador circle { fill: var(--surface); stroke: var(--primary-strong); stroke-width: 2; }
+.vs-tirador:hover circle { fill: var(--primary-weak); }
+.vs-retiro { fill: var(--primary-on-weak); font-size: 10px; font-weight: 600; }
+
 /* ---------- Campos ---------- */
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .field[hidden] { display: none; }

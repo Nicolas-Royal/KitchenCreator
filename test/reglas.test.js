@@ -357,6 +357,88 @@ prueba('R-30 · el auto-nombre describe la configuración vigente', function () 
   assert.strictEqual(T.autoNombre(man.esquinero, registro('esquinero', {}).valores).indexOf('ESQ'), 0);
 });
 
+
+// ---- (f) entrepaños y divisores (gráfico) ----------------------------------
+// Cuerpo 770 − 2 × 18 = 734 mm de interior; repisas de 18 mm.
+function geom(c) { var r = registro('gabinete', c); return T.geomEntrepanos(man.gabinete, r.valores, campoGrupo('entrepanos').visual); }
+function campoGrupo(id) { return man.gabinete.grupos.filter(function (g) { return g.id === id; })[0]; }
+
+prueba('E-01 · iguales: n repisas dejan n + 1 espacios iguales', function () {
+  var G = geom({ h01_entrepano: '0', h02_cantidad: '2' });
+  assert.strictEqual(G.espacios.length, 3);
+  assert.ok(Math.abs(G.alto - 734) < 0.01);
+  assert.ok(Math.abs(G.espacios[0] - (734 - 36) / 3) < 0.01);
+  assert.ok(Math.abs(G.repisas[1].z - (2 * G.espacios[0] + 18)) < 0.01, 'repisa 2 sobre espacio 1 + repisa 1 + espacio 2');
+});
+
+prueba('E-02 · personalizado: los espacios en 0 se reparten el resto', function () {
+  var G = geom({ h01_entrepano: '0', h02_cantidad: '2', h03_tipo_medida: '2', h11_espacio1_alto: '300' });
+  assert.strictEqual(G.espacios[0], 300);
+  assert.ok(Math.abs(G.espacios[1] - (734 - 36 - 300) / 2) < 0.01);
+  assert.ok(Math.abs(G.exceso) < 0.01);
+});
+
+prueba('E-03 · divisor: retiro 0 y sin holgura; entrepaño: retiro y holgura', function () {
+  var f = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '2', h22_tipo: 'D', h21_entrepano1_retiro_fondo: '40' });
+  assert.strictEqual(f.h21_entrepano1_retiro_fondo, '40mm');
+  assert.strictEqual(f.h22_entrepano2_retiro_fondo, '0mm', 'el divisor se fuerza a 0');
+  assert.strictEqual(f.h33_margen_izquierdo, '1.5mm', 'con algún entrepaño queda la holgura');
+  var todos = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '2', h21_tipo: 'D', h22_tipo: 'D' });
+  assert.strictEqual(todos.h33_margen_izquierdo, '0mm');
+  assert.strictEqual(todos.h34_margen_derecho, '0mm');
+  // Un divisor de una repisa que no existe no cuenta.
+  assert.strictEqual(plano('gabinete', { h01_entrepano: '0', h02_cantidad: '1', h22_tipo: 'E', h21_tipo: 'D' }).h33_margen_izquierdo, '0mm');
+  var G = geom({ h01_entrepano: '0', h02_cantidad: '2', h22_tipo: 'D' });
+  assert.ok(Math.abs(G.repisas[1].profundidad - G.prof) < 0.01, 'el divisor llega al frente');
+  // Medido en SketchUp (2026-10-07): 578 − 12 (fondo) − 12 (ranura) = 554 para el divisor.
+  assert.ok(Math.abs(G.prof - 554) < 0.01, 'profundidad interior real: ' + G.prof);
+  assert.strictEqual(G.repisas[1].lateralIzq, 1.5, 'la holgura es global: el divisor también la lleva si hay entrepaños');
+  assert.ok(Math.abs(G.repisas[0].profundidad - (G.prof - 26)) < 0.01, 'entrepaño con su retiro por omisión');
+});
+
+prueba('E-04 · el tipo es virtual: va en la plantilla, no al .skp', function () {
+  var f = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '3' });
+  Object.keys(f).forEach(function (k) { assert.ok(!/^h2\d_tipo$/.test(k), 'no debería inyectarse ' + k); });
+  assert.ok(campo('gabinete', 'h21_tipo').virtual);
+});
+
+prueba('E-05 · con n repisas se inyectan los n + 1 espacios en personalizado', function () {
+  var f = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '1', h03_tipo_medida: '2', h11_espacio1_alto: '200', h12_espacio2_alto: '0' });
+  assert.strictEqual(f.h11_espacio1_alto, '200mm');
+  assert.strictEqual(f.h12_espacio2_alto, '0mm', 'el espacio de arriba también viaja (si no, el .skp conserva el suyo)');
+  assert.ok(!('h13_espacio3_alto' in f));
+});
+
+prueba('E-06 · espacios que se pasan del interior advierten, no bloquean', function () {
+  var c = { h01_entrepano: '0', h02_cantidad: '2', h03_tipo_medida: '2', h11_espacio1_alto: '500', h12_espacio2_alto: '500' };
+  assert.strictEqual(errores('gabinete', c).length, 0);
+  var r = registro('gabinete', c);
+  assert.ok(T.avisosConfig(man.gabinete, r.valores).join(' ').indexOf('se pasan') >= 0);
+});
+
+prueba('M-02 · todo campo tiene id y attr, y ningún id se repite', function () {
+  ['gabinete', 'alacena', 'esquinero'].forEach(function (fam) {
+    var vistos = {};
+    man[fam].grupos.forEach(function (g) {
+      g.campos.forEach(function (c) {
+        assert.ok(c.id && c.attr, fam + ' · campo sin id/attr: ' + JSON.stringify(c).slice(0, 80));
+        assert.ok(!vistos[c.id], fam + ' · id repetido: ' + c.id);
+        vistos[c.id] = true;
+      });
+    });
+  });
+});
+
+prueba('M-01 · todo select del manifiesto trae su lista de opciones', function () {
+  ['gabinete', 'alacena', 'esquinero'].forEach(function (fam) {
+    man[fam].grupos.forEach(function (g) {
+      g.campos.forEach(function (c) {
+        if (c.tipo === 'select') assert.ok(Array.isArray(c.opciones) && c.opciones.length > 0, fam + ' · ' + c.id + ' sin opciones');
+      });
+    });
+  });
+});
+
 // ---- barrido: ninguna combinación válida queda bloqueada -------------------
 prueba('sin falsos positivos: todo acomodo de zonas que cabe genera', function () {
   var contenidos = ['1', '2', '3'];

@@ -10,8 +10,32 @@
     "g01_perfil_tipo": { "1": "A", "2": "M" },
     "d11_z1_contenido": { "1": "P", "2": "C", "3": "S" },
     "d31_z2_contenido": { "1": "P", "2": "C", "3": "S" },
-    "d15_z1_cant_puertas": { "1": "1I", "2": "1D", "3": "2", "4": "3", "5": "4", "6": "5", "7": "6", "8": "7", "9": "8", "10": "9", "11": "10" },
-    "d35_z2_cant_puertas": { "1": "1I", "2": "1D", "3": "2", "4": "3", "5": "4", "6": "5", "7": "6", "8": "7", "9": "8", "10": "9", "11": "10" },
+    "d15_z1_cant_puertas": {
+      "1": "1I",
+      "2": "1D",
+      "3": "2",
+      "4": "3",
+      "5": "4",
+      "6": "5",
+      "7": "6",
+      "8": "7",
+      "9": "8",
+      "10": "9",
+      "11": "10"
+    },
+    "d35_z2_cant_puertas": {
+      "1": "1I",
+      "2": "1D",
+      "3": "2",
+      "4": "3",
+      "5": "4",
+      "6": "5",
+      "7": "6",
+      "8": "7",
+      "9": "8",
+      "10": "9",
+      "11": "10"
+    },
     "h01_entrepano": { "0": "-E", "1": "" },
     "b02_tipo_cajon": { "1": "", "2": "-AN", "3": "-TL" }
   },
@@ -29,30 +53,86 @@
     "zonas": { "attr_cantidad": "d01_cantidad_zonas", "attr_alto_superior": "d02_alto_zona_superior" },
     "pilas": [
       {
-        "id": "z1", "titulo": "zona 1", "zona": 1,
+        "id": "z1",
+        "titulo": "zona 1",
+        "zona": 1,
         "si": [{ "attr": "d11_z1_contenido", "valor": "2" }],
         "attr_cantidad": "d12_z1_cant_cajones",
-        "attr_modo": "d13_z1_medida_cajones", "valor_personalizado": "2",
-        "attrs_alto": ["d21_z1_cajon1_alto", "d22_z1_cajon2_alto", "d23_z1_cajon3_alto", "d24_z1_cajon4_alto", "d25_z1_cajon5_alto", "d26_z1_cajon6_alto"],
-        "max": [{ "n": 2, "si": [{ "attr": "b01_gola_o_tirador", "valor": "2" }], "mensaje": "Con gola van máximo 2 cajones por zona." }]
+        "attr_modo": "d13_z1_medida_cajones",
+        "valor_personalizado": "2",
+        "attrs_alto": [
+          "d21_z1_cajon1_alto",
+          "d22_z1_cajon2_alto",
+          "d23_z1_cajon3_alto",
+          "d24_z1_cajon4_alto",
+          "d25_z1_cajon5_alto",
+          "d26_z1_cajon6_alto"
+        ],
+        "max": [
+          {
+            "n": 2,
+            "si": [{ "attr": "b01_gola_o_tirador", "valor": "2" }],
+            "mensaje": "Con gola van máximo 2 cajones por zona."
+          }
+        ]
       },
       {
-        "id": "z2", "titulo": "zona 2", "zona": 2,
+        "id": "z2",
+        "titulo": "zona 2",
+        "zona": 2,
         "si": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "2" }],
         "attr_cantidad": "d32_z2_cant_cajones",
-        "attr_modo": "d33_z2_medida_cajones", "valor_personalizado": "2",
-        "attrs_alto": ["d41_z2_cajon1_alto", "d42_z2_cajon2_alto", "d43_z2_cajon3_alto", "d44_z2_cajon4_alto", "d45_z2_cajon5_alto", "d46_z2_cajon6_alto"],
-        "max": [{ "n": 2, "si": [{ "attr": "b01_gola_o_tirador", "valor": "2" }], "mensaje": "Con gola van máximo 2 cajones por zona." }]
+        "attr_modo": "d33_z2_medida_cajones",
+        "valor_personalizado": "2",
+        "attrs_alto": [
+          "d41_z2_cajon1_alto",
+          "d42_z2_cajon2_alto",
+          "d43_z2_cajon3_alto",
+          "d44_z2_cajon4_alto",
+          "d45_z2_cajon5_alto",
+          "d46_z2_cajon6_alto"
+        ],
+        "max": [
+          {
+            "n": 2,
+            "si": [{ "attr": "b01_gola_o_tirador", "valor": "2" }],
+            "mensaje": "Con gola van máximo 2 cajones por zona."
+          }
+        ]
       }
     ]
   },
   "reglas_geometria": [
-    { "attrs": ["c01_espesor_estructura"], "menor_que": "LenX", "mensaje": "El espesor de estructura no puede alcanzar el ancho." },
-    { "attrs": ["c01_espesor_estructura"], "menor_que": "LenY", "mensaje": "El espesor de estructura no puede alcanzar la profundidad." },
-    { "attrs": ["c01_espesor_estructura"], "menor_que": "LenZ", "mensaje": "El espesor de estructura no puede alcanzar el alto." },
-    { "attrs": ["c03_espesor_fondo"], "menor_que": "LenY", "mensaje": "El espesor de fondo no puede alcanzar la profundidad." },
-    { "attrs": ["k03_margen_izquierdo", "k04_margen_derecho"], "menor_que": "LenX", "mensaje": "Los márgenes izquierdo y derecho no dejan frente: suman más que el ancho." },
-    { "attrs": ["d02_alto_zona_superior"], "menor_que": "LenZ", "mensaje": "El alto de la zona superior no cabe en el alto del cuerpo." }
+    {
+      "attrs": ["c01_espesor_estructura"],
+      "menor_que": "LenX",
+      "mensaje": "El espesor de estructura no puede alcanzar el ancho."
+    },
+    {
+      "attrs": ["c01_espesor_estructura"],
+      "menor_que": "LenY",
+      "mensaje": "El espesor de estructura no puede alcanzar la profundidad."
+    },
+    {
+      "attrs": ["c01_espesor_estructura"],
+      "menor_que": "LenZ",
+      "mensaje": "El espesor de estructura no puede alcanzar el alto."
+    },
+    {
+      "attrs": ["c03_espesor_fondo"],
+      "menor_que": "LenY",
+      "mensaje": "El espesor de fondo no puede alcanzar la profundidad."
+    },
+    {
+      "attrs": ["k03_margen_izquierdo", "k04_margen_derecho"],
+      "menor_que": "LenX",
+      "mensaje": "Los márgenes izquierdo y derecho no dejan frente: suman más que el ancho."
+    },
+    {
+      "attrs": ["d02_alto_zona_superior"],
+      "menor_que": "LenZ",
+      "mensaje": "El alto de la zona superior no cabe en el alto del cuerpo."
+    }
   ],
   "grupos": [
     {
@@ -60,14 +140,9 @@
       "titulo": "Dimensiones",
       "campos": [
         { "id": "LenX", "attr": "LenX", "label": "Ancho", "tipo": "numero", "unidad": "mm", "default": "600", "placeholder": "600", "positivo": true, "requerido": true },
-        { "id": "LenY", "attr": "LenY", "label": "Profundidad del cuerpo", "tipo": "numero", "unidad": "mm", "default": "578", "placeholder": "578", "positivo": true, "requerido": true,
-          "nota": "Sin la puerta: el componente mide la profundidad total, así que se le suma el espesor de puerta.",
-          "suma": [{ "attr": "c02_espesor_puerta" }] },
-        { "id": "LenZ", "attr": "LenZ", "label": "Alto del cuerpo", "tipo": "numero", "unidad": "mm", "default": "770", "placeholder": "770", "positivo": true, "requerido": true,
-          "nota": "Sin el zoclo: se le suma el alto del zoclo, que eleva la estructura.",
-          "suma": [{ "attr": "a02_alto_zoclo" }] },
-        { "id": "a02_alto_zoclo", "attr": "a02_alto_zoclo", "label": "Alto del zoclo", "tipo": "numero", "unidad": "mm", "default": "100", "placeholder": "100",
-          "nota": "La estructura queda elevada esta medida aunque el zoclo esté apagado (patas o zoclo corrido). Para un gabinete al piso, 0." }
+        { "id": "LenY", "attr": "LenY", "label": "Profundidad del cuerpo", "tipo": "numero", "unidad": "mm", "default": "578", "placeholder": "578", "positivo": true, "requerido": true, "nota": "Sin la puerta: el componente mide la profundidad total, así que se le suma el espesor de puerta.", "suma": [{ "attr": "c02_espesor_puerta" }] },
+        { "id": "LenZ", "attr": "LenZ", "label": "Alto del cuerpo", "tipo": "numero", "unidad": "mm", "default": "770", "placeholder": "770", "positivo": true, "requerido": true, "nota": "Sin el zoclo: se le suma el alto del zoclo, que eleva la estructura.", "suma": [{ "attr": "a02_alto_zoclo" }] },
+        { "id": "a02_alto_zoclo", "attr": "a02_alto_zoclo", "label": "Alto del zoclo", "tipo": "numero", "unidad": "mm", "default": "100", "placeholder": "100", "nota": "La estructura queda elevada esta medida aunque el zoclo esté apagado (patas o zoclo corrido). Para un gabinete al piso, 0." }
       ]
     },
     {
@@ -78,8 +153,7 @@
           { "label": "Módulo con tirador", "valor": "1" },
           { "label": "Módulo con gola", "valor": "2" }
         ] },
-        { "id": "l01_linea_frente", "attr": "l01_linea_frente", "label": "Línea de frente", "tipo": "select", "default": "1",
-          "nota": "Para el catálogo se genera en Lisa; el estilo se cambia al insertar.", "opciones": [
+        { "id": "l01_linea_frente", "attr": "l01_linea_frente", "label": "Línea de frente", "tipo": "select", "default": "1", "nota": "Para el catálogo se genera en Lisa; el estilo se cambia al insertar.", "opciones": [
           { "label": "Lisa", "valor": "1" },
           { "label": "Italiana", "valor": "2" },
           { "label": "Mitered", "valor": "3" },
@@ -91,10 +165,8 @@
           { "label": "Lisa con Estiradera Integrada", "valor": "9" },
           { "label": "Inglesa", "valor": "10" }
         ] },
-        { "id": "l02_marco_ancho", "attr": "l02_marco_ancho", "label": "Italiana: ancho del marco", "tipo": "numero", "unidad": "mm", "default": "60", "placeholder": "60", "positivo": true,
-          "visible_si": { "attr": "l01_linea_frente", "valor": "2" } },
-        { "id": "l03_rebaje_panel", "attr": "l03_rebaje_panel", "label": "Italiana: profundidad del panel", "tipo": "numero", "unidad": "mm", "default": "5", "placeholder": "5", "positivo": true,
-          "visible_si": { "attr": "l01_linea_frente", "valor": "2" } },
+        { "id": "l02_marco_ancho", "attr": "l02_marco_ancho", "label": "Italiana: ancho del marco", "tipo": "numero", "unidad": "mm", "default": "60", "placeholder": "60", "positivo": true, "visible_si": { "attr": "l01_linea_frente", "valor": "2" } },
+        { "id": "l03_rebaje_panel", "attr": "l03_rebaje_panel", "label": "Italiana: profundidad del panel", "tipo": "numero", "unidad": "mm", "default": "5", "placeholder": "5", "positivo": true, "visible_si": { "attr": "l01_linea_frente", "valor": "2" } },
         { "id": "f02_montaje", "attr": "f02_montaje", "label": "Montaje de puertas y cajones", "tipo": "select", "default": "1", "opciones": [
           { "label": "Exterior", "valor": "1" },
           { "label": "Interior", "valor": "2" }
@@ -116,13 +188,11 @@
           { "label": "Izquierda y derecha, interior", "valor": "3" },
           { "label": "Izquierda y derecha, exterior", "valor": "4" }
         ] },
-        { "id": "g03_combinacion", "attr": "g03_combinacion", "label": "Combinación de perfiles", "tipo": "select", "default": "1",
-          "nota": "L - L cierra el hueco entre zonas.", "opciones": [
+        { "id": "g03_combinacion", "attr": "g03_combinacion", "label": "Combinación de perfiles", "tipo": "select", "default": "1", "nota": "L - L cierra el hueco entre zonas.", "opciones": [
           { "label": "L - C", "valor": "1" },
           { "label": "L - L", "valor": "2" }
         ] },
-        { "id": "c23_material_gola_aluminio", "attr": "c23_material_gola_aluminio", "label": "Color de la gola de aluminio", "tipo": "select", "default": "Gris mate",
-          "habilitado_si": { "attr": "g01_perfil_tipo", "valor": "1", "mensaje": "Solo aplica al perfil de aluminio." }, "opciones": [
+        { "id": "c23_material_gola_aluminio", "attr": "c23_material_gola_aluminio", "label": "Color de la gola de aluminio", "tipo": "select", "default": "Gris mate", "habilitado_si": { "attr": "g01_perfil_tipo", "valor": "1", "mensaje": "Solo aplica al perfil de aluminio." }, "opciones": [
           { "label": "Aluminio anodizado mate", "valor": "Aluminio anodizado mate" },
           { "label": "Negro mate", "valor": "Negro mate" },
           { "label": "Champagne mate", "valor": "Champagne mate" },
@@ -138,16 +208,13 @@
           { "label": "1 zona", "valor": "1" },
           { "label": "2 zonas", "valor": "2" }
         ] },
-        { "id": "d02_alto_zona_superior", "attr": "d02_alto_zona_superior", "label": "Alto de la zona superior", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "nota": "0 = mitad de la fachada.",
-          "habilitado_si": { "attr": "d01_cantidad_zonas", "valor": "2", "mensaje": "Solo aplica con 2 zonas." } },
+        { "id": "d02_alto_zona_superior", "attr": "d02_alto_zona_superior", "label": "Alto de la zona superior", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "nota": "0 = mitad de la fachada.", "habilitado_si": { "attr": "d01_cantidad_zonas", "valor": "2", "mensaje": "Solo aplica con 2 zonas." } },
         { "id": "d11_z1_contenido", "attr": "d11_z1_contenido", "label": "Zona 1 (superior, o única): contenido", "tipo": "select", "default": "1", "opciones": [
           { "label": "Puerta", "valor": "1" },
           { "label": "Cajones", "valor": "2" },
           { "label": "Sin frente", "valor": "3" }
         ] },
-        { "id": "d31_z2_contenido", "attr": "d31_z2_contenido", "label": "Zona 2 (inferior): contenido", "tipo": "select", "default": "2",
-          "habilitado_si": { "attr": "d01_cantidad_zonas", "valor": "2", "mensaje": "Solo aplica con 2 zonas." }, "opciones": [
+        { "id": "d31_z2_contenido", "attr": "d31_z2_contenido", "label": "Zona 2 (inferior): contenido", "tipo": "select", "default": "2", "habilitado_si": { "attr": "d01_cantidad_zonas", "valor": "2", "mensaje": "Solo aplica con 2 zonas." }, "opciones": [
           { "label": "Puerta", "valor": "1" },
           { "label": "Cajones", "valor": "2" },
           { "label": "Sin frente", "valor": "3" }
@@ -172,8 +239,7 @@
           { "label": "Puerta - 9", "valor": "10" },
           { "label": "Puerta - 10", "valor": "11" }
         ] },
-        { "id": "d16_z1_tirador_tipo", "attr": "d16_z1_tirador_tipo", "label": "Zona 1: tirador", "tipo": "select", "default": "9",
-          "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola no lleva tirador." }, "opciones": [
+        { "id": "d16_z1_tirador_tipo", "attr": "d16_z1_tirador_tipo", "label": "Zona 1: tirador", "tipo": "select", "default": "9", "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola no lleva tirador." }, "opciones": [
           { "label": "Sin tirador", "valor": "1" },
           { "label": "Lateral negra", "valor": "7" },
           { "label": "New Chica", "valor": "8" },
@@ -191,8 +257,7 @@
           { "label": "Botón cilíndrico plateado", "valor": "20" },
           { "label": "Berlín", "valor": "21" }
         ] },
-        { "id": "d17_z1_tirador_posicion", "attr": "d17_z1_tirador_posicion", "label": "Zona 1: posición del tirador", "tipo": "select", "default": "6",
-          "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d16_z1_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que posicionar." }, "opciones": [
+        { "id": "d17_z1_tirador_posicion", "attr": "d17_z1_tirador_posicion", "label": "Zona 1: posición del tirador", "tipo": "select", "default": "6", "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d16_z1_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que posicionar." }, "opciones": [
           { "label": "Arriba - Izquierda", "valor": "1" },
           { "label": "Arriba - Centro", "valor": "2" },
           { "label": "Arriba - Derecha", "valor": "3" },
@@ -203,13 +268,11 @@
           { "label": "Abajo - Centro", "valor": "8" },
           { "label": "Abajo - Derecha", "valor": "9" }
         ] },
-        { "id": "d18_z1_tirador_orientacion", "attr": "d18_z1_tirador_orientacion", "label": "Zona 1: orientación del tirador", "tipo": "select", "default": "2",
-          "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d16_z1_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que orientar." }, "opciones": [
+        { "id": "d18_z1_tirador_orientacion", "attr": "d18_z1_tirador_orientacion", "label": "Zona 1: orientación del tirador", "tipo": "select", "default": "2", "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d16_z1_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que orientar." }, "opciones": [
           { "label": "Horizontal", "valor": "1" },
           { "label": "Vertical", "valor": "2" }
         ] },
-        { "id": "d19_z1_tirador_largo", "attr": "d19_z1_tirador_largo", "label": "Zona 1: largo del tirador", "tipo": "numero", "unidad": "mm", "default": "300", "placeholder": "300", "positivo": true,
-          "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d16_z1_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay largo." } }
+        { "id": "d19_z1_tirador_largo", "attr": "d19_z1_tirador_largo", "label": "Zona 1: largo del tirador", "tipo": "numero", "unidad": "mm", "default": "300", "placeholder": "300", "positivo": true, "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d16_z1_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay largo." } }
       ]
     },
     {
@@ -223,23 +286,20 @@
           { "label": "Iguales", "valor": "1" },
           { "label": "Personalizado", "valor": "2" }
         ] },
-        { "id": "d21_z1_cajon1_alto", "attr": "d21_z1_cajon1_alto", "label": "Zona 1: alto cajón 1 (arriba)", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "nota": "0 = igual que los demás. El último cajón siempre toma el resto.",
-          "visible_si": { "attr": "d12_z1_cant_cajones", "min": 2 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
-        { "id": "d22_z1_cajon2_alto", "attr": "d22_z1_cajon2_alto", "label": "Zona 1: alto cajón 2", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "d12_z1_cant_cajones", "min": 3 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
-        { "id": "d23_z1_cajon3_alto", "attr": "d23_z1_cajon3_alto", "label": "Zona 1: alto cajón 3", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "d12_z1_cant_cajones", "min": 4 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
-        { "id": "d24_z1_cajon4_alto", "attr": "d24_z1_cajon4_alto", "label": "Zona 1: alto cajón 4", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "d12_z1_cant_cajones", "min": 5 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
-        { "id": "d25_z1_cajon5_alto", "attr": "d25_z1_cajon5_alto", "label": "Zona 1: alto cajón 5", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "d12_z1_cant_cajones", "min": 6 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } }
+        { "id": "d21_z1_cajon1_alto", "attr": "d21_z1_cajon1_alto", "label": "Zona 1: alto cajón 1 (arriba)", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "nota": "0 = igual que los demás. El último cajón siempre toma el resto.", "visible_si": { "attr": "d12_z1_cant_cajones", "min": 2 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
+        { "id": "d22_z1_cajon2_alto", "attr": "d22_z1_cajon2_alto", "label": "Zona 1: alto cajón 2", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "d12_z1_cant_cajones", "min": 3 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
+        { "id": "d23_z1_cajon3_alto", "attr": "d23_z1_cajon3_alto", "label": "Zona 1: alto cajón 3", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "d12_z1_cant_cajones", "min": 4 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
+        { "id": "d24_z1_cajon4_alto", "attr": "d24_z1_cajon4_alto", "label": "Zona 1: alto cajón 4", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "d12_z1_cant_cajones", "min": 5 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
+        { "id": "d25_z1_cajon5_alto", "attr": "d25_z1_cajon5_alto", "label": "Zona 1: alto cajón 5", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "d12_z1_cant_cajones", "min": 6 }, "habilitado_si": { "attr": "d13_z1_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } }
       ]
     },
     {
       "id": "z2_puertas",
       "titulo": "Zona 2 · Puertas",
-      "condicion": { "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "1" }], "mensaje": "Se activa con 2 zonas y «Zona 2: Puerta»." },
+      "condicion": {
+        "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "1" }],
+        "mensaje": "Se activa con 2 zonas y «Zona 2: Puerta»."
+      },
       "campos": [
         { "id": "d35_z2_cant_puertas", "attr": "d35_z2_cant_puertas", "label": "Zona 2: cantidad de puertas", "tipo": "select", "default": "3", "opciones": [
           { "label": "Puerta simple - IZQ", "valor": "1" },
@@ -254,8 +314,7 @@
           { "label": "Puerta - 9", "valor": "10" },
           { "label": "Puerta - 10", "valor": "11" }
         ] },
-        { "id": "d36_z2_tirador_tipo", "attr": "d36_z2_tirador_tipo", "label": "Zona 2: tirador", "tipo": "select", "default": "9",
-          "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola no lleva tirador." }, "opciones": [
+        { "id": "d36_z2_tirador_tipo", "attr": "d36_z2_tirador_tipo", "label": "Zona 2: tirador", "tipo": "select", "default": "9", "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola no lleva tirador." }, "opciones": [
           { "label": "Sin tirador", "valor": "1" },
           { "label": "Lateral negra", "valor": "7" },
           { "label": "New Chica", "valor": "8" },
@@ -273,8 +332,7 @@
           { "label": "Botón cilíndrico plateado", "valor": "20" },
           { "label": "Berlín", "valor": "21" }
         ] },
-        { "id": "d37_z2_tirador_posicion", "attr": "d37_z2_tirador_posicion", "label": "Zona 2: posición del tirador", "tipo": "select", "default": "5",
-          "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d36_z2_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que posicionar." }, "opciones": [
+        { "id": "d37_z2_tirador_posicion", "attr": "d37_z2_tirador_posicion", "label": "Zona 2: posición del tirador", "tipo": "select", "default": "5", "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d36_z2_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que posicionar." }, "opciones": [
           { "label": "Arriba - Izquierda", "valor": "1" },
           { "label": "Arriba - Centro", "valor": "2" },
           { "label": "Arriba - Derecha", "valor": "3" },
@@ -285,46 +343,44 @@
           { "label": "Abajo - Centro", "valor": "8" },
           { "label": "Abajo - Derecha", "valor": "9" }
         ] },
-        { "id": "d38_z2_tirador_orientacion", "attr": "d38_z2_tirador_orientacion", "label": "Zona 2: orientación del tirador", "tipo": "select", "default": "2",
-          "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d36_z2_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que orientar." }, "opciones": [
+        { "id": "d38_z2_tirador_orientacion", "attr": "d38_z2_tirador_orientacion", "label": "Zona 2: orientación del tirador", "tipo": "select", "default": "2", "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d36_z2_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que orientar." }, "opciones": [
           { "label": "Horizontal", "valor": "1" },
           { "label": "Vertical", "valor": "2" }
         ] },
-        { "id": "d39_z2_tirador_largo", "attr": "d39_z2_tirador_largo", "label": "Zona 2: largo del tirador", "tipo": "numero", "unidad": "mm", "default": "120", "placeholder": "120", "positivo": true,
-          "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d36_z2_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay largo." } }
+        { "id": "d39_z2_tirador_largo", "attr": "d39_z2_tirador_largo", "label": "Zona 2: largo del tirador", "tipo": "numero", "unidad": "mm", "default": "120", "placeholder": "120", "positivo": true, "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "d36_z2_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay largo." } }
       ]
     },
     {
       "id": "z2_cajones",
       "titulo": "Zona 2 · Cajones",
       "presupuesto": "cajones:z2",
-      "condicion": { "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "2" }], "mensaje": "Se activa con 2 zonas y «Zona 2: Cajones»." },
+      "condicion": {
+        "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "2" }],
+        "mensaje": "Se activa con 2 zonas y «Zona 2: Cajones»."
+      },
       "campos": [
         { "id": "d32_z2_cant_cajones", "attr": "d32_z2_cant_cajones", "label": "Zona 2: cantidad de cajones", "tipo": "derivado", "default": "3", "min": 1, "max": 6, "max_regla": "cajones:z2", "controla": [] },
         { "id": "d33_z2_medida_cajones", "attr": "d33_z2_medida_cajones", "label": "Zona 2: medida de cajones", "tipo": "select", "default": "1", "opciones": [
           { "label": "Iguales", "valor": "1" },
           { "label": "Personalizado", "valor": "2" }
         ] },
-        { "id": "d41_z2_cajon1_alto", "attr": "d41_z2_cajon1_alto", "label": "Zona 2: alto cajón 1 (arriba)", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "nota": "0 = igual que los demás. El último cajón siempre toma el resto.",
-          "visible_si": { "attr": "d32_z2_cant_cajones", "min": 2 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
-        { "id": "d42_z2_cajon2_alto", "attr": "d42_z2_cajon2_alto", "label": "Zona 2: alto cajón 2", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "d32_z2_cant_cajones", "min": 3 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
-        { "id": "d43_z2_cajon3_alto", "attr": "d43_z2_cajon3_alto", "label": "Zona 2: alto cajón 3", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "d32_z2_cant_cajones", "min": 4 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
-        { "id": "d44_z2_cajon4_alto", "attr": "d44_z2_cajon4_alto", "label": "Zona 2: alto cajón 4", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "d32_z2_cant_cajones", "min": 5 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
-        { "id": "d45_z2_cajon5_alto", "attr": "d45_z2_cajon5_alto", "label": "Zona 2: alto cajón 5", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "d32_z2_cant_cajones", "min": 6 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } }
+        { "id": "d41_z2_cajon1_alto", "attr": "d41_z2_cajon1_alto", "label": "Zona 2: alto cajón 1 (arriba)", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "nota": "0 = igual que los demás. El último cajón siempre toma el resto.", "visible_si": { "attr": "d32_z2_cant_cajones", "min": 2 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
+        { "id": "d42_z2_cajon2_alto", "attr": "d42_z2_cajon2_alto", "label": "Zona 2: alto cajón 2", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "d32_z2_cant_cajones", "min": 3 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
+        { "id": "d43_z2_cajon3_alto", "attr": "d43_z2_cajon3_alto", "label": "Zona 2: alto cajón 3", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "d32_z2_cant_cajones", "min": 4 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
+        { "id": "d44_z2_cajon4_alto", "attr": "d44_z2_cajon4_alto", "label": "Zona 2: alto cajón 4", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "d32_z2_cant_cajones", "min": 5 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } },
+        { "id": "d45_z2_cajon5_alto", "attr": "d45_z2_cajon5_alto", "label": "Zona 2: alto cajón 5", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "d32_z2_cant_cajones", "min": 6 }, "habilitado_si": { "attr": "d33_z2_medida_cajones", "valor": "2", "mensaje": "Solo con medida «Personalizado»." } }
       ]
     },
     {
       "id": "cajones",
       "titulo": "Cajones: herraje y tirador",
-      "condicion": { "alguna": [
-        { "attr": "d11_z1_contenido", "valor": "2" },
-        { "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "2" }] }
-      ], "mensaje": "Se activa cuando alguna zona lleva cajones." },
+      "condicion": {
+        "alguna": [
+          { "attr": "d11_z1_contenido", "valor": "2" },
+          { "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "2" }] }
+        ],
+        "mensaje": "Se activa cuando alguna zona lleva cajones."
+      },
       "campos": [
         { "id": "b02_tipo_cajon", "attr": "b02_tipo_cajon", "label": "Tipo de cajón", "tipo": "select", "default": "1", "opciones": [
           { "label": "Tandem", "valor": "1" },
@@ -341,8 +397,7 @@
           { "label": "Corredera 45 cm", "valor": "460mm" },
           { "label": "Corredera 50 cm", "valor": "510mm" }
         ] },
-        { "id": "e01_tirador_tipo", "attr": "e01_tirador_tipo", "label": "Tirador de cajones", "tipo": "select", "default": "9",
-          "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola no lleva tirador." }, "opciones": [
+        { "id": "e01_tirador_tipo", "attr": "e01_tirador_tipo", "label": "Tirador de cajones", "tipo": "select", "default": "9", "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola no lleva tirador." }, "opciones": [
           { "label": "Sin tirador", "valor": "1" },
           { "label": "Lateral negra", "valor": "7" },
           { "label": "New Chica", "valor": "8" },
@@ -360,8 +415,7 @@
           { "label": "Botón cilíndrico plateado", "valor": "20" },
           { "label": "Berlín", "valor": "21" }
         ] },
-        { "id": "e02_tirador_posicion", "attr": "e02_tirador_posicion", "label": "Posición del tirador de cajones", "tipo": "select", "default": "5",
-          "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "e01_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que posicionar." }, "opciones": [
+        { "id": "e02_tirador_posicion", "attr": "e02_tirador_posicion", "label": "Posición del tirador de cajones", "tipo": "select", "default": "5", "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "e01_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que posicionar." }, "opciones": [
           { "label": "Arriba - Izquierda", "valor": "1" },
           { "label": "Arriba - Centro", "valor": "2" },
           { "label": "Arriba - Derecha", "valor": "3" },
@@ -372,22 +426,23 @@
           { "label": "Abajo - Centro", "valor": "8" },
           { "label": "Abajo - Derecha", "valor": "9" }
         ] },
-        { "id": "e03_tirador_orientacion", "attr": "e03_tirador_orientacion", "label": "Orientación del tirador de cajones", "tipo": "select", "default": "1",
-          "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "e01_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que orientar." }, "opciones": [
+        { "id": "e03_tirador_orientacion", "attr": "e03_tirador_orientacion", "label": "Orientación del tirador de cajones", "tipo": "select", "default": "1", "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "e01_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay pieza que orientar." }, "opciones": [
           { "label": "Horizontal", "valor": "1" },
           { "label": "Vertical", "valor": "2" }
         ] },
-        { "id": "e04_tirador_largo", "attr": "e04_tirador_largo", "label": "Largo del tirador de cajones", "tipo": "numero", "unidad": "mm", "default": "140", "placeholder": "140", "positivo": true,
-          "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "e01_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay largo." } }
+        { "id": "e04_tirador_largo", "attr": "e04_tirador_largo", "label": "Largo del tirador de cajones", "tipo": "numero", "unidad": "mm", "default": "140", "placeholder": "140", "positivo": true, "habilitado_si": { "todas": [{ "attr": "b01_gola_o_tirador", "valor": "1" }, { "attr": "e01_tirador_tipo", "excepto": ["1"] }], "mensaje": "Sin tirador no hay largo." } }
       ]
     },
     {
       "id": "bisagras",
       "titulo": "Puertas: bisagras",
-      "condicion": { "alguna": [
-        { "attr": "d11_z1_contenido", "valor": "1" },
-        { "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "1" }] }
-      ], "mensaje": "Se activa cuando alguna zona lleva puerta." },
+      "condicion": {
+        "alguna": [
+          { "attr": "d11_z1_contenido", "valor": "1" },
+          { "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "1" }] }
+        ],
+        "mensaje": "Se activa cuando alguna zona lleva puerta."
+      },
       "campos": [
         { "id": "f07_bisagra_angulo", "attr": "f07_bisagra_angulo", "label": "Ángulo de apertura (°)", "tipo": "numero", "default": "90", "placeholder": "90", "positivo": true },
         { "id": "f08_bisagra_lado", "attr": "f08_bisagra_lado", "label": "Mostrar bisagras", "tipo": "select", "default": "S", "opciones": [
@@ -407,53 +462,98 @@
     },
     {
       "id": "entrepanos",
-      "titulo": "Entrepaños",
-      "condicion": { "alguna": [
-        { "attr": "d11_z1_contenido", "valor": "1" },
-        { "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "1" }] }
-      ], "mensaje": "Se activa cuando alguna zona lleva puerta." },
+      "titulo": "Entrepaños y divisores",
+      "condicion": {
+        "alguna": [
+          { "attr": "d11_z1_contenido", "valor": "1" },
+          { "todas": [{ "attr": "d01_cantidad_zonas", "valor": "2" }, { "attr": "d31_z2_contenido", "valor": "1" }] }
+        ],
+        "mensaje": "Se activa cuando alguna zona lleva puerta."
+      },
+      "visual": {
+        "tipo": "entrepanos",
+        "activo": { "attr": "h01_entrepano", "valor": "0" },
+        "ancho": "LenX",
+        "alto": "LenZ",
+        "profundidad": "LenY",
+        "espesor_estructura": "c01_espesor_estructura",
+        "fondo": "c03_espesor_fondo",
+        "fondo_extra_mm": 12,
+        "fondo_extra_nota": "i25_fondo_distancia_ranura (técnico, 12 mm en el componente): el fondo va en ranura y la repisa termina antes.",
+        "cantidad": "h02_cantidad",
+        "modo": "h03_tipo_medida",
+        "modo_personalizado": "2",
+        "espacios": [
+          "h11_espacio1_alto",
+          "h12_espacio2_alto",
+          "h13_espacio3_alto",
+          "h14_espacio4_alto",
+          "h15_espacio5_alto",
+          "h16_espacio6_alto",
+          "h17_espacio7_alto"
+        ],
+        "retiros": [
+          "h21_entrepano1_retiro_fondo",
+          "h22_entrepano2_retiro_fondo",
+          "h23_entrepano3_retiro_fondo",
+          "h24_entrepano4_retiro_fondo",
+          "h25_entrepano5_retiro_fondo",
+          "h26_entrepano6_retiro_fondo"
+        ],
+        "tipos": ["h21_tipo", "h22_tipo", "h23_tipo", "h24_tipo", "h25_tipo", "h26_tipo"],
+        "valor_divisor": "D",
+        "lateral_izq": "h33_margen_izquierdo",
+        "lateral_der": "h34_margen_derecho"
+      },
       "campos": [
         { "id": "h01_entrepano", "attr": "h01_entrepano", "label": "Entrepaño", "tipo": "select", "default": "1", "opciones": [
           { "label": "Sí", "valor": "0" },
           { "label": "No", "valor": "1" }
         ] },
-        { "id": "h02_cantidad", "attr": "h02_cantidad", "label": "Cantidad de entrepaños", "tipo": "derivado", "default": "1", "min": 1, "max": 6, "controla": [],
-          "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." } },
-        { "id": "h03_tipo_medida", "attr": "h03_tipo_medida", "label": "Separación entre entrepaños", "tipo": "select", "default": "1",
-          "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "opciones": [
+        { "id": "h02_cantidad", "attr": "h02_cantidad", "label": "Cantidad de entrepaños", "tipo": "derivado", "default": "1", "min": 1, "max": 6, "controla": [], "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." } },
+        { "id": "h03_tipo_medida", "attr": "h03_tipo_medida", "label": "Separación entre entrepaños", "tipo": "select", "default": "1", "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "opciones": [
           { "label": "Separaciones iguales", "valor": "1" },
           { "label": "Personalizado", "valor": "2" }
         ] },
-        { "id": "h11_espacio1_alto", "attr": "h11_espacio1_alto", "label": "Alto del espacio 1 (abajo)", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "nota": "0 = reparto automático del alto restante.",
-          "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
-        { "id": "h12_espacio2_alto", "attr": "h12_espacio2_alto", "label": "Alto del espacio 2", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 2 },
-          "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
-        { "id": "h13_espacio3_alto", "attr": "h13_espacio3_alto", "label": "Alto del espacio 3", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 3 },
-          "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
-        { "id": "h14_espacio4_alto", "attr": "h14_espacio4_alto", "label": "Alto del espacio 4", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 4 },
-          "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
-        { "id": "h15_espacio5_alto", "attr": "h15_espacio5_alto", "label": "Alto del espacio 5", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 5 },
-          "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
-        { "id": "h16_espacio6_alto", "attr": "h16_espacio6_alto", "label": "Alto del espacio 6", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 6 },
-          "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
-        { "id": "h21_entrepano1_retiro_fondo", "attr": "h21_entrepano1_retiro_fondo", "label": "Retiro de fondo, entrepaño 1", "tipo": "numero", "unidad": "mm", "default": "26", "placeholder": "26",
-          "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." } },
-        { "id": "h22_entrepano2_retiro_fondo", "attr": "h22_entrepano2_retiro_fondo", "label": "Retiro de fondo, entrepaño 2", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 2 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." } },
-        { "id": "h23_entrepano3_retiro_fondo", "attr": "h23_entrepano3_retiro_fondo", "label": "Retiro de fondo, entrepaño 3", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 3 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." } },
-        { "id": "h24_entrepano4_retiro_fondo", "attr": "h24_entrepano4_retiro_fondo", "label": "Retiro de fondo, entrepaño 4", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 4 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." } },
-        { "id": "h25_entrepano5_retiro_fondo", "attr": "h25_entrepano5_retiro_fondo", "label": "Retiro de fondo, entrepaño 5", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 5 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." } },
-        { "id": "h26_entrepano6_retiro_fondo", "attr": "h26_entrepano6_retiro_fondo", "label": "Retiro de fondo, entrepaño 6", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0",
-          "visible_si": { "attr": "h02_cantidad", "min": 6 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." } }
+        { "id": "h21_tipo", "attr": "h21_tipo", "label": "Repisa 1: tipo", "tipo": "select", "default": "E", "virtual": true, "nota": "Entrepaño = repisa con retiro del frente (desmontable). Divisor = llega hasta el frente, retiro 0. Repisa 1 = la de abajo. En el gráfico: clic en una repisa cambia el tipo.", "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "opciones": [
+          { "label": "Entrepaño", "valor": "E" },
+          { "label": "Divisor", "valor": "D" }
+        ] },
+        { "id": "h21_entrepano1_retiro_fondo", "attr": "h21_entrepano1_retiro_fondo", "label": "Repisa 1: retiro del frente", "tipo": "numero", "unidad": "mm", "default": "26", "placeholder": "26", "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "forzar": [{ "valor": "0", "si": [{ "attr": "h21_tipo", "valor": "D" }], "mensaje": "Divisor: llega al frente, sin retiro." }] },
+        { "id": "h22_tipo", "attr": "h22_tipo", "label": "Repisa 2: tipo", "tipo": "select", "default": "E", "virtual": true, "visible_si": { "attr": "h02_cantidad", "min": 2 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "opciones": [
+          { "label": "Entrepaño", "valor": "E" },
+          { "label": "Divisor", "valor": "D" }
+        ] },
+        { "id": "h22_entrepano2_retiro_fondo", "attr": "h22_entrepano2_retiro_fondo", "label": "Repisa 2: retiro del frente", "tipo": "numero", "unidad": "mm", "default": "26", "placeholder": "26", "visible_si": { "attr": "h02_cantidad", "min": 2 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "forzar": [{ "valor": "0", "si": [{ "attr": "h22_tipo", "valor": "D" }], "mensaje": "Divisor: llega al frente, sin retiro." }] },
+        { "id": "h23_tipo", "attr": "h23_tipo", "label": "Repisa 3: tipo", "tipo": "select", "default": "E", "virtual": true, "visible_si": { "attr": "h02_cantidad", "min": 3 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "opciones": [
+          { "label": "Entrepaño", "valor": "E" },
+          { "label": "Divisor", "valor": "D" }
+        ] },
+        { "id": "h23_entrepano3_retiro_fondo", "attr": "h23_entrepano3_retiro_fondo", "label": "Repisa 3: retiro del frente", "tipo": "numero", "unidad": "mm", "default": "26", "placeholder": "26", "visible_si": { "attr": "h02_cantidad", "min": 3 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "forzar": [{ "valor": "0", "si": [{ "attr": "h23_tipo", "valor": "D" }], "mensaje": "Divisor: llega al frente, sin retiro." }] },
+        { "id": "h24_tipo", "attr": "h24_tipo", "label": "Repisa 4: tipo", "tipo": "select", "default": "E", "virtual": true, "visible_si": { "attr": "h02_cantidad", "min": 4 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "opciones": [
+          { "label": "Entrepaño", "valor": "E" },
+          { "label": "Divisor", "valor": "D" }
+        ] },
+        { "id": "h24_entrepano4_retiro_fondo", "attr": "h24_entrepano4_retiro_fondo", "label": "Repisa 4: retiro del frente", "tipo": "numero", "unidad": "mm", "default": "26", "placeholder": "26", "visible_si": { "attr": "h02_cantidad", "min": 4 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "forzar": [{ "valor": "0", "si": [{ "attr": "h24_tipo", "valor": "D" }], "mensaje": "Divisor: llega al frente, sin retiro." }] },
+        { "id": "h25_tipo", "attr": "h25_tipo", "label": "Repisa 5: tipo", "tipo": "select", "default": "E", "virtual": true, "visible_si": { "attr": "h02_cantidad", "min": 5 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "opciones": [
+          { "label": "Entrepaño", "valor": "E" },
+          { "label": "Divisor", "valor": "D" }
+        ] },
+        { "id": "h25_entrepano5_retiro_fondo", "attr": "h25_entrepano5_retiro_fondo", "label": "Repisa 5: retiro del frente", "tipo": "numero", "unidad": "mm", "default": "26", "placeholder": "26", "visible_si": { "attr": "h02_cantidad", "min": 5 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "forzar": [{ "valor": "0", "si": [{ "attr": "h25_tipo", "valor": "D" }], "mensaje": "Divisor: llega al frente, sin retiro." }] },
+        { "id": "h26_tipo", "attr": "h26_tipo", "label": "Repisa 6: tipo", "tipo": "select", "default": "E", "virtual": true, "visible_si": { "attr": "h02_cantidad", "min": 6 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "opciones": [
+          { "label": "Entrepaño", "valor": "E" },
+          { "label": "Divisor", "valor": "D" }
+        ] },
+        { "id": "h26_entrepano6_retiro_fondo", "attr": "h26_entrepano6_retiro_fondo", "label": "Repisa 6: retiro del frente", "tipo": "numero", "unidad": "mm", "default": "26", "placeholder": "26", "visible_si": { "attr": "h02_cantidad", "min": 6 }, "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "forzar": [{ "valor": "0", "si": [{ "attr": "h26_tipo", "valor": "D" }], "mensaje": "Divisor: llega al frente, sin retiro." }] },
+        { "id": "h11_espacio1_alto", "attr": "h11_espacio1_alto", "label": "Alto del espacio 1 (abajo)", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "nota": "Hay un espacio más que repisas. 0 = se reparte el alto restante.", "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
+        { "id": "h12_espacio2_alto", "attr": "h12_espacio2_alto", "label": "Alto del espacio 2", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "h02_cantidad", "min": 1 }, "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
+        { "id": "h13_espacio3_alto", "attr": "h13_espacio3_alto", "label": "Alto del espacio 3", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "h02_cantidad", "min": 2 }, "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
+        { "id": "h14_espacio4_alto", "attr": "h14_espacio4_alto", "label": "Alto del espacio 4", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "h02_cantidad", "min": 3 }, "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
+        { "id": "h15_espacio5_alto", "attr": "h15_espacio5_alto", "label": "Alto del espacio 5", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "h02_cantidad", "min": 4 }, "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
+        { "id": "h16_espacio6_alto", "attr": "h16_espacio6_alto", "label": "Alto del espacio 6", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "h02_cantidad", "min": 5 }, "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
+        { "id": "h17_espacio7_alto", "attr": "h17_espacio7_alto", "label": "Alto del espacio 7 (arriba con 6 repisas)", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0", "visible_si": { "attr": "h02_cantidad", "min": 6 }, "habilitado_si": { "todas": [{ "attr": "h01_entrepano", "valor": "0" }, { "attr": "h03_tipo_medida", "valor": "2" }], "mensaje": "Solo con separación «Personalizado»." } },
+        { "id": "h33_margen_izquierdo", "attr": "h33_margen_izquierdo", "label": "Holgura lateral izquierda de entrepaños", "tipo": "numero", "unidad": "mm", "default": "1.5", "placeholder": "1.5", "nota": "El componente aplica la misma holgura a todas las repisas, divisores incluidos; si todas son divisores va en 0.", "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "forzar": [{ "valor": "0", "si": [{ "todas": [{ "attr": "h21_tipo", "valor": "D" }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1"] }, { "attr": "h22_tipo", "valor": "D" }] }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1", "2"] }, { "attr": "h23_tipo", "valor": "D" }] }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1", "2", "3"] }, { "attr": "h24_tipo", "valor": "D" }] }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1", "2", "3", "4"] }, { "attr": "h25_tipo", "valor": "D" }] }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1", "2", "3", "4", "5"] }, { "attr": "h26_tipo", "valor": "D" }] }] }], "mensaje": "Solo divisores: sin holgura lateral." }] },
+        { "id": "h34_margen_derecho", "attr": "h34_margen_derecho", "label": "Holgura lateral derecha de entrepaños", "tipo": "numero", "unidad": "mm", "default": "1.5", "placeholder": "1.5", "habilitado_si": { "attr": "h01_entrepano", "valor": "0", "mensaje": "Se activa con «Entrepaño: Sí»." }, "forzar": [{ "valor": "0", "si": [{ "todas": [{ "attr": "h21_tipo", "valor": "D" }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1"] }, { "attr": "h22_tipo", "valor": "D" }] }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1", "2"] }, { "attr": "h23_tipo", "valor": "D" }] }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1", "2", "3"] }, { "attr": "h24_tipo", "valor": "D" }] }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1", "2", "3", "4"] }, { "attr": "h25_tipo", "valor": "D" }] }, { "alguna": [{ "attr": "h02_cantidad", "valores": ["1", "2", "3", "4", "5"] }, { "attr": "h26_tipo", "valor": "D" }] }] }], "mensaje": "Solo divisores: sin holgura lateral." }] }
       ]
     },
     {
@@ -483,8 +583,7 @@
           { "label": "Con ceja", "valor": "0" },
           { "label": "Sin ceja", "valor": "1" }
         ] },
-        { "id": "i06_trasera", "attr": "i06_trasera", "label": "¿Módulo para tarja?", "tipo": "select", "default": "0",
-          "nota": "«Sí» quita el respaldo y coloca 2 refuerzos para la tarja.", "opciones": [
+        { "id": "i06_trasera", "attr": "i06_trasera", "label": "¿Módulo para tarja?", "tipo": "select", "default": "0", "nota": "«Sí» quita el respaldo y coloca 2 refuerzos para la tarja.", "opciones": [
           { "label": "No (respaldo)", "valor": "0" },
           { "label": "Sí (2 refuerzos)", "valor": "1" }
         ] }
@@ -494,13 +593,11 @@
       "id": "zoclo",
       "titulo": "Zoclo",
       "campos": [
-        { "id": "j02_zoclo_activo", "attr": "j02_zoclo_activo", "label": "Zoclo", "tipo": "select", "default": "1",
-          "nota": "«No» quita la pieza de zoclo; la estructura sigue elevada el alto del zoclo.", "opciones": [
+        { "id": "j02_zoclo_activo", "attr": "j02_zoclo_activo", "label": "Zoclo", "tipo": "select", "default": "1", "nota": "«No» quita la pieza de zoclo; la estructura sigue elevada el alto del zoclo.", "opciones": [
           { "label": "Sí", "valor": "1" },
           { "label": "No", "valor": "2" }
         ] },
-        { "id": "j01_pieza_frontal", "attr": "j01_pieza_frontal", "label": "Pieza frontal del zoclo", "tipo": "select", "default": "1",
-          "habilitado_si": { "attr": "j02_zoclo_activo", "valor": "1", "mensaje": "Sin zoclo no hay pieza frontal." }, "opciones": [
+        { "id": "j01_pieza_frontal", "attr": "j01_pieza_frontal", "label": "Pieza frontal del zoclo", "tipo": "select", "default": "1", "habilitado_si": { "attr": "j02_zoclo_activo", "valor": "1", "mensaje": "Sin zoclo no hay pieza frontal." }, "opciones": [
           { "label": "Sí", "valor": "1" },
           { "label": "No", "valor": "2" }
         ] }
@@ -519,17 +616,13 @@
       "id": "margenes",
       "titulo": "Márgenes y separaciones",
       "campos": [
-        { "id": "k06_margen_sup_tirador", "attr": "k06_margen_sup_tirador", "label": "Margen superior de frentes", "tipo": "numero", "unidad": "mm", "default": "13", "placeholder": "13",
-          "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola manda el margen superior con gola." } },
-        { "id": "k05_margen_sup_gola", "attr": "k05_margen_sup_gola", "label": "Margen superior con gola", "tipo": "numero", "unidad": "mm", "default": "40", "placeholder": "40",
-          "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "2", "mensaje": "Solo aplica a módulos con gola." } },
+        { "id": "k06_margen_sup_tirador", "attr": "k06_margen_sup_tirador", "label": "Margen superior de frentes", "tipo": "numero", "unidad": "mm", "default": "13", "placeholder": "13", "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola manda el margen superior con gola." } },
+        { "id": "k05_margen_sup_gola", "attr": "k05_margen_sup_gola", "label": "Margen superior con gola", "tipo": "numero", "unidad": "mm", "default": "40", "placeholder": "40", "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "2", "mensaje": "Solo aplica a módulos con gola." } },
         { "id": "k02_margen_inferior", "attr": "k02_margen_inferior", "label": "Margen inferior de frentes", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0" },
         { "id": "k03_margen_izquierdo", "attr": "k03_margen_izquierdo", "label": "Margen izquierdo de frentes", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0" },
         { "id": "k04_margen_derecho", "attr": "k04_margen_derecho", "label": "Margen derecho de frentes", "tipo": "numero", "unidad": "mm", "default": "0", "placeholder": "0" },
-        { "id": "k11_sep_cajones", "attr": "k11_sep_cajones", "label": "Separación entre cajones y zonas", "tipo": "numero", "unidad": "mm", "default": "3", "placeholder": "3",
-          "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola manda la separación con gola." } },
-        { "id": "k12_sep_cajones_gola", "attr": "k12_sep_cajones_gola", "label": "Separación entre cajones y zonas con gola", "tipo": "numero", "unidad": "mm", "default": "40", "placeholder": "40",
-          "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "2", "mensaje": "Solo aplica a módulos con gola." } },
+        { "id": "k11_sep_cajones", "attr": "k11_sep_cajones", "label": "Separación entre cajones y zonas", "tipo": "numero", "unidad": "mm", "default": "3", "placeholder": "3", "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "1", "mensaje": "Con gola manda la separación con gola." } },
+        { "id": "k12_sep_cajones_gola", "attr": "k12_sep_cajones_gola", "label": "Separación entre cajones y zonas con gola", "tipo": "numero", "unidad": "mm", "default": "40", "placeholder": "40", "habilitado_si": { "attr": "b01_gola_o_tirador", "valor": "2", "mensaje": "Solo aplica a módulos con gola." } },
         { "id": "k13_sep_puertas", "attr": "k13_sep_puertas", "label": "Separación entre puertas", "tipo": "numero", "unidad": "mm", "default": "3", "placeholder": "3" }
       ]
     }

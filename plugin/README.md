@@ -60,6 +60,31 @@ insertar.
 - **Divisores** — cantidad de divisores (contador) con sus espacios y márgenes, intercalados:
   espacio 1 → margen 1 → espacio 2 → margen 2 → …
 
+### Entrepaños y divisores (gráfico interactivo)
+
+El grupo «Entrepaños y divisores» del gabinete declara `visual: { "tipo": "entrepanos", … }` y se
+dibuja con dos vistas a la misma escala: **alzado** (de frente) y **corte lateral**.
+
+| Acción | Efecto |
+|---|---|
+| Arrastrar una repisa arriba/abajo (alzado) | Cambia los altos de los dos espacios que la rodean; pasa a «Personalizado» y deja el espacio de arriba en 0 (toma el resto). |
+| Clic en una repisa (cualquier vista) | Alterna **Entrepaño ↔ Divisor**. |
+| Arrastrar el canto de un entrepaño (corte) | Cambia su **retiro del frente**. |
+| `−` / `+` · «Repartir iguales» | Cantidad de repisas · vuelve a separaciones iguales. |
+
+- **Entrepaño** = repisa desmontable con retiro del frente (26 mm por omisión). **Divisor** = llega al
+  frente, retiro forzado a 0 (`forzar`). Es el equivalente de la opción Entrepaño/Divisor del gabinete v1.
+- El tipo de cada repisa (`h2N_tipo`) es un campo **`virtual`**: el componente no tiene ese atributo.
+  Se captura, viaja en la plantilla y el CSV, y gobierna el retiro, pero **no se inyecta**.
+- **Holgura lateral** (`h33`/`h34`): el componente aplica UNA para todas las repisas, divisores
+  incluidos; si todas son divisores se fuerza a 0.
+- El gráfico repite las fórmulas del divisor (`DIA01` bajo `Estructura`): interior = cuerpo − 2 ×
+  espesor; `n` repisas dejan `n + 1` espacios; profundidad = cuerpo − fondo − ranura (12 mm) − retiro.
+  Verificado contra la geometría generada en SketchUp: alturas exactas al milímetro.
+- Lo editado en el gráfico son los mismos campos numéricos que siguen debajo: formulario, plantilla y
+  CSV dicen lo mismo. Avisos (no bloquean): espacios fijados que no caben, espacio en 0 o negativo,
+  repisa de menos de 50 mm de fondo.
+
 ### Editor de caja para márgenes
 
 Un grupo puede declarar `box_model` y sus cuatro márgenes se dibujan **en su posición** alrededor de

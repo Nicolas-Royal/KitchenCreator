@@ -46,10 +46,10 @@ Por qué importa, con los tres casos reales:
    (dimensiones → espesores → estructura → frente → tirador → divisores).
 3. **Bloques por familia** — lo exclusivo de Gabinete, luego Alacena, luego Esquinero.
 
-Estado al 2026-10-07: **130 columnas** (86 aplican al gabinete, contando `familia` y `nombre_salida`).
+Estado al 2026-10-07: **139 columnas** (95 aplican al gabinete, contando `familia` y `nombre_salida`). Incluye los campos **virtuales** (`Repisa N: tipo` = Entrepaño/Divisor): se capturan en el Excel/CSV y deciden otros campos, pero no se inyectan al componente.
 
 `Input/Gabinetes.csv` es un ejemplo listo para «Importar…» con los encabezados de la plantilla y 4
-gabinetes por zonas (los mismos que se validaron en SketchUp).
+gabinetes por zonas (los validados en SketchUp), el último con entrepaños personalizados y un divisor.
 
 Ojo con `Cantidad de puertas`: desde que la alacena adoptó la lista del gabinete para sus puertas
 normales, ambas familias comparten una sola columna `[GAB·ALA]`. El Avento usa el mismo atributo con
