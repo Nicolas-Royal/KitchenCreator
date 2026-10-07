@@ -378,34 +378,40 @@ prueba('E-02 · personalizado: los espacios en 0 se reparten el resto', function
   assert.ok(Math.abs(G.exceso) < 0.01);
 });
 
-prueba('E-03 · divisor: retiro 0 y sin holgura; entrepaño: retiro y holgura', function () {
-  var f = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '2', h22_tipo: 'D', h21_entrepano1_retiro_fondo: '40' });
-  assert.strictEqual(f.h21_entrepano1_retiro_fondo, '40mm');
-  assert.strictEqual(f.h22_entrepano2_retiro_fondo, '0mm', 'el divisor se fuerza a 0');
+prueba('E-03 · Entrepaño inyecta la fórmula; Divisor, 0; holgura global', function () {
+  var F = campo('gabinete', 'h21_entrepano1_retiro_fondo').presets[0].formula;
+  var f = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '2', h22_entrepano2_retiro_fondo: '0mm' });
+  assert.strictEqual(f.h21_entrepano1_retiro_fondo, '=' + F, 'entrepaño = fórmula del componente');
+  assert.strictEqual(f.h22_entrepano2_retiro_fondo, '0mm', 'divisor = 0');
   assert.strictEqual(f.h33_margen_izquierdo, '1.5mm', 'con algún entrepaño queda la holgura');
-  var todos = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '2', h21_tipo: 'D', h22_tipo: 'D' });
+  var todos = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '2', h21_entrepano1_retiro_fondo: '0mm', h22_entrepano2_retiro_fondo: '0mm' });
   assert.strictEqual(todos.h33_margen_izquierdo, '0mm');
   assert.strictEqual(todos.h34_margen_derecho, '0mm');
-  // Un divisor de una repisa que no existe no cuenta.
-  assert.strictEqual(plano('gabinete', { h01_entrepano: '0', h02_cantidad: '1', h22_tipo: 'E', h21_tipo: 'D' }).h33_margen_izquierdo, '0mm');
-  var G = geom({ h01_entrepano: '0', h02_cantidad: '2', h22_tipo: 'D' });
-  assert.ok(Math.abs(G.repisas[1].profundidad - G.prof) < 0.01, 'el divisor llega al frente');
-  // Medido en SketchUp (2026-10-07): 578 − 12 (fondo) − 12 (ranura) = 554 para el divisor.
+  // Un entrepaño de una repisa que no existe no cuenta.
+  assert.strictEqual(plano('gabinete', { h01_entrepano: '0', h02_cantidad: '1', h21_entrepano1_retiro_fondo: '0mm' }).h33_margen_izquierdo, '0mm');
+  var p = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '1', h21_entrepano1_retiro_fondo: '__custom__', 'h21_entrepano1_retiro_fondo::custom': '40' });
+  assert.strictEqual(p.h21_entrepano1_retiro_fondo, '40mm', 'medida libre');
+});
+
+prueba('E-04 · la fórmula da 26 mm (5 cm − ranura − fondo) y cambia con el fondo', function () {
+  var G = geom({ h01_entrepano: '0', h02_cantidad: '2', h22_entrepano2_retiro_fondo: '0mm' });
+  assert.strictEqual(G.retiroFormula, 26);
+  // Medido en SketchUp (2026-10-07): interior 554 mm; divisor 554, entrepaño 528.
   assert.ok(Math.abs(G.prof - 554) < 0.01, 'profundidad interior real: ' + G.prof);
-  assert.strictEqual(G.repisas[1].lateralIzq, 1.5, 'la holgura es global: el divisor también la lleva si hay entrepaños');
-  assert.ok(Math.abs(G.repisas[0].profundidad - (G.prof - 26)) < 0.01, 'entrepaño con su retiro por omisión');
+  assert.ok(Math.abs(G.repisas[0].profundidad - 528) < 0.01);
+  assert.ok(Math.abs(G.repisas[1].profundidad - 554) < 0.01, 'el divisor llega al frente');
+  assert.ok(G.repisas[1].divisor && !G.repisas[0].divisor);
+  var tarja = geom({ h01_entrepano: '0', h02_cantidad: '1', i06_trasera: '1' });
+  assert.strictEqual(tarja.retiroFormula, 50, 'con refuerzos de tarja no hay fondo detrás');
+  assert.strictEqual(tarja.prof, 578);
+  var sinCeja = geom({ h01_entrepano: '0', h02_cantidad: '1', i05_ceja_trasera: '1' });
+  assert.strictEqual(sinCeja.retiroFormula, 38);
 });
 
-prueba('E-04 · el tipo es virtual: va en la plantilla, no al .skp', function () {
-  var f = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '3' });
-  Object.keys(f).forEach(function (k) { assert.ok(!/^h2\d_tipo$/.test(k), 'no debería inyectarse ' + k); });
-  assert.ok(campo('gabinete', 'h21_tipo').virtual);
-});
-
-prueba('E-05 · con n repisas se inyectan los n + 1 espacios en personalizado', function () {
-  var f = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '1', h03_tipo_medida: '2', h11_espacio1_alto: '200', h12_espacio2_alto: '0' });
+prueba('E-05 · con n repisas se inyectan los n + 1 espacios; vacío = 0 (reparto)', function () {
+  var f = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '1', h03_tipo_medida: '2', h11_espacio1_alto: '200', h12_espacio2_alto: '' });
   assert.strictEqual(f.h11_espacio1_alto, '200mm');
-  assert.strictEqual(f.h12_espacio2_alto, '0mm', 'el espacio de arriba también viaja (si no, el .skp conserva el suyo)');
+  assert.strictEqual(f.h12_espacio2_alto, '0mm', 'el de arriba también viaja (si no, el .skp conserva el suyo)');
   assert.ok(!('h13_espacio3_alto' in f));
 });
 
@@ -414,6 +420,83 @@ prueba('E-06 · espacios que se pasan del interior advierten, no bloquean', func
   assert.strictEqual(errores('gabinete', c).length, 0);
   var r = registro('gabinete', c);
   assert.ok(T.avisosConfig(man.gabinete, r.valores).join(' ').indexOf('se pasan') >= 0);
+});
+
+prueba('E-07 · una medida igual a un preset se vuelve ese preset (0 = Divisor)', function () {
+  var f = campo('gabinete', 'h21_entrepano1_retiro_fondo');
+  var v = { h21_entrepano1_retiro_fondo: '__custom__', 'h21_entrepano1_retiro_fondo::custom': '0' };
+  assert.ok(T.normalizarPreset(f, v));
+  assert.strictEqual(v.h21_entrepano1_retiro_fondo, '0mm');
+  var w = { h21_entrepano1_retiro_fondo: '__custom__', 'h21_entrepano1_retiro_fondo::custom': '30' };
+  assert.ok(!T.normalizarPreset(f, w), 'una medida distinta se queda como personalizada');
+});
+
+// ---- (g) frentes y cajas de cajón, contra lo medido en SketchUp ------------
+// Medido el 2026-10-07 con 600 × 578 × 770 + zoclo 100, tirador, zona 1 puerta
+// doble, zona 2 con cajones, corredera 51 cm. Coordenadas del cuerpo (z − 100).
+function frentes(c) { var r = registro('gabinete', c); return T.geomFrentes(man.gabinete, r.valores, campoGrupo('entrepanos').visual); }
+function cerca(a, b, msg) { assert.ok(Math.abs(a - b) < 0.11, (msg || '') + ': ' + a + ' ≠ ' + b); }
+
+prueba('F-01 · frentes de cajón y puerta en su lugar', function () {
+  var F = frentes({});
+  var z2 = F.zonas.filter(function (z) { return z.zona === 2; })[0];
+  var alt = z2.frentes.map(function (f) { return [f.z0, f.z1]; }).sort(function (a, b) { return a[0] - b[0]; });
+  [[0, 123.7], [126.7, 250.3], [253.3, 377]].forEach(function (m, j) { cerca(alt[j][0], m[0], 'frente ' + j); cerca(alt[j][1], m[1], 'frente ' + j); });
+  var z1 = F.zonas.filter(function (z) { return z.zona === 1; })[0];
+  assert.strictEqual(z1.frentes.length, 2, 'puerta doble = 2 hojas');
+  cerca(z1.frentes[0].z0, 380); cerca(z1.frentes[0].z1, 757);
+});
+
+prueba('F-02 · cajas: base +28, lateral por tipo, largo = corredera, holgura por lado', function () {
+  var med = { 1: [80, 28, 572], 2: [83, 55.5, 544.5], 3: [123.7, 31, 569] };   // tope de la caja de abajo, x0, x1
+  [1, 2, 3].forEach(function (t) {
+    var F = frentes({ b02_tipo_cajon: String(t) });
+    var cajas = F.zonas.filter(function (z) { return z.zona === 2; })[0].cajas.slice().sort(function (a, b) { return a.z0 - b.z0; });
+    cerca(cajas[0].z0, 28, 'tipo ' + t + ' base');
+    cerca(cajas[0].z1, med[t][0], 'tipo ' + t + ' tope');
+    cerca(cajas[0].x0, med[t][1], 'tipo ' + t + ' x0'); cerca(cajas[0].x1, med[t][2], 'tipo ' + t + ' x1');
+    cerca(cajas[0].y1, 510, 'tipo ' + t + ' largo');
+  });
+});
+
+prueba('F-03 · un cajón alto y corredera automática', function () {
+  var med = { 1: [303, 560], 2: [192, 526], 3: [148, 550] };
+  [1, 2, 3].forEach(function (t) {
+    var F = frentes({ b02_tipo_cajon: String(t), d32_z2_cant_cajones: '1', e05_corredera_largo: '0mm' });
+    var c = F.zonas.filter(function (z) { return z.zona === 2; })[0].cajas[0];
+    cerca(c.z1, med[t][0], 'tipo ' + t + ' tope'); cerca(c.y1, med[t][1], 'tipo ' + t + ' largo auto');
+  });
+});
+
+prueba('F-04 · personalizado: el cajón 1 es el de arriba', function () {
+  var F = frentes({ d33_z2_medida_cajones: '2', d41_z2_cajon1_alto: '200' });
+  var fr = F.zonas.filter(function (z) { return z.zona === 2; })[0].frentes;
+  cerca(fr[0].z0, 177); cerca(fr[0].z1, 377);
+  cerca(fr[2].z0, 0); cerca(fr[2].z1, 47.3);
+});
+
+prueba('F-06 · montaje interior: puertas dentro del cuerpo, frentes de cajón por fuera', function () {
+  // Medido en SketchUp (2026-10-07) con montaje interior y 2 cajones Tandem.
+  var F = frentes({ f02_montaje: '2', d32_z2_cant_cajones: '2' });
+  var z1 = F.zonas.filter(function (z) { return z.zona === 1; })[0].frentes;
+  cerca(z1[0].x0, 18); cerca(z1[0].x1, 298.5); cerca(z1[1].x0, 301.5); cerca(z1[1].x1, 582);
+  cerca(z1[0].z0, 398); cerca(z1[0].z1, 739);
+  var z2 = F.zonas.filter(function (z) { return z.zona === 2; })[0];
+  cerca(z2.frentes[0].x0, 0); cerca(z2.frentes[0].x1, 600);
+  cerca(z2.frentes[0].z0, 190); cerca(z2.frentes[0].z1, 377);
+  var caja = z2.cajas.slice().sort(function (a, b) { return a.z0 - b.z0; });
+  cerca(caja[0].z0, 28); cerca(caja[0].z1, 135); cerca(caja[1].z0, 218); cerca(caja[1].z1, 325);
+});
+
+prueba('F-05 · una repisa a la altura de los cajones choca; en la zona de puerta no', function () {
+  var base = { h01_entrepano: '0', h02_cantidad: '1', h03_tipo_medida: '2' };
+  var malo = registro('gabinete', Object.assign({ h11_espacio1_alto: '100' }, base));
+  assert.ok(T.avisosConfig(man.gabinete, malo.valores).join(' ').indexOf('choca con los cajones') >= 0);
+  var bueno = registro('gabinete', Object.assign({ h11_espacio1_alto: '500' }, base));
+  assert.strictEqual(T.avisosConfig(man.gabinete, bueno.valores).join(' ').indexOf('choca'), -1);
+  var interior = registro('gabinete', Object.assign({ h11_espacio1_alto: '500', f02_montaje: '2', h21_entrepano1_retiro_fondo: '0mm' }, base));
+  assert.ok(T.avisosConfig(man.gabinete, interior.valores).join(' ').indexOf('puerta interior') >= 0,
+            'divisor contra una puerta montada por dentro');
 });
 
 prueba('M-02 · todo campo tiene id y attr, y ningún id se repite', function () {

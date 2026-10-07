@@ -418,26 +418,73 @@
   }
 
   // =========================================================================
-  //  Geometría de entrepaños y divisores (gráfico interactivo)
+  //  Geometría de entrepaños, frentes y cajones (gráfico interactivo)
   // -------------------------------------------------------------------------
-  //  Repite las fórmulas del divisor del componente (DIA01 bajo Estructura):
-  //    alto interior  = cuerpo − 2 × espesor de estructura
-  //    espacios       = n + 1 (uno bajo cada repisa y el de arriba)
-  //    «Iguales»      → (interior − n × espesor) / (n + 1) cada uno
-  //    «Personalizado»→ cada espacio su medida; los que van en 0 se reparten
-  //                     el resto por igual
-  //    profundidad    = interior − retiro de esa repisa (divisor = retiro 0)
-  //  Los attrs salen de `group.visual` del manifiesto (dato, no código).
+  //  Repite las fórmulas del componente, verificadas contra la geometría que
+  //  genera SketchUp (2026-10-07). Coordenadas del CUERPO: z = 0 en la cara de
+  //  abajo del cuerpo (arriba del zoclo), y = 0 en la cara frontal del cuerpo,
+  //  creciendo hacia el fondo. Todo en mm.
+  //
+  //  Repisas (DIA01 bajo Estructura):
+  //    interior  = cuerpo − 2 × espesor;  n repisas dejan n + 1 espacios
+  //    «Iguales» → (interior − n × espesor) / (n + 1); «Personalizado» → cada
+  //    espacio su medida y los vacíos/0 se reparten el resto
+  //    fondo     = cuerpo − reserva del fondo (v41tamlenyrep1)
+  //    repisa    = fondo − retiro (g01margenf = h2N)
+  //  Frentes y cajones (Z1/Z2_PUERTA, Z1/Z2_CAJONES → Cajon):
+  //    zonas como zn11/zn21; cajón 1 = el de ARRIBA; el último toma el resto
+  //    caja      = desde el frente del cuerpo hacia atrás, largo = corredera
+  //    base caja = borde inferior del frente + e34 (28 mm)
+  //    lateral   = n12altolatfront acotado (ver altoLateralCajon)
   // =========================================================================
+
+  /* Tipo de fondo del componente: Estructura!o01tipofondo =
+     IF(i06_trasera=1, 1, IF(i05_ceja_trasera=1, 2, 3)). */
+  function tipoFondo(manifest, valores, V) {
+    if (condicionCumple(manifest, valores, V.fondo_tarja)) return 1;
+    if (condicionCumple(manifest, valores, V.fondo_sin_ceja)) return 2;
+    return 3;
+  }
+
+  /* Lo que el fondo ocupa detrás. Las repisas (v41tamlenyrep1) y los cajones
+     (s04profinterior) usan tablas distintas: con tarja la repisa llega atrás
+     del todo, pero el cajón sigue descontando el espesor del fondo. */
+  function reservaFondo(manifest, valores, V, para) {
+    var num = function (a) { var v = attrMmCrudo(manifest, valores, a); return isNaN(v) ? 0 : v; };
+    var c03 = num(V.fondo), c01 = num(V.espesor_estructura);
+    var ranura = (V.ranura_mm || 0) === 0 ? c01 : V.ranura_mm;      // i25 (técnico)
+    var t = tipoFondo(manifest, valores, V);
+    if (para === 'cajones') return [c03, c03, ranura + c03][t - 1];
+    return [0, c03, ranura + c03][t - 1];
+  }
+
+  /* Valor de la fórmula del entrepaño: la repisa queda 5 cm más corta que el
+     cuerpo (la misma que inyecta el preset «Entrepaño»). */
+  function retiroFormulaMm(manifest, valores, V) {
+    return 50 - reservaFondo(manifest, valores, V, 'repisas');
+  }
+
+  /* Retiro efectivo de una repisa: preset «Entrepaño» = fórmula, «Divisor» = 0,
+     o la medida personalizada. */
+  function retiroRepisa(manifest, valores, V, attr) {
+    var f = fieldByAttr(manifest, attr);
+    if (!f) return 0;
+    var v = valorCapturado(f, valores);
+    if (v === '') return retiroFormulaMm(manifest, valores, V);
+    var mm = parseMm(v);
+    return isNaN(mm) ? 0 : mm;
+  }
+
   function geomEntrepanos(manifest, valores, V) {
     var num = function (a) { var v = a ? attrMmCrudo(manifest, valores, a) : NaN; return isNaN(v) ? 0 : v; };
     var on = condicionCumple(manifest, valores, V.activo);
     var esp    = num(V.espesor_estructura);
-    var alto   = num(V.alto) - 2 * esp;
+    var cuerpo = num(V.alto);
+    var fondoC = num(V.profundidad);
+    var alto   = cuerpo - 2 * esp;
     var ancho  = num(V.ancho) - 2 * esp;
-    // Fondo: su espesor + lo que el componente reserva detrás (ranura), como
-    // v41tamlenyrep1 de Estructura. Lo que no es campo del formulario va fijo.
-    var prof   = num(V.profundidad) - num(V.fondo) - (V.fondo_extra_mm || 0);
+    var reserva = reservaFondo(manifest, valores, V, 'repisas');
+    var prof   = fondoC - reserva;
     var n      = on ? (attrNumber(manifest, valores, V.cantidad) || 0) : 0;
     var personal = condicionCumple(manifest, valores, { attr: V.modo, valor: V.modo_personalizado });
     var k      = n + 1;
@@ -454,20 +501,142 @@
     var repisas = [], z = 0;
     for (var i = 0; i < n; i++) {
       z += espacios[i];
-      var div = String(attrRaw(manifest, valores, V.tipos[i])) === String(V.valor_divisor);
-      var retiro = div ? 0 : num(V.retiros[i]);
-      repisas.push({ i: i, z: z, divisor: div, retiro: retiro, profundidad: prof - retiro,
+      var retiro = retiroRepisa(manifest, valores, V, V.retiros[i]);
+      var f = fieldByAttr(manifest, V.retiros[i]);
+      repisas.push({ i: i, z: z, zCuerpo: esp + z, divisor: retiro < 0.5, retiro: retiro,
+                     formula: !!f && valorCapturado(f, valores) === '',
+                     profundidad: prof - retiro,
                      // La holgura lateral es UNA para todas las repisas en el
                      // componente: un divisor junto a entrepaños también la lleva.
                      lateralIzq: latIzq, lateralDer: latDer });
       z += esp;
     }
     var usado = espacios.reduce(function (s, v) { return s + v; }, 0) + n * esp;
-    return { on: on, alto: alto, ancho: ancho, prof: prof, esp: esp, n: n, personal: personal,
+    return { on: on, cuerpo: cuerpo, fondoCuerpo: fondoC, alto: alto, ancho: ancho, prof: prof,
+             reserva: reserva, esp: esp, n: n, personal: personal,
              espacios: espacios, crudos: crudos, repisas: repisas, libre: libre, fijos: fijos,
+             retiroFormula: retiroFormulaMm(manifest, valores, V),
              // Lo fijado que no cabe: si hay espacios en 0, ellos absorben (y quedan
              // negativos) en vez de que la suma total crezca.
              exceso: Math.max(usado - alto, fijos - libre), latIzq: latIzq, latDer: latDer };
+  }
+
+  /* Alto del lateral de la caja (Cajon!u02altolateral), en mm, para un frente
+     de alto `h` mm. Las fórmulas del componente van en cm y redondean a 1 decimal:
+       Tandem      n12 = ROUND(h·0.8808 − 5.735, 1)
+       Antaro      n12 = ROUND(h·0.4301 + 0.229, 1)
+       Telescópica n12 = e32 (12 cm)
+     y luego se acota entre 3 cm y h − margen inferior. Un alto fijo de lateral
+     (e35, Tandem/Antaro) reemplaza la fórmula. */
+  function altoLateralCajon(tipo, hMm, C) {
+    var h = hMm / 10;
+    var r1 = function (x) { return Math.round(x * 10) / 10; };
+    var fijo = (C.alto_lateral_tandem_antaro_mm || 0) / 10;
+    var n12 = tipo === 3 ? (C.alto_lateral_telescopica_mm || 120) / 10
+            : fijo > 0 ? fijo
+            : tipo === 2 ? r1(h * 0.4301 + 0.229) : r1(h * 0.8808 - 5.735);
+    var n13 = (C.margen_lateral_frontal_mm || 0) / 10, n15 = (C.margen_inferior_mm || 0) / 10;
+    var lat = n12 - n13;
+    if (lat < 3) lat = 3;
+    else if (lat > h - n15 - n13) lat = h - n15 - n13;
+    return lat * 10;
+  }
+
+  /* Largo de la caja (= corredera). Automático: n01corredauto =
+     FLOOR(fondo, 5 cm) − IF(telescópica, 0, n05 + IF(Tandem, −1, 2.4)) cm. */
+  function largoCajon(tipo, corrMm, fondoMm, C) {
+    if (corrMm > 0) return corrMm;
+    var base = Math.floor(fondoMm / 50 + 1e-9) * 50;
+    if (tipo === 3) return base;
+    return base - ((C.corredera_margen_post_mm || 0) + (tipo === 1 ? -10 : 24));
+  }
+
+  /* Frentes (puertas y cajones) y cajas de cajón de las zonas de fachada. */
+  function geomFrentes(manifest, valores, V) {
+    var C = V.cajones || {};
+    var num = function (a) { var v = a ? attrMmCrudo(manifest, valores, a) : NaN; return isNaN(v) ? 0 : v; };
+    var R = manifest.reglas_cajones;
+    if (!R) return { zonas: [] };
+    var cuerpo = num(V.alto), ancho = num(V.ancho), esp = num(V.espesor_estructura);
+    var espPuerta = num(V.espesor_puerta);
+    var k02 = num(V.margen_inf);
+    var k03 = num(V.margen_izq), k04 = num(V.margen_der), k13 = num(V.sep_puertas);
+    var sep = sepCajones(manifest, valores);
+    var interior = condicionCumple(manifest, valores, V.montaje_interior);
+    var nz = attrNumber(manifest, valores, R.zonas.attr_cantidad) === 2 ? 2 : 1;
+    var h1 = altoZona(manifest, valores, 1), h2 = nz === 2 ? altoZona(manifest, valores, 2) : 0;
+    var tipo = parseInt(attrRaw(manifest, valores, C.tipo), 10) || 1;
+    var corr = num(C.corredera);
+    var fondoCaj = num(V.profundidad) - reservaFondo(manifest, valores, V, 'cajones');
+    var inset = esp + (tipo === 1 ? 10 : tipo === 2 ? 37.5 : (C.espesor_telescopica_mm || 13));
+
+    var zonas = [];
+    var defs = [{ zona: 1, z0: nz === 2 ? k02 + h2 + sep : k02, h: h1 }];
+    if (nz === 2) defs.push({ zona: 2, z0: k02, h: h2 });
+    defs.forEach(function (d) {
+      var Z = (V.zonas || [])[d.zona - 1];
+      var cont = String(attrRaw(manifest, valores, Z.contenido));
+      var x0 = k03, x1 = ancho - k04;
+      var zona = { zona: d.zona, z0: d.z0, z1: d.z0 + d.h, contenido: cont === '1' ? 'puerta' : cont === '2' ? 'cajones' : 'nada',
+                   frentes: [], cajas: [] };
+      // «Montaje interior» solo mete las PUERTAS dentro del cuerpo (Z?_PUERTA
+      // usa f01posextintpu); los frentes de cajón siguen por fuera. Medido.
+      if (zona.contenido === 'puerta') {
+        var px0 = interior ? esp : x0, px1 = interior ? ancho - esp : x1;
+        var fz0 = interior ? d.z0 + esp : d.z0, fz1 = interior ? d.z0 + d.h - esp : d.z0 + d.h;
+        var v = parseInt(attrRaw(manifest, valores, Z.puertas), 10) || 1;
+        var hojas = v <= 2 ? 1 : v - 1;
+        var w = (px1 - px0 - (hojas - 1) * k13) / hojas;
+        for (var i = 0; i < hojas; i++) {
+          zona.frentes.push({ tipo: 'puerta', interior: interior, x0: px0 + i * (w + k13), x1: px0 + i * (w + k13) + w, z0: fz0, z1: fz1 });
+        }
+      } else if (zona.contenido === 'cajones') {
+        var p = presupuestoCajones(manifest, valores, Z.pila);
+        if (p.aplica) {
+          var top = d.z0 + d.h;
+          p.altos.forEach(function (hc, j) {
+            var zf1 = top, zf0 = top - hc;
+            top = zf0 - sep;
+            zona.frentes.push({ tipo: 'cajon', n: j + 1, x0: x0, x1: x1, z0: zf0, z1: zf1 });
+            var lat = altoLateralCajon(tipo, hc, C);
+            var cz0 = zf0 + (C.margen_inferior_mm || 0);
+            zona.cajas.push({ n: j + 1, x0: inset, x1: ancho - inset, z0: cz0, z1: cz0 + lat,
+                              y0: 0, y1: largoCajon(tipo, corr, fondoCaj, C) });
+          });
+        }
+      }
+      zonas.push(zona);
+    });
+    return { zonas: zonas, cuerpo: cuerpo, ancho: ancho, espPuerta: espPuerta, interior: interior,
+             tipoCajon: tipo, fondoCajones: fondoCaj };
+  }
+
+  /* Choques de las repisas con lo que hay en las zonas: cajas de cajón (en
+     altura y en fondo) y puertas montadas por dentro del cuerpo. */
+  function choquesRepisas(G, F) {
+    var out = [];
+    G.repisas.forEach(function (r) {
+      var z0 = r.zCuerpo, z1 = r.zCuerpo + G.esp;
+      F.zonas.forEach(function (zn) {
+        // Un cajón usa todo el alto de su frente al abrirse y cerrarse (lo que se
+        // guarda, el herraje), no solo el de su caja dibujada: la franja que
+        // ocupan los cajones va de la base de la caja de abajo al tope de la zona.
+        // La repisa ocupa del fondo hasta (frente + retiro) y la caja del frente
+        // hasta su largo: se cruzan en fondo si el retiro es menor que la caja.
+        if (!zn.cajas.length) return;
+        var b0 = Math.min.apply(null, zn.cajas.map(function (c) { return c.z0; }));
+        var largo = Math.max.apply(null, zn.cajas.map(function (c) { return c.y1; }));
+        if (z1 > b0 + 0.5 && z0 < zn.z1 - 0.5 && r.retiro < largo) {
+          out.push({ repisa: r.i, zona: zn.zona, motivo: 'cajon' });
+        }
+      });
+      F.zonas.forEach(function (zn) {
+        if (F.interior && zn.contenido === 'puerta' && z1 > zn.z0 && z0 < zn.z1 && r.retiro < F.espPuerta) {
+          out.push({ repisa: r.i, zona: zn.zona, motivo: 'puerta' });
+        }
+      });
+    });
+    return out;
   }
 
   function visualesEntrepanos(manifest) {
@@ -595,6 +764,12 @@
       }
       G.repisas.forEach(function (r) {
         if (r.profundidad < 50) out.push('La repisa ' + (r.i + 1) + ' queda de ' + fmt(r.profundidad) + ' mm de profundidad: revisa su retiro.');
+      });
+      choquesRepisas(G, geomFrentes(manifest, valores, g.visual)).forEach(function (c) {
+        out.push(c.motivo === 'cajon'
+          ? 'La repisa ' + (c.repisa + 1) + ' choca con los cajones de la zona ' + c.zona + ': súbela a la zona de puerta o quítala.'
+          : 'La repisa ' + (c.repisa + 1) + ' choca con la puerta interior de la zona ' + c.zona +
+            ': dale un retiro de al menos el espesor de puerta.');
       });
     });
     var d = presupuestoDivisores(manifest, valores);
@@ -851,13 +1026,13 @@
     return { widget: widget, usados: usados };
   }
 
-  /* Gráfico interactivo de entrepaños y divisores.
-     Dos vistas a la misma escala vertical:
-       · Alzado (de frente): arrastrar una repisa arriba/abajo cambia los altos
-         de los espacios (pasa a «Personalizado»); clic la cambia de Entrepaño a
-         Divisor y viceversa.
-       · Corte lateral: arrastrar el canto frontal de un entrepaño cambia su
-         retiro del frente. Un divisor siempre llega al frente (retiro 0).
+  /* Gráfico interactivo de entrepaños y divisores, a medida real del cuerpo.
+       · Alzado (de frente): cuerpo, interior, frentes (punteado fino) y cajas de
+         cajón (sombreado). Arrastrar una repisa arriba/abajo cambia los altos de
+         los espacios (pasa a «Personalizado»); clic alterna Entrepaño ↔ Divisor.
+       · Corte lateral: frentes con su espesor, cajas con su largo, reserva del
+         fondo y repisas. Arrastrar el canto de una repisa cambia su retiro; en 0
+         se vuelve «Divisor», y un divisor arrastrado hacia atrás deja de serlo.
      No guarda estado propio: lee y escribe los mismos campos del manifiesto
      que se ven debajo, así que formulario, plantilla y CSV dicen lo mismo. */
   function renderVisualEntrepanos(V, manifest, registro) {
@@ -868,19 +1043,29 @@
     var pie = el('p', 'visual__pie');
     wrap.appendChild(barra); wrap.appendChild(vistas); wrap.appendChild(pie);
 
-    var ESC_ALTO = 260;                 // alto de dibujo del interior (px)
-    var drag = null;                    // { modo:'alto'|'retiro', i, ... }
+    var ESC_ALTO = 280;                 // alto de dibujo del cuerpo (px)
+    var drag = null;
 
     function campo(attr) { return fieldByAttr(manifest, attr); }
+    function wrapDe(f) { return document.querySelector('.field[data-field-id="' + f.id + '"]'); }
     function setValor(attr, valor) {
       var f = campo(attr);
       if (!f) return;
       registro.valores[f.id] = String(valor);
-      // El control numérico de abajo no se vuelve a pintar solo: se sincroniza.
-      var w = document.querySelector('.field[data-field-id="' + f.id + '"]');
+      var w = wrapDe(f);
       if (w) Array.prototype.forEach.call(w.querySelectorAll('input, select'), function (c) {
         if (c !== document.activeElement) c.value = String(valor);
       });
+    }
+    /* Retiro de una repisa: null = «Entrepaño» (fórmula), 0 = «Divisor», o mm. */
+    function setRetiro(i, mm) {
+      var f = campo(V.retiros[i]);
+      if (!f) return;
+      if (mm === null) { registro.valores[f.id] = ''; registro.valores[f.id + '::custom'] = ''; }
+      else if (mm <= 0) { registro.valores[f.id] = '0mm'; registro.valores[f.id + '::custom'] = ''; }
+      else { registro.valores[f.id] = '__custom__'; registro.valores[f.id + '::custom'] = String(Math.round(mm)); }
+      var w = wrapDe(f), p = w && w.querySelector('.preset');
+      if (p && p.__sync) p.__sync();
     }
     function cambio() { onValueChange(manifest, registro); }
     function svg(tag, attrs, txt) {
@@ -888,6 +1073,9 @@
       Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
       if (txt != null) n.textContent = txt;
       return n;
+    }
+    function rect(x, y, w, h, cls, extra) {
+      return svg('rect', Object.assign({ 'class': cls, x: x, y: y, width: Math.max(0, w), height: Math.max(0, h) }, extra || {}));
     }
     function boton(txt, title, fn) {
       var b = el('button', 'visual__btn', txt);
@@ -899,150 +1087,203 @@
     // ---- barra: cantidad, modo y leyenda --------------------------------
     var lblN = el('span', 'visual__n');
     var bMenos = boton('−', 'Quitar repisa', function () {
-      var f = campo(V.cantidad);
-      var n = parseInt(registro.valores[f.id], 10) || 1;
+      var f = campo(V.cantidad), n = parseInt(registro.valores[f.id], 10) || 1;
       if (n > (f.min || 1)) { setValor(V.cantidad, n - 1); cambio(); }
     });
     var bMas = boton('+', 'Agregar repisa', function () {
-      var f = campo(V.cantidad);
-      var n = parseInt(registro.valores[f.id], 10) || 1;
+      var f = campo(V.cantidad), n = parseInt(registro.valores[f.id], 10) || 1;
       if (n < (f.max || 6)) { setValor(V.cantidad, n + 1); cambio(); }
     });
     var bIguales = boton('Repartir iguales', 'Vuelve a separaciones iguales', function () {
       var f = campo(V.modo);
       var iguales = (f.opciones || []).filter(function (o) { return o.valor !== V.modo_personalizado; })[0];
-      if (iguales) { setValor(V.modo, iguales.valor); cambio(); }
+      if (!iguales) return;
+      setValor(V.modo, iguales.valor);
+      V.espacios.forEach(function (a) { setValor(a, ''); });   // en «Iguales» no significan nada
+      cambio();
     });
     barra.appendChild(bMenos); barra.appendChild(lblN); barra.appendChild(bMas);
     barra.appendChild(bIguales);
     var ley = el('span', 'visual__leyenda');
-    ley.innerHTML = '<i class="sw sw--ent"></i>Entrepaño <i class="sw sw--div"></i>Divisor';
+    ley.innerHTML = '<i class="sw sw--ent"></i>Entrepaño <i class="sw sw--div"></i>Divisor ' +
+                    '<i class="sw sw--caj"></i>Cajón <i class="sw sw--fre"></i>Frente';
     barra.appendChild(ley);
+
+    // ---- refresco de los campos numéricos (valores recalculados) ----------
+    function refrescarCampos(G) {
+      V.espacios.forEach(function (a, j) {
+        var f = campo(a), w = f && wrapDe(f), inp = w && w.querySelector('input');
+        if (!inp) return;
+        inp.placeholder = j < G.espacios.length ? 'auto · ' + fmt(G.espacios[j]) : '';
+        // El de más arriba no está «bajo» ninguna repisa: se dice en pantalla
+        // (la etiqueta del manifiesto, que es el encabezado del CSV, no cambia).
+        var lbl = w.querySelector('.field__label');
+        if (lbl) lbl.textContent = (G.on && j === G.n) ? 'Espacio ' + (j + 1) + ' · arriba de todo' : f.label;
+      });
+      V.retiros.forEach(function (a) {
+        var f = campo(a), w = f && wrapDe(f), sel = w && w.querySelector('select');
+        if (!sel) return;
+        Array.prototype.forEach.call(sel.options, function (o) {
+          var p = (f.presets || []).filter(function (x) { return x.valor === o.value; })[0];
+          if (p && p.formula) o.textContent = p.label + ' · ' + fmt(G.retiroFormula) + ' mm';
+        });
+      });
+    }
 
     // ---- dibujo -----------------------------------------------------------
     function pintar() {
       aplicarForzados(manifest, registro.valores);
       var G = geomEntrepanos(manifest, registro.valores, V);
+      var F = geomFrentes(manifest, registro.valores, V);
+      var choques = G.on ? choquesRepisas(G, F) : [];
+      var chocan = {};
+      choques.forEach(function (c) { chocan[c.repisa] = true; });
+
       vistas.innerHTML = '';
-      wrap.classList.toggle('is-off', !G.on);
       var fN = campo(V.cantidad);
-      lblN.textContent = G.on ? (G.n + (G.n === 1 ? ' repisa' : ' repisas')) : 'Sin entrepaños';
+      lblN.textContent = G.on ? (G.n + (G.n === 1 ? ' repisa' : ' repisas')) : 'Sin repisas';
       bMenos.disabled = !G.on || G.n <= (fN.min || 1);
       bMas.disabled   = !G.on || G.n >= (fN.max || 6);
       bIguales.disabled = !G.on || !G.personal;
-      if (!G.on) {
-        pie.textContent = 'Activa «Entrepaño: Sí» para acomodar repisas.';
+      if (!(G.cuerpo > 0) || !(G.ancho > 0) || !(G.fondoCuerpo > 0)) {
+        pie.textContent = 'Faltan las dimensiones del cuerpo para dibujar.';
         return;
       }
-      if (!(G.alto > 0) || !(G.ancho > 0) || !(G.prof > 0)) {
-        pie.textContent = 'Faltan las dimensiones del cuerpo para dibujar el interior.';
-        return;
-      }
-      var s = ESC_ALTO / G.alto;                 // px por mm, común a las dos vistas
-      var M = { t: 14, b: 22, l: 46, r: 14 };      // márgenes del lienzo (cotas a la izquierda)
-      var tPx = Math.max(3, G.esp * s);
-      var yDe = function (zmm) { return M.t + (G.alto - zmm) * s; };   // z desde el piso interior
+      refrescarCampos(G);
 
-      // Alzado ---------------------------------------------------------------
-      var wA = Math.max(90, G.ancho * s);
+      var s = ESC_ALTO / G.cuerpo;                       // px por mm, común a las dos vistas
+      var M = { t: 12, b: 24, l: 48, r: 18 };
+      var Y = function (z) { return M.t + (G.cuerpo - z) * s; };   // z en coordenadas del cuerpo
+      var tPx = Math.max(3, G.esp * s);
+      var anchoC = G.ancho + 2 * G.esp;
+
+      // ===== Alzado ==========================================================
+      var wA = anchoC * s;
       var A = svg('svg', { 'class': 'visual__svg', width: wA + M.l + M.r, height: ESC_ALTO + M.t + M.b,
                            viewBox: '0 0 ' + (wA + M.l + M.r) + ' ' + (ESC_ALTO + M.t + M.b) });
-      A.appendChild(svg('rect', { 'class': 'vs-caja', x: M.l, y: M.t, width: wA, height: ESC_ALTO }));
-      // cotas de los espacios
-      var zBase = 0;
-      G.espacios.forEach(function (e, j) {
-        var y1 = yDe(zBase), y0 = yDe(zBase + e);
-        A.appendChild(svg('line', { 'class': 'vs-cota', x1: M.l - 10, y1: y0, x2: M.l - 10, y2: y1 }));
-        A.appendChild(svg('text', { 'class': 'vs-cota-txt' + (G.crudos[j] > 0 ? ' is-fijo' : ''),
-                                    x: M.l - 14, y: (y0 + y1) / 2 + 4, 'text-anchor': 'end' }, fmt(e)));
-        zBase += e + (j < G.n ? G.esp : 0);
+      var X = function (x) { return M.l + x * s; };
+      A.appendChild(rect(X(0), Y(G.cuerpo), wA, ESC_ALTO, 'vs-cuerpo'));
+      A.appendChild(rect(X(G.esp), Y(G.cuerpo - G.esp), G.ancho * s, G.alto * s, 'vs-caja'));
+      F.zonas.forEach(function (zn) {
+        zn.cajas.forEach(function (c) {
+          A.appendChild(rect(X(c.x0), Y(c.z1), (c.x1 - c.x0) * s, (c.z1 - c.z0) * s, 'vs-cajon'));
+        });
       });
-      G.repisas.forEach(function (r) {
-        // Holgura exagerada a 2 px mínimo para que se vea; 0 real = sin hueco.
-        var inset  = r.lateralIzq > 0 ? Math.max(2, r.lateralIzq * s) : 0;
-        var insetD = r.lateralDer > 0 ? Math.max(2, r.lateralDer * s) : 0;
-        var g = svg('g', { 'class': 'vs-repisa' + (r.divisor ? ' is-div' : ''), 'data-i': r.i });
-        var y = yDe(r.z + G.esp);
-        g.appendChild(svg('rect', { 'class': 'vs-hit', x: M.l, y: y - 6, width: wA, height: tPx + 12 }));
-        g.appendChild(svg('rect', { 'class': 'vs-tabla', x: M.l + inset, y: y, width: wA - inset - insetD, height: tPx, rx: 1.5 }));
-        g.appendChild(svg('title', {}, (r.divisor ? 'Divisor ' : 'Entrepaño ') + (r.i + 1) +
-                          ' · arrastra para mover · clic para cambiar a ' + (r.divisor ? 'entrepaño' : 'divisor')));
-        g.addEventListener('pointerdown', function (ev) { empezar(ev, 'alto', r.i, A); });
-        A.appendChild(g);
+      if (G.on) {
+        // cotas de los espacios (interior)
+        var zb = G.esp;
+        G.espacios.forEach(function (e, j) {
+          var y1 = Y(zb), y0 = Y(zb + e);
+          A.appendChild(svg('line', { 'class': 'vs-cota', x1: M.l - 10, y1: y0, x2: M.l - 10, y2: y1 }));
+          A.appendChild(svg('text', { 'class': 'vs-cota-txt' + (G.crudos[j] > 0 ? ' is-fijo' : ''),
+                                      x: M.l - 14, y: (y0 + y1) / 2 + 4, 'text-anchor': 'end' }, fmt(e)));
+          zb += e + (j < G.n ? G.esp : 0);
+        });
+        G.repisas.forEach(function (r) {
+          var il = r.lateralIzq > 0 ? Math.max(2, r.lateralIzq * s) : 0;
+          var id = r.lateralDer > 0 ? Math.max(2, r.lateralDer * s) : 0;
+          var g = svg('g', { 'class': 'vs-repisa' + (r.divisor ? ' is-div' : '') + (chocan[r.i] ? ' is-choque' : ''), 'data-i': r.i });
+          var y = Y(r.zCuerpo + G.esp);
+          g.appendChild(rect(X(G.esp), y - 6, G.ancho * s, tPx + 12, 'vs-hit'));
+          g.appendChild(rect(X(G.esp) + il, y, G.ancho * s - il - id, tPx, 'vs-tabla', { rx: 1.5 }));
+          g.appendChild(svg('title', {}, (r.divisor ? 'Divisor ' : 'Entrepaño ') + (r.i + 1) +
+                            ' · arrastra para mover · clic para cambiar a ' + (r.divisor ? 'entrepaño' : 'divisor')));
+          g.addEventListener('pointerdown', function (ev) { empezar(ev, 'alto', r.i, A); });
+          A.appendChild(g);
+        });
+      }
+      // frentes al final, encima de todo pero sin estorbar (punteado fino)
+      F.zonas.forEach(function (zn) {
+        zn.frentes.forEach(function (fr) {
+          A.appendChild(rect(X(fr.x0), Y(fr.z1), (fr.x1 - fr.x0) * s, (fr.z1 - fr.z0) * s, 'vs-frente-out'));
+          A.appendChild(svg('text', { 'class': 'vs-frente-txt', x: X(fr.x0) + 4, y: Y(fr.z1) + 11 },
+                            fr.tipo === 'puerta' ? 'P' : 'C' + fr.n));
+        });
       });
-      A.appendChild(svg('text', { 'class': 'vs-titulo', x: M.l + wA / 2, y: ESC_ALTO + M.t + 16, 'text-anchor': 'middle' },
-                        'Frente · ' + fmt(G.ancho) + ' mm'));
+      A.appendChild(svg('text', { 'class': 'vs-titulo', x: M.l + wA / 2, y: ESC_ALTO + M.t + 17, 'text-anchor': 'middle' },
+                        'Frente · ' + fmt(anchoC) + ' × ' + fmt(G.cuerpo) + ' mm'));
 
-      // Corte lateral ----------------------------------------------------------
-      var wC = Math.max(90, G.prof * s);
+      // ===== Corte lateral ===================================================
+      // y = 0 en la cara frontal del cuerpo, creciendo hacia el fondo; el frente
+      // queda a la derecha y sobresale el espesor de puerta.
+      var salida = F.espPuerta;          // los frentes de cajón siempre van por fuera
+      var wC = (G.fondoCuerpo + salida) * s;
       var C = svg('svg', { 'class': 'visual__svg', width: wC + M.l + M.r, height: ESC_ALTO + M.t + M.b,
                            viewBox: '0 0 ' + (wC + M.l + M.r) + ' ' + (ESC_ALTO + M.t + M.b) });
-      C.appendChild(svg('rect', { 'class': 'vs-caja', x: M.l, y: M.t, width: wC, height: ESC_ALTO }));
-      C.appendChild(svg('line', { 'class': 'vs-frente', x1: M.l + wC, y1: M.t, x2: M.l + wC, y2: M.t + ESC_ALTO }));
-      G.repisas.forEach(function (r) {
-        var y = yDe(r.z + G.esp);
-        var largo = Math.max(4, r.profundidad * s);
-        var g = svg('g', { 'class': 'vs-repisa' + (r.divisor ? ' is-div' : ''), 'data-i': r.i });
-        g.appendChild(svg('rect', { 'class': 'vs-tabla', x: M.l, y: y, width: largo, height: tPx, rx: 1.5 }));
-        g.appendChild(svg('title', {}, (r.divisor ? 'Divisor ' : 'Entrepaño ') + (r.i + 1) + ' · ' + fmt(r.profundidad) + ' mm de fondo'));
-        g.addEventListener('click', function () { if (!drag || !drag.movio) alternarTipo(r.i); });
-        C.appendChild(g);
-        if (!r.divisor) {
-          var hx = M.l + largo;
-          var h = svg('g', { 'class': 'vs-tirador', 'data-i': r.i });
-          h.appendChild(svg('rect', { 'class': 'vs-hit', x: hx - 8, y: y - 6, width: 16, height: tPx + 12 }));
-          h.appendChild(svg('circle', { cx: hx, cy: y + tPx / 2, r: 4.5 }));
-          h.appendChild(svg('title', {}, 'Arrastra para cambiar el retiro del frente'));
-          h.addEventListener('pointerdown', function (ev) { empezar(ev, 'retiro', r.i, C, M.l + wC); });
-          C.appendChild(h);
-          if (r.retiro > 0) {
-            C.appendChild(svg('text', { 'class': 'vs-retiro', x: Math.min(hx + 6, M.l + wC - 2), y: y - 3,
-                                        'text-anchor': hx + 30 > M.l + wC ? 'end' : 'start' }, '↤ ' + fmt(r.retiro)));
-          }
-        }
+      var XF = M.l + G.fondoCuerpo * s;                     // cara frontal del cuerpo
+      var XC = function (y) { return XF - y * s; };
+      C.appendChild(rect(M.l, Y(G.cuerpo), G.fondoCuerpo * s, ESC_ALTO, 'vs-cuerpo'));
+      C.appendChild(rect(XC(G.fondoCuerpo - G.reserva), Y(G.cuerpo - G.esp), (G.fondoCuerpo - G.reserva) * s, G.alto * s, 'vs-caja'));
+      if (G.reserva > 0) {
+        C.appendChild(rect(M.l, Y(G.cuerpo - G.esp), G.reserva * s, G.alto * s, 'vs-fondo'));
+      }
+      F.zonas.forEach(function (zn) {
+        zn.cajas.forEach(function (c) {
+          C.appendChild(rect(XC(c.y1), Y(c.z1), (c.y1 - c.y0) * s, (c.z1 - c.z0) * s, 'vs-cajon'));
+        });
       });
-      C.appendChild(svg('text', { 'class': 'vs-titulo', x: M.l + wC / 2, y: ESC_ALTO + M.t + 16, 'text-anchor': 'middle' },
-                        'Lado · fondo ' + fmt(G.prof) + ' mm →frente'));
+      if (G.on) {
+        G.repisas.forEach(function (r) {
+          var y = Y(r.zCuerpo + G.esp);
+          var xa = XC(G.fondoCuerpo - G.reserva), xb = XC(r.retiro);
+          var g = svg('g', { 'class': 'vs-repisa' + (r.divisor ? ' is-div' : '') + (chocan[r.i] ? ' is-choque' : ''), 'data-i': r.i });
+          g.appendChild(rect(xa, y, Math.max(4, xb - xa), tPx, 'vs-tabla', { rx: 1.5 }));
+          g.appendChild(svg('title', {}, (r.divisor ? 'Divisor ' : 'Entrepaño ') + (r.i + 1) + ' · ' + fmt(r.profundidad) +
+                            ' mm de fondo · clic para cambiar a ' + (r.divisor ? 'entrepaño' : 'divisor')));
+          g.addEventListener('click', function () { if (!drag || !drag.movio) alternarTipo(r.i); });
+          C.appendChild(g);
+          var h = svg('g', { 'class': 'vs-tirador', 'data-i': r.i });
+          h.appendChild(rect(xb - 8, y - 6, 16, tPx + 12, 'vs-hit'));
+          h.appendChild(svg('circle', { cx: xb, cy: y + tPx / 2, r: 4.5 }));
+          h.appendChild(svg('title', {}, 'Arrastra para cambiar el retiro del frente (en 0 es divisor)'));
+          h.addEventListener('pointerdown', function (ev) { empezar(ev, 'retiro', r.i, C); });
+          C.appendChild(h);
+          if (!r.divisor) {
+            C.appendChild(svg('text', { 'class': 'vs-retiro', x: xb - 7, y: y - 3, 'text-anchor': 'end' },
+                              (r.formula ? 'ƒ ' : '') + fmt(r.retiro)));
+          }
+        });
+      }
+      F.zonas.forEach(function (zn) {
+        zn.frentes.forEach(function (fr) {
+          var x0 = fr.interior ? XC(F.espPuerta) : XF;
+          C.appendChild(rect(x0, Y(fr.z1), F.espPuerta * s, (fr.z1 - fr.z0) * s, 'vs-frente-out'));
+        });
+      });
+      C.appendChild(svg('text', { 'class': 'vs-titulo', x: M.l + wC / 2, y: ESC_ALTO + M.t + 17, 'text-anchor': 'middle' },
+                        'Lado · fondo ' + fmt(G.fondoCuerpo) + ' mm · frente →'));
 
       vistas.appendChild(A); vistas.appendChild(C);
 
-      var msg = 'Interior ' + fmt(G.ancho) + ' × ' + fmt(G.alto) + ' mm · repisas de ' + fmt(G.esp) + ' mm · ' +
-                (G.personal ? 'altos personalizados (los de 0 se reparten el resto)' : 'separaciones iguales');
+      var msg = G.on
+        ? 'Interior ' + fmt(G.ancho) + ' × ' + fmt(G.alto) + ' × ' + fmt(G.prof) + ' mm · repisas de ' + fmt(G.esp) + ' mm · ' +
+          (G.personal ? 'altos personalizados (los vacíos se reparten el resto)' : 'separaciones iguales') +
+          ' · ƒ = retiro por fórmula (' + fmt(G.retiroFormula) + ' mm)'
+        : 'Activa «Entrepaño: Sí» para acomodar repisas. Los frentes y cajones se dibujan como referencia.';
       if (G.exceso > 1) msg += ' — se pasan ' + fmt(G.exceso) + ' mm';
+      if (choques.length) msg += ' — ' + choques.length + (choques.length === 1 ? ' choque' : ' choques') + ' (en rojo)';
       pie.textContent = msg;
-      pie.classList.toggle('is-bad', G.exceso > 1);
+      pie.classList.toggle('is-bad', G.exceso > 1 || choques.length > 0);
 
-      // contexto que necesita el arrastre
-      wrap.__geom = { G: G, s: s, M: M };
+      wrap.__geom = { G: G, s: s, XF: XF };
     }
 
     function alternarTipo(i) {
-      var f = campo(V.tipos[i]);
+      var f = campo(V.retiros[i]);
       if (!f || !fieldEnabled(f, manifest, registro.valores)) return;
-      var actual = String(registro.valores[f.id]);
-      var otro = (f.opciones || []).filter(function (o) { return String(o.valor) !== actual; })[0];
-      if (!otro) return;
-      setValor(V.tipos[i], otro.valor);
-      // Al volver a entrepaño se recupera un retiro razonable si estaba en 0.
-      if (String(otro.valor) !== String(V.valor_divisor)) {
-        var fr = campo(V.retiros[i]);
-        if (fr && !(parseFloat(registro.valores[fr.id]) > 0)) setValor(V.retiros[i], fr.default || '0');
-      }
+      var G = wrap.__geom.G, r = G.repisas[i];
+      setRetiro(i, r && r.divisor ? null : 0);   // divisor → entrepaño (fórmula), si no → divisor
       cambio();
     }
 
-    function empezar(ev, modo, i, lienzo, xFrente) {
+    function empezar(ev, modo, i, lienzo) {
       if (ev.button !== 0) return;
       ev.preventDefault();
       var r = lienzo.getBoundingClientRect();
-      drag = { modo: modo, i: i, x0: ev.clientX, y0: ev.clientY, top: r.top, left: r.left,
-               xFrente: xFrente, movio: false, base: wrap.__geom };
-      if (modo === 'alto') {
-        // Al arrastrar se fijan TODOS los espacios en su medida actual: así mover
-        // una repisa no hace saltar a las demás. El de arriba queda en 0 (resto).
-        var G = drag.base.G;
-        drag.espacios = G.espacios.slice();
-      }
+      drag = { modo: modo, i: i, x0: ev.clientX, y0: ev.clientY, left: r.left, movio: false, base: wrap.__geom };
+      // Se fijan TODOS los espacios en su medida actual: mover una repisa no
+      // hace saltar a las demás. El de arriba queda vacío (toma el resto).
+      if (modo === 'alto') drag.espacios = drag.base.G.espacios.slice();
       // La captura mantiene el arrastre aunque el puntero salga del dibujo; si
       // el navegador la rechaza, el arrastre sigue funcionando dentro del widget.
       try { if (wrap.setPointerCapture) wrap.setPointerCapture(ev.pointerId); } catch (e) {}
@@ -1056,20 +1297,18 @@
       var B = drag.base, G = B.G, s = B.s;
       if (drag.modo === 'alto') {
         var i = drag.i, e = drag.espacios.slice();
-        var dmm = -dy / s;                                     // arriba = más espacio abajo
         var minEsp = 10;
-        var abajo = Math.round(e[i] + dmm), arriba = e[i] + e[i + 1] - abajo;
+        var abajo = Math.round(e[i] - dy / s), arriba = e[i] + e[i + 1] - abajo;
         if (abajo < minEsp) { arriba -= (minEsp - abajo); abajo = minEsp; }
         if (arriba < minEsp) { abajo -= (minEsp - arriba); arriba = minEsp; }
         e[i] = abajo; e[i + 1] = arriba;
         setValor(V.modo, V.modo_personalizado);
         for (var j = 0; j < G.n; j++) setValor(V.espacios[j], Math.round(e[j]));
-        setValor(V.espacios[G.n], '0');                        // el de arriba toma el resto
+        setValor(V.espacios[G.n], '');                       // el de arriba toma el resto
       } else {
-        var xPx = ev.clientX - drag.left;
-        var retiro = Math.round((drag.xFrente - xPx) / s);
+        var retiro = Math.round((B.XF - (ev.clientX - drag.left)) / s);
         retiro = Math.max(0, Math.min(Math.round(G.prof - 50), retiro));
-        setValor(V.retiros[drag.i], retiro);
+        setRetiro(drag.i, retiro);                            // 0 = «Divisor»
       }
       cambio();
     });
@@ -1097,6 +1336,9 @@
     // resuelve visible_si/habilitado_si leyendo el manifiesto, no el dataset.
     var wrap = el('div', 'field' + (field.requerido ? ' is-required' : ''));
     wrap.dataset.fieldId = field.id;
+    // `columna` fija la columna del grid: deja «a la par» campos que van juntos
+    // (repisa N a la izquierda, su espacio a la derecha), aunque otros se oculten.
+    if (field.columna) wrap.style.gridColumn = String(field.columna);
 
     // Dentro del editor de caja la posición ya dice de qué margen se trata.
     var texto = (corto && field.label_corto) ? field.label_corto : field.label;
@@ -1189,6 +1431,22 @@
     return control;
   }
 
+  /* Si el preset está en «Personalizado» con una medida igual a la de un preset
+     de medida fija, cambia a ese preset. Devuelve true si cambió algo. */
+  function normalizarPreset(field, valores) {
+    if (valores[field.id] !== '__custom__') return false;
+    var mm = parseMm(String(valores[field.id + '::custom'] || '') + (field.unidad || ''));
+    if (isNaN(mm)) return false;
+    var hit = (field.presets || []).filter(function (p) {
+      var pm = parseMm(p.valor);
+      return p.valor !== '' && !isNaN(pm) && Math.abs(pm - mm) < 0.05;
+    })[0];
+    if (!hit) return false;
+    valores[field.id] = hit.valor;
+    valores[field.id + '::custom'] = '';
+    return true;
+  }
+
   function ctrlPreset(field, manifest, registro) {
     var box = el('div', 'preset');
     var sel = el('select', 'select');
@@ -1223,6 +1481,21 @@
       registro.valores[field.id + '::custom'] = input.value.trim();
       onValueChange(findManifest(registro.familia), registro);
     });
+    // Al salir del campo, una medida que coincide con un preset se vuelve ese
+    // preset (0 mm en un retiro = «Divisor»): la lista dice lo que hay.
+    input.addEventListener('change', function () {
+      if (normalizarPreset(field, registro.valores)) {
+        box.__sync();
+        onValueChange(findManifest(registro.familia), registro);
+      }
+    });
+
+    // Lo usa el gráfico de entrepaños cuando escribe en este campo.
+    box.__sync = function () {
+      sel.value = registro.valores[field.id] != null ? registro.valores[field.id] : '';
+      if (document.activeElement !== input) input.value = registro.valores[field.id + '::custom'] || '';
+      sync();
+    };
 
     /* Deja de ofrecer los presets que ya no caben en el espacio restante. Lo
        llama updateConditionals() en cada cambio del formulario, igual que el
@@ -1525,11 +1798,14 @@
       if (!groupEnabled(g, manifest, registro.valores)) return;
       g.campos.forEach(function (f) {
         if (!fieldInyecta(f, manifest, registro.valores)) return;
-        // Un campo `virtual` es una decisión de captura (p. ej. «Entrepaño o
-        // Divisor») que el componente no tiene como atributo: gobierna a otros
-        // campos vía `forzar`, viaja en la plantilla/CSV, pero no al .skp.
-        if (f.virtual) return;
         var v = effectiveValue(f, registro.valores, manifest);
+        // `vacio`: lo que se inyecta cuando el campo se deja en blanco. Un espacio
+        // entre repisas vacío significa «reparto automático» y el componente lo
+        // espera en 0; sin escribirlo, el .skp conservaría su valor anterior.
+        if ((v === '' || v == null) && f.vacio != null) {
+          flat[f.attr] = f.vacio;
+          return;
+        }
         if (v === '' || v == null) {
           // Un preset vacío («Entrepaño») puede traer su propia fórmula: se
           // inyecta explícita para no depender de que el componente base la
@@ -1799,6 +2075,9 @@
       if (!campo.permite_personalizado) return { error: 'Opción no válida.' };
       var n = numeroEnUnidad(t, campo.unidad);
       if (n === null) return { error: 'Escribe una opción de la lista o una medida.' };
+      // Igual que en el formulario: «0» en un retiro es el preset «Divisor».
+      var tmp = {}; tmp[campo.id] = '__custom__'; tmp[campo.id + '::custom'] = n;
+      if (normalizarPreset(campo, tmp)) return { valor: tmp[campo.id] };
       return { valor: '__custom__', custom: n };
     }
     if (campo.tipo === 'derivado') {
@@ -2292,6 +2571,10 @@
     presupuestosCajones:  presupuestosCajones,
     altoZona:             altoZona,
     geomEntrepanos:       geomEntrepanos,
+    geomFrentes:          geomFrentes,
+    choquesRepisas:       choquesRepisas,
+    altoLateralCajon:     altoLateralCajon,
+    normalizarPreset:     normalizarPreset,
     presupuestoDivisores: presupuestoDivisores,
     fieldByAttr:          fieldByAttr,
     fieldVisible:         fieldVisible,

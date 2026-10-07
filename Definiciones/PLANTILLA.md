@@ -46,7 +46,7 @@ Por qué importa, con los tres casos reales:
    (dimensiones → espesores → estructura → frente → tirador → divisores).
 3. **Bloques por familia** — lo exclusivo de Gabinete, luego Alacena, luego Esquinero.
 
-Estado al 2026-10-07: **139 columnas** (95 aplican al gabinete, contando `familia` y `nombre_salida`). Incluye los campos **virtuales** (`Repisa N: tipo` = Entrepaño/Divisor): se capturan en el Excel/CSV y deciden otros campos, pero no se inyectan al componente.
+Estado al 2026-10-07: **133 columnas** (89 aplican al gabinete, contando `familia` y `nombre_salida`). El retiro de cada repisa acepta `Entrepaño` (inyecta la fórmula del componente), `Divisor` o una medida; un `0` se lee como `Divisor`. Un espacio entre repisas vacío = reparto automático.
 
 `Input/Gabinetes.csv` es un ejemplo listo para «Importar…» con los encabezados de la plantilla y 4
 gabinetes por zonas (los validados en SketchUp), el último con entrepaños personalizados y un divisor.

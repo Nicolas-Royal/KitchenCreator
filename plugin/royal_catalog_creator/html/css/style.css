@@ -308,8 +308,17 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
 .visual__pie { margin: 0; font-size: 12px; color: var(--text-dim); }
 .visual__pie.is-bad { color: var(--warn); }
 
-.vs-caja   { fill: var(--surface); stroke: var(--text-dim); stroke-width: 1.5; }
-.vs-frente { stroke: var(--primary); stroke-width: 3; stroke-dasharray: 4 3; }
+.visual__leyenda .sw--caj { background: color-mix(in srgb, var(--warn) 30%, transparent); border: 1px solid var(--warn); height: 8px; }
+.visual__leyenda .sw--fre { background: transparent; border: 1px dashed var(--text-dim); height: 8px; }
+/* Cuerpo (silueta) e interior; los frentes y cajones son referencia: tenues,
+   para que no tapen las repisas, que es lo que se edita. */
+.vs-cuerpo { fill: var(--surface-2); stroke: var(--text-dim); stroke-width: 1.5; }
+.vs-fondo  { fill: var(--border); }
+.vs-cajon  { fill: color-mix(in srgb, var(--warn) 18%, transparent); stroke: var(--warn); stroke-width: 1; stroke-opacity: .7; }
+.vs-frente-out { fill: none; stroke: var(--text-dim); stroke-width: 1; stroke-dasharray: 3 3; opacity: .75; pointer-events: none; }
+.vs-frente-txt { fill: var(--muted); font-size: 9px; pointer-events: none; }
+.vs-repisa.is-choque .vs-tabla { fill: var(--danger); }
+.vs-caja   { fill: var(--surface); stroke: var(--text-dim); stroke-width: 1; }
 .vs-cota   { stroke: var(--muted); stroke-width: 1; }
 .vs-cota-txt { fill: var(--text-dim); font-size: 10px; font-variant-numeric: tabular-nums; }
 .vs-cota-txt.is-fijo { fill: var(--text); font-weight: 600; }
@@ -492,6 +501,8 @@ code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .9em; }
   .app { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .group__body { grid-template-columns: 1fr; }
+  /* En una columna, los pares «a la par» (style grid-column) van uno bajo otro. */
+  .group__body > .field { grid-column: auto !important; }
   .familias { grid-template-columns: 1fr; }
   /* Sin ancho para el anillo: los cuatro márgenes pasan a lista, en el mismo
      orden de lectura (arriba, izquierda, derecha, abajo). */

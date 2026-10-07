@@ -63,27 +63,44 @@ insertar.
 ### Entrepaños y divisores (gráfico interactivo)
 
 El grupo «Entrepaños y divisores» del gabinete declara `visual: { "tipo": "entrepanos", … }` y se
-dibuja con dos vistas a la misma escala: **alzado** (de frente) y **corte lateral**.
+dibuja con dos vistas a la misma escala, a medida real del cuerpo: **alzado** (de frente) y **corte
+lateral**. Además de las repisas dibuja, como referencia tenue, los **frentes** (puertas y frentes de
+cajón, punteado) y las **cajas de cajón** (sombreado), para ver dónde no chocar.
 
 | Acción | Efecto |
 |---|---|
-| Arrastrar una repisa arriba/abajo (alzado) | Cambia los altos de los dos espacios que la rodean; pasa a «Personalizado» y deja el espacio de arriba en 0 (toma el resto). |
-| Clic en una repisa (cualquier vista) | Alterna **Entrepaño ↔ Divisor**. |
-| Arrastrar el canto de un entrepaño (corte) | Cambia su **retiro del frente**. |
+| Arrastrar una repisa arriba/abajo (alzado) | Cambia los altos de los dos espacios que la rodean; pasa a «Personalizado» y deja vacío el de arriba (toma el resto). |
+| Clic en una repisa (cualquier vista) | Alterna **Entrepaño (fórmula) ↔ Divisor**. |
+| Arrastrar el canto de una repisa (corte) | Cambia su **retiro del frente**. Al llegar a 0 queda «Divisor»; un divisor arrastrado hacia atrás pasa a medida libre. |
 | `−` / `+` · «Repartir iguales» | Cantidad de repisas · vuelve a separaciones iguales. |
 
-- **Entrepaño** = repisa desmontable con retiro del frente (26 mm por omisión). **Divisor** = llega al
-  frente, retiro forzado a 0 (`forzar`). Es el equivalente de la opción Entrepaño/Divisor del gabinete v1.
-- El tipo de cada repisa (`h2N_tipo`) es un campo **`virtual`**: el componente no tiene ese atributo.
-  Se captura, viaja en la plantilla y el CSV, y gobierna el retiro, pero **no se inyecta**.
+**Retiro de cada repisa** (`h2N_…_retiro_fondo`, preset, como la opción Entrepaño/Divisor del gabinete v1):
+
+| Opción | Se inyecta |
+|---|---|
+| **Entrepaño** | La fórmula `=5-CHOOSE(IF(i06_trasera=1,1,IF(i05_ceja_trasera=1,2,3)),0,c03,…)`: la repisa queda **5 cm más corta que el cuerpo** (la `LenY-(parent!lenyorigin-5)` del v1, reescrita en el padre). 26 mm con fondo en ranura, 38 sin ceja, 50 con refuerzos de tarja. La lista muestra el resultado (`Entrepaño · 26 mm`). |
+| **Divisor** | `0mm`: llega al frente. |
+| Medida libre | La medida. Si es 0 (escrita, arrastrada o en el CSV) se vuelve «Divisor» sola (`normalizarPreset`). |
+
+- **A la par**: cada repisa y el espacio que tiene debajo van en la misma fila (`columna` 1 y 2 en el
+  manifiesto). Los espacios vacíos muestran en gris el valor que reparte el componente (`auto · 188`) y
+  se inyectan como `0` (`vacio`), que es «reparto» para el componente; el de arriba se rotula «arriba de todo».
 - **Holgura lateral** (`h33`/`h34`): el componente aplica UNA para todas las repisas, divisores
   incluidos; si todas son divisores se fuerza a 0.
-- El gráfico repite las fórmulas del divisor (`DIA01` bajo `Estructura`): interior = cuerpo − 2 ×
-  espesor; `n` repisas dejan `n + 1` espacios; profundidad = cuerpo − fondo − ranura (12 mm) − retiro.
-  Verificado contra la geometría generada en SketchUp: alturas exactas al milímetro.
-- Lo editado en el gráfico son los mismos campos numéricos que siguen debajo: formulario, plantilla y
-  CSV dicen lo mismo. Avisos (no bloquean): espacios fijados que no caben, espacio en 0 o negativo,
-  repisa de menos de 50 mm de fondo.
+- **Fórmulas replicadas** (verificadas contra la geometría generada en SketchUp, al milímetro):
+  - repisas: interior = cuerpo − 2 × espesor; `n` repisas dejan `n + 1` espacios; fondo = cuerpo −
+    reserva del fondo (0 / fondo / ranura + fondo según tarja y ceja) − retiro;
+  - zonas y frentes: como `zn11/zn21`; con montaje interior **solo las puertas** entran al cuerpo; los
+    frentes de cajón siguen por fuera; el cajón 1 es el de arriba;
+  - cajas: base = borde inferior del frente + 28 mm (`e34`); lateral Tandem `ROUND(h·0.8808−5.735,1)`,
+    Antaro `ROUND(h·0.4301+0.229,1)`, Telescópica 12 cm, acotado a `h − 2.8` (cm); largo = corredera
+    (automática: `FLOOR(fondo, 5 cm)` +1 cm Tandem, −2.4 cm Antaro); holgura por lado = estructura +
+    corredera (10 / 37.5 / 13 mm). Los técnicos (`e32`, `e33`, `e34`, `e35`, `e21`, `e22`, `i25`) van
+    fijos en `visual.cajones` con el valor del `.skp`.
+- **Avisos** (no bloquean): espacios fijados que no caben, espacio en 0 o negativo, repisa de menos de
+  50 mm de fondo, **repisa dentro de la franja de cajones** de una zona (en rojo en el dibujo) y
+  repisa sin retiro contra una **puerta montada por dentro**.
+- Lo editado en el gráfico son los mismos campos que siguen debajo: formulario, plantilla y CSV dicen lo mismo.
 
 ### Editor de caja para márgenes
 
