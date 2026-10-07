@@ -63,41 +63,74 @@ function prueba(nombre, fn) {
 }
 
 // ---- (a) combinaciones mutuamente excluyentes ------------------------------
-prueba('R-01 · con puerta de cajones no hay entrepaños ni divisores', function () {
-  var f = plano('gabinete', { EstiloPuerta: '6', c24entrepano: '0' });
-  assert.strictEqual(f['c24entrepano'], '1', 'el entrepaño debe quedar forzado a No');
-  Object.keys(f).forEach(function (k) {
-    assert.ok(k.indexOf('divisor>') !== 0, 'no debe inyectarse ' + k);
+// Gabinete por zonas (GABINETE-BASE-ZONAS). Por omisión: 600 × 578 × 770 mm de
+// cuerpo + zoclo 100, tirador, 2 zonas: zona 1 puerta doble, zona 2 3 cajones.
+// Fachada = 870 − 100 − 13 (margen sup. tirador) = 757 mm → zonas de 377 mm.
+
+prueba('Z-01 · todo se escribe en el padre: ningún attr con «prefijo>»', function () {
+  Object.keys(plano('gabinete', {})).forEach(function (k) {
+    assert.ok(k.indexOf('>') < 0, 'attr de hijo en el gabinete: ' + k);
   });
-  assert.strictEqual(T.nombresDivisores(man.gabinete, registro('gabinete',
-    { EstiloPuerta: '6', c24entrepano: '0' })), null);
 });
 
-prueba('R-02 · sin puerta no hay cantidad, posición, separación, márgenes ni tirador', function () {
-  var f = plano('gabinete', { EstiloPuerta: '0' });
-  ['puerta>e07cantpuerta', 'puerta>f01posextintpu', 'f04seppuertas',
-   'f11margsupcaj', 'f12marginfcaj', 'f13margizqcaj', 'f14margdercaj',
-   'puerta>f21tipotirador', 'puerta>f22postirador', 'puerta>f23orienttirador'
-  ].forEach(function (a) { assert.ok(!(a in f), a + ' no debería inyectarse'); });
+prueba('Z-02 · con 1 zona no se inyecta nada de la zona 2', function () {
+  var f = plano('gabinete', { d01_cantidad_zonas: '1' });
+  Object.keys(f).forEach(function (k) {
+    assert.ok(!/^d[34]\d_/.test(k), 'zona 2 con 1 zona: ' + k);
+  });
+  assert.ok(!('d02_alto_zona_superior' in f), 'el alto de zona superior no aplica con 1 zona');
 });
 
-prueba('R-03 · «Sin tirador» apaga posición y orientación', function () {
-  var f = plano('gabinete', { f21tipotirador: '1' });
-  assert.ok(!('puerta>f22postirador' in f));
-  assert.ok(!('puerta>f23orienttirador' in f));
-  var g = plano('gabinete', { f21tipotirador: '4' });
-  assert.strictEqual(g['puerta>f22postirador'], '3');
+prueba('Z-03 · la puerta y los cajones de una zona se excluyen', function () {
+  var p = plano('gabinete', { d11_z1_contenido: '1' });
+  assert.ok('d15_z1_cant_puertas' in p);
+  assert.ok(!('d12_z1_cant_cajones' in p), 'zona 1 con puerta no lleva cajones');
+  var c = plano('gabinete', { d11_z1_contenido: '2' });
+  assert.ok('d12_z1_cant_cajones' in c);
+  assert.ok(!('d15_z1_cant_puertas' in c), 'zona 1 con cajones no lleva puertas');
+  var s = plano('gabinete', { d11_z1_contenido: '3' });
+  ['d12_z1_cant_cajones', 'd15_z1_cant_puertas', 'd16_z1_tirador_tipo']
+    .forEach(function (a) { assert.ok(!(a in s), 'sin frente no lleva ' + a); });
 });
 
-prueba('R-04 · sin diseño de cajones no se inyecta nada del grupo Cajones', function () {
-  var f = plano('gabinete', { EstiloPuerta: '1' });
-  ['b03tipocajon', 'cajon>a21cantcajon', 'f02sepcajtirad', 'cajon>n02corredpers',
-   'b11altocaj1'].forEach(function (a) { assert.ok(!(a in f), a + ' no debería inyectarse'); });
+prueba('Z-04 · con gola no se inyecta ningún tirador; con tirador no hay gola', function () {
+  var g = plano('gabinete', { b01_gola_o_tirador: '2', d32_z2_cant_cajones: '2' });
+  ['d16_z1_tirador_tipo', 'd36_z2_tirador_tipo', 'e01_tirador_tipo', 'd17_z1_tirador_posicion', 'e04_tirador_largo']
+    .forEach(function (a) { assert.ok(!(a in g), 'con gola no debería inyectarse ' + a); });
+  assert.strictEqual(g['g01_perfil_tipo'], '1');
+  var t = plano('gabinete', {});
+  assert.ok(!('g01_perfil_tipo' in t), 'con tirador no hay perfil de gola');
+  assert.strictEqual(t['d16_z1_tirador_tipo'], '9');
 });
 
-prueba('R-05 · «Entrepaño» es el interruptor maestro de Divisores', function () {
-  assert.ok(!('divisor>f01cantdiv' in plano('gabinete', { c24entrepano: '1' })));
-  assert.strictEqual(plano('gabinete', { c24entrepano: '0' })['divisor>f01cantdiv'], '1');
+prueba('Z-05 · «Sin tirador» apaga posición, orientación y largo', function () {
+  var f = plano('gabinete', { d16_z1_tirador_tipo: '1' });
+  ['d17_z1_tirador_posicion', 'd18_z1_tirador_orientacion', 'd19_z1_tirador_largo']
+    .forEach(function (a) { assert.ok(!(a in f), a + ' no debería inyectarse'); });
+});
+
+prueba('Z-06 · herraje de cajones solo si alguna zona lleva cajones', function () {
+  var f = plano('gabinete', { d31_z2_contenido: '1' });            // puerta y puerta
+  ['b02_tipo_cajon', 'e05_corredera_largo', 'e01_tirador_tipo']
+    .forEach(function (a) { assert.ok(!(a in f), a + ' no debería inyectarse'); });
+  assert.strictEqual(plano('gabinete', {})['b02_tipo_cajon'], '1');
+});
+
+prueba('Z-07 · entrepaños solo con alguna puerta; sus medidas solo con «Sí»', function () {
+  var sinPuerta = plano('gabinete', { d11_z1_contenido: '2' });     // cajones y cajones
+  assert.ok(!('h01_entrepano' in sinPuerta));
+  var no = plano('gabinete', {});
+  assert.strictEqual(no['h01_entrepano'], '1');
+  assert.ok(!('h02_cantidad' in no));
+  var si = plano('gabinete', { h01_entrepano: '0', h02_cantidad: '2' });
+  assert.strictEqual(si['h02_cantidad'], '2');
+  assert.ok(!('h11_espacio1_alto' in si), 'con separaciones iguales no se inyectan alturas');
+});
+
+prueba('Z-08 · LenZ y LenY llevan sumados el zoclo y el espesor de puerta', function () {
+  var f = plano('gabinete', {});
+  assert.strictEqual(f.LenZ, '870mm');
+  assert.strictEqual(f.LenY, '600mm');
 });
 
 prueba('R-06 · cada diseño de puerta de alacena trae sus propios campos', function () {
@@ -131,7 +164,7 @@ prueba('R-06 · cada diseño de puerta de alacena trae sus propios campos', func
 });
 
 prueba('R-06b · el vidrio completo y el uñero no llevan tirador', function () {
-  [['gabinete', 'EstiloPuerta'], ['alacena', 'c25tipopuerta'], ['esquinero', 'EstiloPuerta']]
+  [['alacena', 'c25tipopuerta'], ['esquinero', 'EstiloPuerta']]
     .forEach(function (par) {
       ['3', '5'].forEach(function (diseno) {
         var v = {}; v[par[1]] = diseno;
@@ -166,8 +199,8 @@ prueba('R-07 · el esquinero no tiene separación entre puertas', function () {
 prueba('R-08 · ni negativos ni cero en las dimensiones', function () {
   assert.ok(errores('gabinete', { LenX: '-800' }).length > 0);
   assert.ok(errores('gabinete', { LenX: '0' }).length > 0);
-  assert.ok(errores('gabinete', { c01espestr: '0' }).length > 0);
-  assert.strictEqual(errores('gabinete', { f11margsupcaj: '0' }).length, 0, '0 mm de margen es válido');
+  assert.ok(errores('gabinete', { c01_espesor_estructura: '0' }).length > 0);
+  assert.strictEqual(errores('gabinete', { k02_margen_inferior: '0' }).length, 0, '0 mm de margen es válido');
 });
 
 prueba('R-09/R-22 · lo que no es una medida se rechaza en el campo', function () {
@@ -176,31 +209,26 @@ prueba('R-09/R-22 · lo que no es una medida se rechaza en el campo', function (
   });
 });
 
-prueba('R-10 · el zócalo no puede alcanzar el alto del cuerpo', function () {
-  assert.ok(errores('gabinete', { LenZ: '300', a02zocalo: '500' }).length > 0);
-  assert.strictEqual(errores('gabinete', { LenZ: '600', a02zocalo: '100' }).length, 0);
-});
-
 prueba('R-11 · los márgenes no pueden comerse el frente', function () {
-  assert.ok(errores('gabinete', { LenX: '800', f13margizqcaj: '600', f14margdercaj: '600' }).length > 0);
-  assert.ok(errores('gabinete', { LenZ: '600', f11margsupcaj: '400', f12marginfcaj: '400' }).length > 0);
+  assert.ok(errores('gabinete', { LenX: '600', k03_margen_izquierdo: '400', k04_margen_derecho: '400' }).length > 0);
+  assert.ok(errores('gabinete', { d02_alto_zona_superior: '900' }).length > 0, 'zona superior más alta que el cuerpo');
 });
 
 prueba('R-12 · un espesor no puede alcanzar la dimensión que atraviesa', function () {
-  assert.ok(errores('gabinete', { c01espestr: '999' }).length > 0);
-  assert.ok(errores('gabinete', { c03espfondo: '600' }).length > 0);   // LenY = 600
+  assert.ok(errores('gabinete', { c01_espesor_estructura: '999' }).length > 0);
+  assert.ok(errores('gabinete', { c03_espesor_fondo: '600' }).length > 0);   // LenY = 578
 });
 
 prueba('R-13 · descartada: la cantidad de puertas no se acota contra el ancho', function () {
-  assert.strictEqual(errores('gabinete', { LenX: '300', e07cantpuerta: '11' }).length, 0);
+  assert.strictEqual(errores('gabinete', { LenX: '300', d15_z1_cant_puertas: '11' }).length, 0);
 });
 
 prueba('R-14 · los espacios de los divisores advierten, no bloquean', function () {
-  var cambios = { c24entrepano: '0', f02tipomedida: '2', f01cantdiv: '3',
+  var cambios = { LenX: '800', LenY: '350', LenZ: '700', c24entrepano: '0', f02tipomedida: '2', f01cantdiv: '3',
                   f03espacio1: '5000', f03espacio2: '5000', f03espacio3: '5000' };
-  assert.strictEqual(errores('gabinete', cambios).length, 0, 'no debe bloquear');
-  var r = registro('gabinete', cambios);
-  assert.ok(T.avisosConfig(man.gabinete, r.valores).length > 0, 'debe advertir');
+  assert.strictEqual(errores('alacena', cambios).length, 0, 'no debe bloquear');
+  var r = registro('alacena', cambios);
+  assert.ok(T.avisosConfig(man.alacena, r.valores).length > 0, 'debe advertir');
 });
 
 prueba('R-15 · el séptimo espacio no existe en ningún manifiesto', function () {
@@ -209,73 +237,83 @@ prueba('R-15 · el séptimo espacio no existe en ningún manifiesto', function (
   });
 });
 
-prueba('R-17 · el alto de cajones que sobra se advierte y se genera', function () {
-  // 2 cajones CH fijados a mano en 600 mm útiles: sobran ~217 mm bajo la pila.
-  var r = registro('gabinete', { EstiloPuerta: '7', b11altocaj1: '190mm', b12altocaj2: '190mm' });
-  assert.strictEqual(T.erroresConfig(man.gabinete, r.valores).length, 0);
-  assert.ok(T.avisosConfig(man.gabinete, r.valores).join(' ').indexOf('Sobran') >= 0);
+// ---- (c) presupuesto de cajones por zona ----------------------------------
+prueba('C-01 · el alto de cada zona sigue las fórmulas del componente', function () {
+  var r = registro('gabinete', {});
+  assert.ok(Math.abs(T.altoZona(man.gabinete, r.valores, 1) - 377) < 0.01);
+  assert.ok(Math.abs(T.altoZona(man.gabinete, r.valores, 2) - 377) < 0.01);
+  var s = registro('gabinete', { d02_alto_zona_superior: '500' });
+  assert.ok(Math.abs(T.altoZona(man.gabinete, s.valores, 2) - 254) < 0.01, '757 − 3 − 500');
+  var u = registro('gabinete', { d01_cantidad_zonas: '1' });
+  assert.ok(Math.abs(T.altoZona(man.gabinete, u.valores, 1) - 757) < 0.01, 'una zona = toda la fachada');
+  var g = registro('gabinete', { b01_gola_o_tirador: '2' });
+  assert.ok(Math.abs(T.altoZona(man.gabinete, g.valores, 1) - 345) < 0.01, 'gola: (870−100−40−40)/2');
 });
 
-prueba('R-17b · con «N cajones» el alto no se captura, se calcula', function () {
-  var r = registro('gabinete', { EstiloPuerta: '6', a21cantcajon: '3', b11altocaj1: '190mm' });
-
-  // Ningún campo de alto se muestra: los tres cajones son copias del primero.
-  man.gabinete.reglas_cajones.attrs_alto.forEach(function (a) {
-    var f = T.fieldByAttr(man.gabinete, a);
-    assert.ok(!T.fieldVisible(f, man.gabinete, r.valores), a + ' no debería mostrarse');
-  });
-
-  // El 190 mm que quedó capturado se ignora: reparte el alto útil entre los 3.
-  var p = T.presupuestoCajones(man.gabinete, r.valores);
-  assert.strictEqual(p.libres, 3);
-  assert.strictEqual(p.asignado, 0);
-  assert.ok(Math.abs(p.porCajon - p.disponible / 3) < 0.01);
-
-  // Y ese alto calculado sí llega al .skp, aunque el campo esté oculto.
-  var f = plano('gabinete', { EstiloPuerta: '6', a21cantcajon: '3', b11altocaj1: '190mm' });
-  assert.strictEqual(f['b11altocaj1'], (Math.round(p.porCajon * 100) / 100) + 'mm');
-  ['b12altocaj2', 'b13altocaj3', 'b14altocaj4']
-    .forEach(function (a) { assert.ok(!(a in f), a + ' lo copia el componente'); });
+prueba('C-02 · cajones iguales: bloquea por debajo del mínimo y topa el contador', function () {
+  var ok = registro('gabinete', { d32_z2_cant_cajones: '3' });
+  var p = T.presupuestoCajones(man.gabinete, ok.valores, 'z2');
+  assert.ok(p.aplica && p.ok, JSON.stringify(p));
+  assert.strictEqual(p.nMax, 3);
+  assert.ok(errores('gabinete', { d32_z2_cant_cajones: '4' }).length > 0, '4 × 92 mm no cabe');
+  assert.strictEqual(errores('gabinete', { d01_cantidad_zonas: '1', d11_z1_contenido: '2', d12_z1_cant_cajones: '6' }).length, 0,
+                     '6 cajones en una sola zona sí caben');
 });
 
-// ---- (c) dependencias entre campos ----------------------------------------
-prueba('R-18 · el ancho de amarres solo aplica con amarres', function () {
-  assert.ok(!('estructura>e23ancamtecho' in plano('gabinete', { e22tipotecho: '5', e23ancamtecho: '80' })));
-  assert.strictEqual(plano('gabinete', { e22tipotecho: '2', e23ancamtecho: '80' })['estructura>e23ancamtecho'], '80mm');
+prueba('C-03 · personalizado: el último cajón toma el resto y no baja del mínimo', function () {
+  var base = { d33_z2_medida_cajones: '2', d32_z2_cant_cajones: '3' };
+  assert.strictEqual(errores('gabinete', Object.assign({ d41_z2_cajon1_alto: '120' }, base)).length, 0);
+  assert.ok(errores('gabinete', Object.assign({ d41_z2_cajon1_alto: '200' }, base)).length > 0,
+            'al último le quedan 47 mm');
+  assert.ok(errores('gabinete', Object.assign({ d41_z2_cajon1_alto: '80' }, base)).length > 0,
+            'un cajón fijado bajo el mínimo');
+  var r = registro('gabinete', Object.assign({ d41_z2_cajon1_alto: '120' }, base));
+  var p = T.presupuestoCajones(man.gabinete, r.valores, 'z2');
+  assert.strictEqual(p.altos.length, 3);
+  assert.ok(Math.abs(p.altos.reduce(function (s, v) { return s + v; }, 0) - p.disponible) < 0.01);
 });
 
+prueba('C-04 · con gola van máximo 2 cajones por zona', function () {
+  assert.strictEqual(errores('gabinete', { b01_gola_o_tirador: '2', d32_z2_cant_cajones: '2' }).length, 0);
+  assert.ok(errores('gabinete', { b01_gola_o_tirador: '2', d32_z2_cant_cajones: '3' }).length > 0);
+});
+
+prueba('C-05 · una zona sin cajones no tiene presupuesto', function () {
+  var r = registro('gabinete', {});
+  assert.strictEqual(T.presupuestoCajones(man.gabinete, r.valores, 'z1').aplica, false);
+  var u = registro('gabinete', { d01_cantidad_zonas: '1' });
+  assert.strictEqual(T.presupuestoCajones(man.gabinete, u.valores, 'z2').aplica, false, 'zona 2 no existe con 1 zona');
+});
+
+// ---- (d) dependencias entre campos ----------------------------------------
 prueba('R-19 · Alacena y Esquinero no tienen techo que medir', function () {
   assert.strictEqual(campo('alacena', 'e23ancamtecho'), null);
   assert.strictEqual(campo('esquinero', 'e23ancamtecho'), null);
 });
 
 prueba('R-20 · «Personalizado» exige todos los espacios visibles', function () {
-  var e = errores('gabinete', { c24entrepano: '0', f02tipomedida: '2', f01cantdiv: '2' });
+  var dims = { LenX: '800', LenY: '350', LenZ: '700' };
+  var e = errores('alacena', Object.assign({ c24entrepano: '0', f02tipomedida: '2', f01cantdiv: '2' }, dims));
   assert.strictEqual(e.length, 2, 'faltan los dos espacios: ' + JSON.stringify(e));
-  assert.strictEqual(errores('gabinete', { c24entrepano: '0', f02tipomedida: '1', f01cantdiv: '2' }).length, 0);
+  assert.strictEqual(errores('alacena', Object.assign({ c24entrepano: '0', f02tipomedida: '1', f01cantdiv: '2' }, dims)).length, 0);
 });
 
-prueba('R-21 · la separación entre cajones nace en 3 mm', function () {
-  assert.strictEqual(campo('gabinete', 'f02sepcajtirad').default, '3');
+prueba('R-21 · la separación entre cajones nace en 3 mm (40 con gola)', function () {
+  assert.strictEqual(campo('gabinete', 'k11_sep_cajones').default, '3');
+  assert.strictEqual(campo('gabinete', 'k12_sep_cajones_gola').default, '40');
 });
 
-prueba('R-23 · CH y G son los únicos altos estándar de cajón', function () {
-  var vals = campo('gabinete', 'b11altocaj1').presets.map(function (p) { return p.valor; });
-  assert.deepStrictEqual(vals, ['', '190mm', '383mm']);
+prueba('R-25 · la corredera nace en 50 cm', function () {
+  assert.strictEqual(campo('gabinete', 'e05_corredera_largo').default, '510mm');
 });
 
-prueba('R-25 · la corredera nace en 50 cm y no pasa de la profundidad', function () {
-  assert.strictEqual(campo('gabinete', 'n02corredpers').default, '50');
-  assert.strictEqual(errores('gabinete', { EstiloPuerta: '6' }).length, 0);
-  assert.ok(errores('gabinete', { EstiloPuerta: '6', LenY: '600', n02corredpers: '70' }).length > 0);
-});
-
-prueba('R-26 · el esquinero nombra sus divisiones', function () {
+prueba('R-26 · el esquinero nombra sus divisiones; el gabinete ya no', function () {
   var div = T.nombresDivisores(man.esquinero, registro('esquinero', { c24entrepano: '0', f01cantdiv: '2' }));
   assert.deepStrictEqual(div, { prefijo: 'divisor', nombres: ['Entrepaño', 'Entrepaño'] });
+  assert.strictEqual(T.nombresDivisores(man.gabinete, registro('gabinete', { h01_entrepano: '0' })), null);
 });
 
-// ---- (d) estados que impiden generar --------------------------------------
+// ---- (e) estados que impiden generar --------------------------------------
 prueba('R-27 · una alacena recién creada no se genera sin dimensiones', function () {
   var e = errores('alacena', {});
   assert.strictEqual(e.length, 3, 'LenX/LenY/LenZ: ' + JSON.stringify(e));
@@ -308,29 +346,47 @@ prueba('R-29 · un nombre repetido se numera en vez de sobrescribir', function (
 });
 
 prueba('R-30 · el auto-nombre describe la configuración vigente', function () {
-  var r = registro('gabinete', {});
-  assert.strictEqual(T.autoNombre(man.gabinete, r.valores), 'GAB-800-1div');
-  r.valores.LenX = '900';
-  assert.strictEqual(T.autoNombre(man.gabinete, r.valores), 'GAB-900-1div');
+  var n = function (c) { return T.autoNombre(man.gabinete, registro('gabinete', c).valores); };
+  assert.strictEqual(n({}), 'GAB-600-T-Z1P2-Z2C3');
+  assert.strictEqual(n({ LenX: '900' }), 'GAB-900-T-Z1P2-Z2C3');
+  assert.strictEqual(n({ d01_cantidad_zonas: '1' }), 'GAB-600-T-Z1P2', 'sin zona 2');
+  assert.strictEqual(n({ d01_cantidad_zonas: '1', d11_z1_contenido: '3' }), 'GAB-600-T-Z1S');
+  assert.strictEqual(n({ b01_gola_o_tirador: '2', g01_perfil_tipo: '2', d32_z2_cant_cajones: '2' }), 'GAB-600-GM-Z1P2-Z2C2');
+  assert.strictEqual(n({ h01_entrepano: '0', b02_tipo_cajon: '2', d15_z1_cant_puertas: '1' }), 'GAB-600-T-Z1P1I-Z2C3-E-AN');
+  // Alacena y esquinero conservan su patrón sin códigos.
+  assert.strictEqual(T.autoNombre(man.esquinero, registro('esquinero', {}).valores).indexOf('ESQ'), 0);
 });
 
 // ---- barrido: ninguna combinación válida queda bloqueada -------------------
-prueba('sin falsos positivos: todo diseño de puerta con medidas válidas genera', function () {
-  var base = {
-    gabinete:  {},
-    alacena:   { LenX: '800', LenY: '350', LenZ: '700' },
-    esquinero: { LenX: '900', LenY: '900', LenZ: '600', a0101profizq: '600', a0102profder: '600' }
-  };
-  Object.keys(base).forEach(function (fam) {
+prueba('sin falsos positivos: todo acomodo de zonas que cabe genera', function () {
+  var contenidos = ['1', '2', '3'];
+  [['1', '2'], ['2', '2']].forEach(function (sis) {          // tirador / gola
+    var gola = sis[0] === '2';
+    ['1', '2'].forEach(function (nz) {
+      contenidos.forEach(function (c1) {
+        contenidos.forEach(function (c2) {
+          if (nz === '1' && c2 !== '1') return;
+          var cambios = { b01_gola_o_tirador: sis[0], d01_cantidad_zonas: nz,
+                          d11_z1_contenido: c1, d31_z2_contenido: c2,
+                          d12_z1_cant_cajones: gola ? '2' : (nz === '1' ? '6' : '3'),
+                          d32_z2_cant_cajones: gola ? '2' : '3' };
+          var e = errores('gabinete', cambios);
+          assert.strictEqual(e.length, 0, JSON.stringify(cambios) + ': ' + JSON.stringify(e));
+        });
+      });
+    });
+  });
+  ['alacena', 'esquinero'].forEach(function (fam) {
+    var base = fam === 'alacena' ? { LenX: '800', LenY: '350', LenZ: '700' }
+                                 : { LenX: '900', LenY: '900', LenZ: '600', a0101profizq: '600', a0102profder: '600' };
     var puerta = campo(fam, 'EstiloPuerta') || campo(fam, 'c25tipopuerta');
     puerta.opciones.forEach(function (o) {
-      var cambios = Object.assign({}, base[fam]);
+      var cambios = Object.assign({}, base);
       cambios[puerta.id] = o.valor;
       var e = errores(fam, cambios);
       assert.strictEqual(e.length, 0, fam + ' con «' + o.label + '»: ' + JSON.stringify(e));
     });
-    // y con la sección de divisores encendida
-    var conDiv = Object.assign({ c24entrepano: '0', f01cantdiv: '3' }, base[fam]);
+    var conDiv = Object.assign({ c24entrepano: '0', f01cantdiv: '3' }, base);
     assert.strictEqual(errores(fam, conDiv).length, 0, fam + ' con divisores: ' +
       JSON.stringify(errores(fam, conDiv)));
   });

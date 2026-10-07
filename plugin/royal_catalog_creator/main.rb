@@ -12,6 +12,7 @@ module RoyalKitchen
     require File.join(__dir__, 'engine')
     require File.join(__dir__, 'plantilla')
     require File.join(__dir__, 'importer')
+    require File.join(__dir__, 'rk_mitered')
 
     # -- Configuración ------------------------------------------------------
     PREF_SECTION = 'RoyalCatalogCreator'.freeze
@@ -268,19 +269,82 @@ module RoyalKitchen
       (pulgadas * 25.4).round(1)
     end
 
-    def cajones_efectivos(reglas, valores)
-      mapa   = reglas['estilos_con_cajones'] || {}
-      estilo = valores[reglas['attr_estilo_puerta']].to_s
-      return 0 unless mapa.key?(estilo)
-      mapa[estilo] == 'n' ? valores[reglas['attr_cantidad']].to_i : mapa[estilo].to_i
+    # Condición del manifiesto evaluada sobre la fila plana. Espejo de
+    # condicionCumple en app.js: { attr, valor } / { attr, valores } /
+    # { attr, excepto } / { todas: [...] } / { alguna: [...] }. Un attr que no
+    # viene en la fila no se inyectó, así que no cumple ningún «igual a».
+    def condicion_cumple?(valores, cond)
+      return cond['todas'].all? { |c| condicion_cumple?(valores, c) } if cond['todas']
+      return cond['alguna'].any? { |c| condicion_cumple?(valores, c) } if cond['alguna']
+      actual = valores[cond['attr']].to_s
+      return Array(cond['excepto']).none? { |v| v.to_s == actual } if cond['excepto']
+      Array(cond['valores'] || [cond['valor']]).any? { |v| v.to_s == actual }
     end
 
-    # Con «N cajones» el componente hace los cajones copia del primero: un solo
-    # alto manda sobre todos.
-    def cajones_uniformes?(reglas, valores)
-      return false unless reglas['uniforme_si_n']
-      estilo = valores[reglas['attr_estilo_puerta']].to_s
-      (reglas['estilos_con_cajones'] || {})[estilo] == 'n'
+    def todas?(valores, conds)
+      Array(conds).all? { |c| condicion_cumple?(valores, c) }
+    end
+
+    # Primer attr de la lista cuyas condiciones `si` se cumplen, en pulgadas.
+    def medida_segun(valores, lista)
+      hit = Array(lista).find { |e| todas?(valores, e['si']) }
+      (hit && medida_in(valores, hit['attr'])) || 0.0
+    end
+
+    # Alto de la zona 1 o 2: mismas fórmulas que el componente
+    # (s01altofachada, zn11altozona1, zn21altozona2).
+    def alto_zona(reglas, valores, zona)
+      fach = reglas['fachada'] || {}
+      alto = medida_in(valores, fach['attr_alto'])
+      return nil if alto.nil?
+      Array(fach['restar']).each { |a| v = medida_in(valores, a); alto -= v if v }
+      alto -= medida_segun(valores, reglas['margen_superior'])
+
+      z = reglas['zonas'] || {}
+      return alto unless valores[z['attr_cantidad']].to_s == '2'
+      sep = medida_segun(valores, reglas['separacion'])
+      sup = medida_in(valores, z['attr_alto_superior'])
+      z1  = [1.0 / 25.4, sup && sup > 0 ? sup : (alto - sep) / 2.0].max
+      zona == 1 ? z1 : [1.0 / 25.4, alto - sep - z1].max
+    end
+
+    # Mensaje de error de una pila de cajones, o nil si cabe.
+    def validar_pila(reglas, pila, valores)
+      return nil unless todas?(valores, pila['si'])
+      n = valores[pila['attr_cantidad']].to_i
+      return nil if n < 1
+
+      tope = Array(pila['max']).find { |e| todas?(valores, e['si']) }
+      return tope['mensaje'] || "Máximo #{tope['n']} cajones en esta zona." if tope && n > tope['n'].to_i
+
+      zona = alto_zona(reglas, valores, pila['zona'].to_i)
+      return nil if zona.nil?
+      sep      = medida_segun(valores, reglas['separacion'])
+      minimo   = reglas['alto_min_mm']
+      alto_min = minimo.to_f / 25.4
+      disp     = zona - sep * (n - 1)
+      return "La zona quedó en #{a_mm(zona)} mm. Revisa alto, zoclo, márgenes y alto de zonas." if disp <= 0
+
+      igual    = disp / n
+      personal = valores[pila['attr_modo']].to_s == pila['valor_personalizado'].to_s
+      unless personal
+        return nil if igual >= alto_min - TOL_IN
+        return "#{n} cajones iguales = #{a_mm(igual)} mm cada uno, por debajo del mínimo de #{minimo} mm."
+      end
+
+      # «Personalizado»: cada cajón toma su alto (0 = igual) y el último el resto.
+      altos = Array(pila['attrs_alto']).first(n - 1).map do |attr|
+        v = medida_in(valores, attr)
+        v && v > 0 ? v : igual
+      end
+      bajo = altos.find { |v| v < alto_min - TOL_IN }
+      return "El alto de un cajón (#{a_mm(bajo)} mm) es menor al mínimo de #{minimo} mm." if bajo
+      ultimo = disp - altos.inject(0.0) { |s, v| s + v }
+      if ultimo < alto_min - TOL_IN
+        return "Al último cajón (el que toma el resto) le quedan #{a_mm(ultimo)} mm, " \
+               "por debajo del mínimo de #{minimo} mm."
+      end
+      nil
     end
 
     # -----------------------------------------------------------------------
@@ -290,65 +354,39 @@ module RoyalKitchen
     # escribiría tal cual y el mueble saldría con la medida del .skp base. El
     # formulario ya lo bloquea; esto atrapa lo que no pasó por él.
     # -----------------------------------------------------------------------
-    def validar_medidas(valores)
+    # Attrs que el manifiesto declara como medida (campos `numero` y `preset`).
+    # Un select puede llevar texto legítimo («S», «Gris mate»): no es medida.
+    def attrs_medida(manifest)
+      Array(manifest['grupos']).flat_map { |g| Array(g['campos']) }
+                               .select { |c| %w[numero preset].include?(c['tipo'] || 'numero') }
+                               .map { |c| c['attr'] }
+    end
+
+    def validar_medidas(manifest, valores)
+      medidas = valores.select { |k, _v| attrs_medida(manifest).include?(k) }
       # Un valor "=formula" es la fórmula nativa del componente reinyectada a
       # propósito (p.ej. margen frontal en modo «Entrepaño»), no una medida.
-      malos = valores.select { |_k, v| (i = Engine.interpret(v)).is_a?(String) && !i.start_with?('=') }.keys
+      malos = medidas.select { |_k, v| (i = Engine.interpret(v)).is_a?(String) && !i.start_with?('=') }.keys
       return "No son medidas válidas: #{malos.join(', ')}." unless malos.empty?
 
-      negativos = valores.select { |_k, v| (n = Engine.interpret(v)).is_a?(Numeric) && n < 0 }.keys
+      negativos = medidas.select { |_k, v| (n = Engine.interpret(v)).is_a?(Numeric) && n < 0 }.keys
       return "No pueden ser negativos: #{negativos.join(', ')}." unless negativos.empty?
 
       nil
     end
 
+    # Una pila de cajones por zona (manifest.reglas_cajones.pilas). La fila
+    # plana trae LenZ con el zoclo ya sumado (ajuste `suma`, resuelto en
+    # app.js#effectiveValue), igual que lo lee presupuestoCajones: los dos
+    # espejos parten del mismo número y restan el zoclo una sola vez.
     def validar_cajones(manifest, valores)
       reglas = manifest['reglas_cajones']
       return nil unless reglas
 
-      n = cajones_efectivos(reglas, valores)
-      return nil if n < 1
-
-      # La fila plana trae LenZ con el zócalo ya sumado (ajuste `suma` del
-      # manifiesto, resuelto en app.js#effectiveValue), así que restarlo aquí es
-      # correcto y no duplica el descuento: app.js hace la misma resta sobre el
-      # mismo número compensado. Los dos espejos leen el alto FINAL, no el
-      # capturado. Ver el comentario de presupuestoCajones en app.js.
-      util = medida_in(valores, reglas['attr_alto_util'])
-      return nil if util.nil?
-      Array(reglas['attr_restar']).each do |attr|
-        v = medida_in(valores, attr)
-        util -= v if v
+      Array(reglas['pilas']).each do |pila|
+        err = validar_pila(reglas, pila, valores)
+        return "#{pila['titulo'] || pila['id']}: #{err}" if err
       end
-
-      sep      = medida_in(valores, reglas['attr_separacion']) || 0.0
-      alto_min = reglas['alto_min_mm'].to_f / 25.4
-      minimo   = reglas['alto_min_mm']
-      disp     = util - sep * (n - 1)
-
-      return "El alto útil del mueble quedó en #{a_mm(util)} mm. Revisa alto, zócalo y márgenes." if disp <= 0
-
-      # En modo uniforme no se captura ningún alto: los n cajones son copias del
-      # primero y su alto sale de la resta, así que no hay nada fijado que
-      # revalidar. Espejo de presupuestoCajones en app.js.
-      uniforme = cajones_uniformes?(reglas, valores)
-      altos    = uniforme ? [] : Array(reglas['attrs_alto']).first(n).map { |attr| medida_in(valores, attr) }
-      fijos    = altos.compact
-      libres   = n - fijos.size
-      restante = disp - fijos.inject(0.0) { |s, v| s + v }
-
-      bajo = fijos.find { |v| v < alto_min - TOL_IN }
-      return "El alto de un cajón (#{a_mm(bajo)} mm) es menor al mínimo de #{minimo} mm." if bajo
-
-      # Solo se bloquea lo que se PASA; que sobre alto deja un hueco, no un desborde.
-      if restante < -TOL_IN
-        return "Los altos fijados suman #{a_mm(disp - restante)} mm y solo caben #{a_mm(disp)} mm: " \
-               "se pasan #{a_mm(-restante)} mm."
-      elsif libres > 0 && (restante / libres) < alto_min - TOL_IN
-        return "Quedan #{a_mm(restante)} mm para #{libres} cajón(es) = #{a_mm(restante / libres)} mm " \
-               "cada uno, por debajo del mínimo de #{minimo} mm."
-      end
-
       nil
     end
 
@@ -381,7 +419,7 @@ module RoyalKitchen
       return manifest_wrap.merge('registro_id' => reg_id) unless manifest_wrap['ok']
       manifest = manifest_wrap['manifest']
 
-      error_medidas = validar_medidas(valores)
+      error_medidas = validar_medidas(manifest, valores)
       return { 'ok' => false, 'registro_id' => reg_id, 'error' => error_medidas } if error_medidas
 
       error_cajones = validar_cajones(manifest, valores)
@@ -427,6 +465,11 @@ module RoyalKitchen
           nombre: uni['nombre'].to_s
         }
       end
+
+      # El hook de Mitered se engancha al redraw de los Componentes Dinámicos.
+      # Al cargar el plugin esa extensión puede no haber cargado todavía, así
+      # que se reintenta aquí (es idempotente).
+      RK::Mitered.instalar_hook if defined?(RK::Mitered)
 
       res = Engine.generar_unidad(base_def, nombre, valores, opts)
 

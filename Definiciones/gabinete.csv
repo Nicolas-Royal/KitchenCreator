@@ -1,48 +1,85 @@
-nombre,valor a asignar,descripcion,nota
-LenX,mm,ANCHO,
-LenY,mm,PROFUNDIDAD,
-LenZ,mm,ALTO,
-a02zocalo,mm,ALTO ZOCALO,ALTO DEL MUEBLE INCLUYE EL ALTO ZOCALO
-b03tipocajon,Tandem (1) / Antaro (2),ESTILO CAJONES,
-b11altocaj1,mm,ALTO CAJON 1 (SUPERIOR),"solo admite mm, pero dentro de la interfaz el campo permitira estas tres opciones CH  / G  / Personalizado. Donde  (CH: 190mm G:383mm)"
-b12altocaj2,mm,ALTO CAJON 2,
-b13altocaj3,mm,ALTO CAJON 3,
-b14altocaj4,mm,ALTO CAJON 4 (INFERIOR),Se asigna el restante con base a las alturas anteriores
-c01espestr,mm,ESPESOR ESTRUCTURA,
-c02esppuerta,mm,ESPESOR PUERTA,
-c03espfondo,mm,ESPESOR FONDO,
-c24entrepano,Si (0) / No (1),,
-EstiloPuerta,Ninguna (0) / PUERTA LISA (1) / PUERTA ITALIANA (2) / PUERTA VIDRIO (3) / PUERTA VIDRIO-MADERA (4) / PUERTA U�ERO (5) / N CAJONES (6) / 2 CAJONES (7) / 3 CAJONES (8) / 4 CAJONES (9),DISE�O DE PUERTA,
-f02sepcajtirad,mm,SEPARACION ENTRE CAJONES,
-f04seppuertas,mm,SEPARACION ENTRE PUERTAS,
-f11margsupcaj,mm,MARGEN SUPERIOR,
-f12marginfcaj,mm,MARGEN INFERIOR,
-f13margizqcaj,mm,MARGEN IZQUIERDO,
-f14margdercaj,mm,MARGEN DERECHO,
-estructura>e22tipotecho,Ninguno (1) / Amarre frontal (2) / Amarre posterior (3) / Amarre frontal + posterior (4) / Techo completo (5),TIPO DE TECHO,
-estructura>e23ancamtecho,mm,ANCHO AMARRES,
-puerta>e07cantpuerta,Puerta simple - IZQ (1) / Puerta simple - DER (2) / Puerta doble (3) / Puerta - 3 (4) / Puerta - 4 (5) / Puerta - 5 (6) / Puerta - 6 (7) / Puerta - 7 (8) / Puerta - 8 (9) / Puerta - 9 (10) / Puerta - 10 (11),CANTIDAD DE PUERTAS,
-puerta>f01posextintpu,Puerta/Caj�n exterior (1) / Puerta/Caj�n interior (2),POSICION DE PUERTAS,
-puerta>f21tipotirador,Sin Tirador (1) / Tirador secc. circular (2) / Tirador secc. cuadrada (3) / Tirador arco (4) / Tirador bot�n cuadrado (5) / Tirador bot�n circular (6) / Tirador CLE (7),TIPO DE TIRADOR,
-puerta>f22postirador,Arriba - Izquierda (1) / Arriba - Centro (2) / Arriba - Derecha (3) / Centro - Izquierda (4) / Centro - Centro (5) / Centro - Derecha (6) / Abajo - Izquierda (7) / Abajo - Centro (8) / Abajo - Derecha (9),POSICION DE TIRADOR,
-puerta>f23orienttirador,Tirador horizontal (1) / Tirador vertical (2),ORIENTACION DE TIRADOR,
-divisor>f01cantdiv,1 (1) / 2 (2) / 3 (3) / 4 (4) / 5 (5) / 6 (6),CANTIDAD DE DIVISORES,
-divisor>f02tipomedida,Separaciones iguales (1) / Personalizado (2),Tipo de medida,
-divisor>f03espacio1,mm,ESPACIO 1 (INFERIOR),
-divisor>f03espacio2,mm,ESPACIO 2 ,
-divisor>f03espacio3,mm,ESPACIO 3,
-divisor>f03espacio4,mm,ESPACIO 4,
-divisor>f03espacio5,mm,ESPACIO 5,
-divisor>f03espacio6,mm,ESPACIO 6,
-divisor>f03espacio7,mm,ESPACIO 7,
-divisor>g01margenf1,mm,MARGEN FRONTAL 1,
-divisor>g01margenf2,mm,MARGEN FRONTAL 2,
-divisor>g01margenf3,mm,MARGEN FRONTAL 3,
-divisor>g01margenf4,mm,MARGEN FRONTAL 4,
-divisor>g01margenf5,mm,MARGEN FRONTAL 5,
-divisor>g01margenf6,mm,MARGEN FRONTAL 6,
-cajon>a21cantcajon,1 (1) / 2 (2) / 3 (3) / 4 (4) / 5 (5) / 6 (6),CANTIDAD DE CAJONES,SOLO APLICA CUANDO SE ELIGE N CAJONES (6) EN EstiloPuerta
-cajon>c05espestrpe,mm,ESPESOR ESTRUCTURA CAJONES,
-cajon>c06esppuertape,mm,ESPESOR PUERTA CAJONES,
-cajon>c06esppuertape,mm,ESPESOR FONDO CAJONES,
-cajon>n02corredpers,cm,CORREDERA CAJON,
+﻿nombre,valor a asignar,descripcion,nota
+LenX,mm,Ancho,Grupo: Dimensiones. Default: 600 mm
+LenY,mm,Profundidad del cuerpo,"Grupo: Dimensiones. Default: 578 mm. Se le suma: c02_espesor_puerta. Sin la puerta: el componente mide la profundidad total, así que se le suma el espesor de puerta."
+LenZ,mm,Alto del cuerpo,"Grupo: Dimensiones. Default: 770 mm. Se le suma: a02_alto_zoclo. Sin el zoclo: se le suma el alto del zoclo, que eleva la estructura."
+a02_alto_zoclo,mm,Alto del zoclo,"Grupo: Dimensiones. Default: 100 mm. La estructura queda elevada esta medida aunque el zoclo esté apagado (patas o zoclo corrido). Para un gabinete al piso, 0."
+b01_gola_o_tirador,Módulo con tirador (1) / Módulo con gola (2),Gola o tirador,Grupo: Sistema. Default: 1
+l01_linea_frente,Lisa (1) / Italiana (2) / Mitered (3) / Mitered Flat Panel (4) / Rectangular Flat Panel (5) / Rectangular Raised Panel (6) / Clásico Europeo (7) / Clásico Europeo Flat Panel (8) / Lisa con Estiradera Integrada (9) / Inglesa (10),Línea de frente,Grupo: Sistema. Default: 1. Para el catálogo se genera en Lisa; el estilo se cambia al insertar.
+l02_marco_ancho,mm,Italiana: ancho del marco,Grupo: Sistema. Default: 60 mm. Visible si l01_linea_frente = 2
+l03_rebaje_panel,mm,Italiana: profundidad del panel,Grupo: Sistema. Default: 5 mm. Visible si l01_linea_frente = 2
+f02_montaje,Exterior (1) / Interior (2),Montaje de puertas y cajones,Grupo: Sistema. Default: 1
+g01_perfil_tipo,Aluminio (1) / Melamina (2),Tipo de perfil,Grupo: Gola [si b01_gola_o_tirador = 2]. Default: 1
+g02_perfil_posicion,"Izquierda, interior (1) / Derecha, interior (2) / Izquierda y derecha, interior (3) / Izquierda y derecha, exterior (4)",Posición del perfil,Grupo: Gola [si b01_gola_o_tirador = 2]. Default: 4
+g03_combinacion,L - C (1) / L - L (2),Combinación de perfiles,Grupo: Gola [si b01_gola_o_tirador = 2]. Default: 1. L - L cierra el hueco entre zonas.
+c23_material_gola_aluminio,Aluminio anodizado mate (Aluminio anodizado mate) / Negro mate (Negro mate) / Champagne mate (Champagne mate) / Gris mate (Gris mate),Color de la gola de aluminio,Grupo: Gola [si b01_gola_o_tirador = 2]. Default: Gris mate. Activo si g01_perfil_tipo = 1
+d01_cantidad_zonas,1 zona (1) / 2 zonas (2),Cantidad de zonas,Grupo: Zonas de fachada. Default: 2
+d02_alto_zona_superior,mm,Alto de la zona superior,Grupo: Zonas de fachada. Default: 0 mm. Activo si d01_cantidad_zonas = 2. 0 = mitad de la fachada.
+d11_z1_contenido,Puerta (1) / Cajones (2) / Sin frente (3),"Zona 1 (superior, o única): contenido",Grupo: Zonas de fachada. Default: 1
+d31_z2_contenido,Puerta (1) / Cajones (2) / Sin frente (3),Zona 2 (inferior): contenido,Grupo: Zonas de fachada. Default: 2. Activo si d01_cantidad_zonas = 2
+d15_z1_cant_puertas,Puerta simple - IZQ (1) / Puerta simple - DER (2) / Puerta doble (3) / Puerta - 3 (4) / Puerta - 4 (5) / Puerta - 5 (6) / Puerta - 6 (7) / Puerta - 7 (8) / Puerta - 8 (9) / Puerta - 9 (10) / Puerta - 10 (11),Zona 1: cantidad de puertas,Grupo: Zona 1 · Puertas [si d11_z1_contenido = 1]. Default: 3
+d16_z1_tirador_tipo,Sin tirador (1) / Lateral negra (7) / New Chica (8) / Andrea (9) / Escolano (10) / Barra negra (11) / Botón cilíndrico chico (12) / Paola (13) / Mulholland (14) / Concha dorada (15) / Botón Oberol (16) / Swarovski chica (17) / Swarovski grande (18) / Botón cilíndrico dorado (19) / Botón cilíndrico plateado (20) / Berlín (21),Zona 1: tirador,Grupo: Zona 1 · Puertas [si d11_z1_contenido = 1]. Default: 9. Activo si b01_gola_o_tirador = 1
+d17_z1_tirador_posicion,Arriba - Izquierda (1) / Arriba - Centro (2) / Arriba - Derecha (3) / Centro - Izquierda (4) / Centro - Centro (5) / Centro - Derecha (6) / Abajo - Izquierda (7) / Abajo - Centro (8) / Abajo - Derecha (9),Zona 1: posición del tirador,Grupo: Zona 1 · Puertas [si d11_z1_contenido = 1]. Default: 6. Activo si b01_gola_o_tirador = 1 y d16_z1_tirador_tipo ≠ 1
+d18_z1_tirador_orientacion,Horizontal (1) / Vertical (2),Zona 1: orientación del tirador,Grupo: Zona 1 · Puertas [si d11_z1_contenido = 1]. Default: 2. Activo si b01_gola_o_tirador = 1 y d16_z1_tirador_tipo ≠ 1
+d19_z1_tirador_largo,mm,Zona 1: largo del tirador,Grupo: Zona 1 · Puertas [si d11_z1_contenido = 1]. Default: 300 mm. Activo si b01_gola_o_tirador = 1 y d16_z1_tirador_tipo ≠ 1
+d12_z1_cant_cajones,1–6,Zona 1: cantidad de cajones,Grupo: Zona 1 · Cajones [si d11_z1_contenido = 2]. Default: 1
+d13_z1_medida_cajones,Iguales (1) / Personalizado (2),Zona 1: medida de cajones,Grupo: Zona 1 · Cajones [si d11_z1_contenido = 2]. Default: 1
+d21_z1_cajon1_alto,mm,Zona 1: alto cajón 1 (arriba),Grupo: Zona 1 · Cajones [si d11_z1_contenido = 2]. Default: 0 mm. Visible si d12_z1_cant_cajones ≥ 2. Activo si d13_z1_medida_cajones = 2. 0 = igual que los demás. El último cajón siempre toma el resto.
+d22_z1_cajon2_alto,mm,Zona 1: alto cajón 2,Grupo: Zona 1 · Cajones [si d11_z1_contenido = 2]. Default: 0 mm. Visible si d12_z1_cant_cajones ≥ 3. Activo si d13_z1_medida_cajones = 2
+d23_z1_cajon3_alto,mm,Zona 1: alto cajón 3,Grupo: Zona 1 · Cajones [si d11_z1_contenido = 2]. Default: 0 mm. Visible si d12_z1_cant_cajones ≥ 4. Activo si d13_z1_medida_cajones = 2
+d24_z1_cajon4_alto,mm,Zona 1: alto cajón 4,Grupo: Zona 1 · Cajones [si d11_z1_contenido = 2]. Default: 0 mm. Visible si d12_z1_cant_cajones ≥ 5. Activo si d13_z1_medida_cajones = 2
+d25_z1_cajon5_alto,mm,Zona 1: alto cajón 5,Grupo: Zona 1 · Cajones [si d11_z1_contenido = 2]. Default: 0 mm. Visible si d12_z1_cant_cajones ≥ 6. Activo si d13_z1_medida_cajones = 2
+d35_z2_cant_puertas,Puerta simple - IZQ (1) / Puerta simple - DER (2) / Puerta doble (3) / Puerta - 3 (4) / Puerta - 4 (5) / Puerta - 5 (6) / Puerta - 6 (7) / Puerta - 7 (8) / Puerta - 8 (9) / Puerta - 9 (10) / Puerta - 10 (11),Zona 2: cantidad de puertas,Grupo: Zona 2 · Puertas [si d01_cantidad_zonas = 2 y d31_z2_contenido = 1]. Default: 3
+d36_z2_tirador_tipo,Sin tirador (1) / Lateral negra (7) / New Chica (8) / Andrea (9) / Escolano (10) / Barra negra (11) / Botón cilíndrico chico (12) / Paola (13) / Mulholland (14) / Concha dorada (15) / Botón Oberol (16) / Swarovski chica (17) / Swarovski grande (18) / Botón cilíndrico dorado (19) / Botón cilíndrico plateado (20) / Berlín (21),Zona 2: tirador,Grupo: Zona 2 · Puertas [si d01_cantidad_zonas = 2 y d31_z2_contenido = 1]. Default: 9. Activo si b01_gola_o_tirador = 1
+d37_z2_tirador_posicion,Arriba - Izquierda (1) / Arriba - Centro (2) / Arriba - Derecha (3) / Centro - Izquierda (4) / Centro - Centro (5) / Centro - Derecha (6) / Abajo - Izquierda (7) / Abajo - Centro (8) / Abajo - Derecha (9),Zona 2: posición del tirador,Grupo: Zona 2 · Puertas [si d01_cantidad_zonas = 2 y d31_z2_contenido = 1]. Default: 5. Activo si b01_gola_o_tirador = 1 y d36_z2_tirador_tipo ≠ 1
+d38_z2_tirador_orientacion,Horizontal (1) / Vertical (2),Zona 2: orientación del tirador,Grupo: Zona 2 · Puertas [si d01_cantidad_zonas = 2 y d31_z2_contenido = 1]. Default: 2. Activo si b01_gola_o_tirador = 1 y d36_z2_tirador_tipo ≠ 1
+d39_z2_tirador_largo,mm,Zona 2: largo del tirador,Grupo: Zona 2 · Puertas [si d01_cantidad_zonas = 2 y d31_z2_contenido = 1]. Default: 120 mm. Activo si b01_gola_o_tirador = 1 y d36_z2_tirador_tipo ≠ 1
+d32_z2_cant_cajones,1–6,Zona 2: cantidad de cajones,Grupo: Zona 2 · Cajones [si d01_cantidad_zonas = 2 y d31_z2_contenido = 2]. Default: 3
+d33_z2_medida_cajones,Iguales (1) / Personalizado (2),Zona 2: medida de cajones,Grupo: Zona 2 · Cajones [si d01_cantidad_zonas = 2 y d31_z2_contenido = 2]. Default: 1
+d41_z2_cajon1_alto,mm,Zona 2: alto cajón 1 (arriba),Grupo: Zona 2 · Cajones [si d01_cantidad_zonas = 2 y d31_z2_contenido = 2]. Default: 0 mm. Visible si d32_z2_cant_cajones ≥ 2. Activo si d33_z2_medida_cajones = 2. 0 = igual que los demás. El último cajón siempre toma el resto.
+d42_z2_cajon2_alto,mm,Zona 2: alto cajón 2,Grupo: Zona 2 · Cajones [si d01_cantidad_zonas = 2 y d31_z2_contenido = 2]. Default: 0 mm. Visible si d32_z2_cant_cajones ≥ 3. Activo si d33_z2_medida_cajones = 2
+d43_z2_cajon3_alto,mm,Zona 2: alto cajón 3,Grupo: Zona 2 · Cajones [si d01_cantidad_zonas = 2 y d31_z2_contenido = 2]. Default: 0 mm. Visible si d32_z2_cant_cajones ≥ 4. Activo si d33_z2_medida_cajones = 2
+d44_z2_cajon4_alto,mm,Zona 2: alto cajón 4,Grupo: Zona 2 · Cajones [si d01_cantidad_zonas = 2 y d31_z2_contenido = 2]. Default: 0 mm. Visible si d32_z2_cant_cajones ≥ 5. Activo si d33_z2_medida_cajones = 2
+d45_z2_cajon5_alto,mm,Zona 2: alto cajón 5,Grupo: Zona 2 · Cajones [si d01_cantidad_zonas = 2 y d31_z2_contenido = 2]. Default: 0 mm. Visible si d32_z2_cant_cajones ≥ 6. Activo si d33_z2_medida_cajones = 2
+b02_tipo_cajon,Tandem (1) / Antaro (2) / Telescópica (3),Tipo de cajón,Grupo: Cajones: herraje y tirador [si (d11_z1_contenido = 2 o d01_cantidad_zonas = 2 y d31_z2_contenido = 2)]. Default: 1
+e05_corredera_largo,Tamaño automático (0mm) / Corredera 20 cm (210mm) / Corredera 25 cm (260mm) / Corredera 30 cm (310mm) / Corredera 35 cm (360mm) / Corredera 40 cm (410mm) / Corredera 45 cm (460mm) / Corredera 50 cm (510mm),Largo de corredera,Grupo: Cajones: herraje y tirador [si (d11_z1_contenido = 2 o d01_cantidad_zonas = 2 y d31_z2_contenido = 2)]. Default: 510mm
+e01_tirador_tipo,Sin tirador (1) / Lateral negra (7) / New Chica (8) / Andrea (9) / Escolano (10) / Barra negra (11) / Botón cilíndrico chico (12) / Paola (13) / Mulholland (14) / Concha dorada (15) / Botón Oberol (16) / Swarovski chica (17) / Swarovski grande (18) / Botón cilíndrico dorado (19) / Botón cilíndrico plateado (20) / Berlín (21),Tirador de cajones,Grupo: Cajones: herraje y tirador [si (d11_z1_contenido = 2 o d01_cantidad_zonas = 2 y d31_z2_contenido = 2)]. Default: 9. Activo si b01_gola_o_tirador = 1
+e02_tirador_posicion,Arriba - Izquierda (1) / Arriba - Centro (2) / Arriba - Derecha (3) / Centro - Izquierda (4) / Centro - Centro (5) / Centro - Derecha (6) / Abajo - Izquierda (7) / Abajo - Centro (8) / Abajo - Derecha (9),Posición del tirador de cajones,Grupo: Cajones: herraje y tirador [si (d11_z1_contenido = 2 o d01_cantidad_zonas = 2 y d31_z2_contenido = 2)]. Default: 5. Activo si b01_gola_o_tirador = 1 y e01_tirador_tipo ≠ 1
+e03_tirador_orientacion,Horizontal (1) / Vertical (2),Orientación del tirador de cajones,Grupo: Cajones: herraje y tirador [si (d11_z1_contenido = 2 o d01_cantidad_zonas = 2 y d31_z2_contenido = 2)]. Default: 1. Activo si b01_gola_o_tirador = 1 y e01_tirador_tipo ≠ 1
+e04_tirador_largo,mm,Largo del tirador de cajones,Grupo: Cajones: herraje y tirador [si (d11_z1_contenido = 2 o d01_cantidad_zonas = 2 y d31_z2_contenido = 2)]. Default: 140 mm. Activo si b01_gola_o_tirador = 1 y e01_tirador_tipo ≠ 1
+f07_bisagra_angulo,número,Ángulo de apertura (°),Grupo: Puertas: bisagras [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 90
+f08_bisagra_lado,Sí (S) / No (N),Mostrar bisagras,Grupo: Puertas: bisagras [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: S
+f09_bisagra_cantidad,2 (2) / 3 (3) / 4 (4) / 5 (5) / 6 (6) / 7 (7) / 8 (8),Bisagras por puerta,Grupo: Puertas: bisagras [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 2
+h01_entrepano,Sí (0) / No (1),Entrepaño,Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 1
+h02_cantidad,1–6,Cantidad de entrepaños,Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 1. Activo si h01_entrepano = 0
+h03_tipo_medida,Separaciones iguales (1) / Personalizado (2),Separación entre entrepaños,Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 1. Activo si h01_entrepano = 0
+h11_espacio1_alto,mm,Alto del espacio 1 (abajo),Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Activo si h01_entrepano = 0 y h03_tipo_medida = 2. 0 = reparto automático del alto restante.
+h12_espacio2_alto,mm,Alto del espacio 2,Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 2. Activo si h01_entrepano = 0 y h03_tipo_medida = 2
+h13_espacio3_alto,mm,Alto del espacio 3,Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 3. Activo si h01_entrepano = 0 y h03_tipo_medida = 2
+h14_espacio4_alto,mm,Alto del espacio 4,Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 4. Activo si h01_entrepano = 0 y h03_tipo_medida = 2
+h15_espacio5_alto,mm,Alto del espacio 5,Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 5. Activo si h01_entrepano = 0 y h03_tipo_medida = 2
+h16_espacio6_alto,mm,Alto del espacio 6,Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 6. Activo si h01_entrepano = 0 y h03_tipo_medida = 2
+h21_entrepano1_retiro_fondo,mm,"Retiro de fondo, entrepaño 1",Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 26 mm. Activo si h01_entrepano = 0
+h22_entrepano2_retiro_fondo,mm,"Retiro de fondo, entrepaño 2",Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 2. Activo si h01_entrepano = 0
+h23_entrepano3_retiro_fondo,mm,"Retiro de fondo, entrepaño 3",Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 3. Activo si h01_entrepano = 0
+h24_entrepano4_retiro_fondo,mm,"Retiro de fondo, entrepaño 4",Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 4. Activo si h01_entrepano = 0
+h25_entrepano5_retiro_fondo,mm,"Retiro de fondo, entrepaño 5",Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 5. Activo si h01_entrepano = 0
+h26_entrepano6_retiro_fondo,mm,"Retiro de fondo, entrepaño 6",Grupo: Entrepaños [si (d11_z1_contenido = 1 o d01_cantidad_zonas = 2 y d31_z2_contenido = 1)]. Default: 0 mm. Visible si h02_cantidad ≥ 6. Activo si h01_entrepano = 0
+i01_union_base,Base interior (1) / Base exterior (2),Unión de la base,Grupo: Estructura. Default: 1
+i02_union_techo,Techo interior (1) / Techo exterior (2),Unión del techo,Grupo: Estructura. Default: 1
+i03_tipo_techo,Ninguno (1) / Amarre frontal (2) / Amarre posterior (3) / Amarre frontal + posterior (4) / Techo completo (5),Tipo de techo,Grupo: Estructura. Default: 4
+i04_cant_amarres_frontales,Sí (1) / No (2),Amarres frontales,Grupo: Estructura. Default: 2
+i05_ceja_trasera,Con ceja (0) / Sin ceja (1),Ceja trasera,Grupo: Estructura. Default: 0
+i06_trasera,No (respaldo) (0) / Sí (2 refuerzos) (1),¿Módulo para tarja?,Grupo: Estructura. Default: 0. «Sí» quita el respaldo y coloca 2 refuerzos para la tarja.
+j02_zoclo_activo,Sí (1) / No (2),Zoclo,Grupo: Zoclo. Default: 1. «No» quita la pieza de zoclo; la estructura sigue elevada el alto del zoclo.
+j01_pieza_frontal,Sí (1) / No (2),Pieza frontal del zoclo,Grupo: Zoclo. Default: 1. Activo si j02_zoclo_activo = 1
+c01_espesor_estructura,mm,Espesor de estructura,Grupo: Espesores. Default: 18 mm
+c02_espesor_puerta,mm,Espesor de puertas y tapas,Grupo: Espesores. Default: 22 mm
+c03_espesor_fondo,mm,Espesor del fondo,Grupo: Espesores. Default: 12 mm
+k06_margen_sup_tirador,mm,Margen superior de frentes,Grupo: Márgenes y separaciones. Default: 13 mm. Activo si b01_gola_o_tirador = 1
+k05_margen_sup_gola,mm,Margen superior con gola,Grupo: Márgenes y separaciones. Default: 40 mm. Activo si b01_gola_o_tirador = 2
+k02_margen_inferior,mm,Margen inferior de frentes,Grupo: Márgenes y separaciones. Default: 0 mm
+k03_margen_izquierdo,mm,Margen izquierdo de frentes,Grupo: Márgenes y separaciones. Default: 0 mm
+k04_margen_derecho,mm,Margen derecho de frentes,Grupo: Márgenes y separaciones. Default: 0 mm
+k11_sep_cajones,mm,Separación entre cajones y zonas,Grupo: Márgenes y separaciones. Default: 3 mm. Activo si b01_gola_o_tirador = 1
+k12_sep_cajones_gola,mm,Separación entre cajones y zonas con gola,Grupo: Márgenes y separaciones. Default: 40 mm. Activo si b01_gola_o_tirador = 2
+k13_sep_puertas,mm,Separación entre puertas,Grupo: Márgenes y separaciones. Default: 3 mm

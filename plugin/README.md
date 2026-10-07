@@ -8,7 +8,7 @@ CSV ni usar la consola Ruby. Reusa el motor de inyección de atributos validado 
 
 | Familia | Estado |
 |---|---|
-| **Gabinete** | ✅ Activo — `manifest/gabinete.json` (desde `Definiciones/gabinete.csv`). |
+| **Gabinete** | ✅ Activo — `manifest/gabinete.json`, gabinete **por zonas** (`GABINETE-BASE-ZONAS`, base en `Main Components/GABINETE.skp`). |
 | **Alacena** | ✅ Activo — `manifest/alacena.json` (desde `Definiciones/alacena.csv`). |
 | **Esquinero** | ✅ Activo — `manifest/esquinero.json` (desde `Definiciones/esquinero.csv`). |
 
@@ -16,25 +16,49 @@ Agregar una familia = crear su `manifest/<familia>.json` y activarla en `FAMILIA
 
 ### Grupos del formulario
 
-Los campos se agrupan por bloque temático (el manifiesto define el orden):
+Los campos se agrupan por bloque temático (el manifiesto define el orden).
 
-- **Dimensiones** — `LenX/LenY/LenZ` (+ `a02zocalo` en Gabinete/Esquinero). En **Esquinero** las tres
+**Gabinete (por zonas).** El componente `GABINETE-BASE-ZONAS` concentra toda su configuración en el
+gabinete padre (prefijo = sección: `a` general · `b` sistema · `c` materiales · `d` zonas · `e`
+cajones · `f` puertas · `g` gola · `h` entrepaños · `i` estructura · `j` zoclo · `k` márgenes · `l`
+línea de frente). Las piezas leen `parent!<var>`, así que **ningún attr lleva `prefijo>`**.
+
+- **Dimensiones**: ancho, profundidad y alto **del cuerpo** y alto del zoclo. Al inyectar se suma el
+  espesor de puerta a `LenY` y el zoclo a `LenZ` (`suma`), porque el componente mide el total.
+- **Sistema**: gola o tirador, línea de frente (Lisa por omisión; Italiana muestra marco y rebaje) y
+  montaje exterior/interior.
+- **Gola** (solo con gola): perfil Aluminio/Melamina, posición, combinación L-C / L-L y color.
+- **Zonas de fachada**: 1 o 2 zonas, alto de la superior (0 = mitad) y el contenido de cada una:
+  Puerta, Cajones o Sin frente.
+- **Zona 1/2 · Puertas**: cantidad de puertas y su tirador (tipo, posición, orientación, largo).
+- **Zona 1/2 · Cajones**: contador 1–6 topado por lo que cabe, medida Iguales/Personalizado y, en
+  Personalizado, el alto de los cajones 1…n−1 (el último toma el resto). Cada grupo trae su resumen.
+- **Cajones: herraje y tirador** (si alguna zona lleva cajones): Tandem/Antaro/Telescópica,
+  corredera y el tirador común de los cajones.
+- **Puertas: bisagras**, **Entrepaños** (si alguna zona lleva puerta), **Estructura**, **Zoclo**,
+  **Espesores** y **Márgenes y separaciones** (los de gola se activan solo con gola).
+
+Las condiciones de grupo y de campo admiten composición: `{ "todas": [...] }` y
+`{ "alguna": [...] }` (ej. «2 zonas **y** zona 2 con cajones»), evaluadas igual en `app.js` y en
+`main.rb`.
+
+Los **materiales** (`c11…c17`) no se exponen: sus fórmulas dependen de la paleta externa de Melamina
+Pro (`material01!…material10!`), que no viene en el archivo; se resuelven en KitchenCatalog al
+insertar.
+
+**Alacena / Esquinero** (sin cambios):
+
+- **Dimensiones** — `LenX/LenY/LenZ` (+ `a02zocalo` en Esquinero). En **Esquinero** las tres
   no significan lo mismo: el mueble tiene dos alas, así que `LenX`/`LenY` son el **ancho izquierdo**
   y el **derecho**, y la profundidad de cada una va en `a0101profizq` / `a0102profder`.
-- **Espesores** — estructura/puerta/fondo (+ los de cajón en Gabinete).
-- **Estructura e interior** — ancho de amarres y **Entrepaño** (`c24entrepano`); **tipo de techo solo en
-  Gabinete** (Alacena no lo lleva y el Esquinero trae el suyo fijo en el componente base).
+- **Espesores** — estructura/puerta/fondo.
+- **Estructura e interior** — **Entrepaño** (`c24entrepano`).
 - **Frente y puertas** — diseño de puerta, cantidad/posición de puertas, separación y márgenes
   (estos últimos en el **editor de caja**, ver abajo).
 - **Tirador** — tipo, posición y orientación.
-- **Cajones** (solo Gabinete) — estilo, alturas, separación y corredera. Estos campos están
-  **siempre activos**; únicamente «Cantidad de cajones» se habilita cuando el diseño de puerta es
-  «N cajones» (habilitación **por campo** vía `habilitado_si`, no por grupo). Los «Alto cajón»
-  ofrecen **Automático (restante) / CH / G / Personalizado** y solo se muestran cuando el diseño de
-  puerta implica esa cantidad de cajones (`visible_si.min_cajones`). Con **«N cajones» no se muestra
-  ninguno**: el componente hace los cajones copia del primero, así que todos miden lo mismo y ese
-  alto es la resta, no una captura. El presupuesto lo calcula, lo enseña e inyecta el resultado
-  (`reglas_cajones.uniforme_si_n`).
+
+- **Divisores** — cantidad de divisores (contador) con sus espacios y márgenes, intercalados:
+  espacio 1 → margen 1 → espacio 2 → margen 2 → …
 
 ### Editor de caja para márgenes
 
@@ -52,39 +76,53 @@ Los campos siguen siendo campos normales del manifiesto (mismo `attr`, `visible_
 widget. Lo usan el grupo «Frente y puertas» de las tres familias y «Divisores» del Esquinero (en
 vista de planta: frontal abajo, posterior arriba).
 
-## Presupuesto de alto de cajones
+## Presupuesto de alto de cajones (por zona)
 
-La fórmula interna del componente reparte el alto en partes iguales
-(`=(LenZ − f02sepcajtirad*(a21cantcajon−1))/a21cantcajon`) pero **no tiene piso**: si el reparto
-queda por debajo del alto físico mínimo del cajón, el componente lo recorta hacia arriba y la pila
-traspasa el mueble. El plugin hace la misma cuenta **antes** de generar:
+El gabinete por zonas reparte los cajones solo (iguales, o personalizados con «0 = igual» y el último
+tomando el resto), pero no conoce el alto físico mínimo del herraje: con cajones muy bajos recorta
+hasta 10 mm. El plugin repite **las mismas fórmulas** del componente antes de generar:
 
 ```
-util       = LenZ − a02zocalo − f11margsupcaj − f12marginfcaj
-disponible = util − f02sepcajtirad × (n − 1)      // suma de los n frentes
+fachada  = LenZ(total) − a02_alto_zoclo − k01 − k02_margen_inferior
+           k01 = k05_margen_sup_gola (con gola) | k06_margen_sup_tirador
+sep      = k12_sep_cajones_gola (con gola) | k11_sep_cajones        (también separa las zonas)
+zona 1   = fachada                       si 1 zona
+         = d02 (si > 0) | (fachada − sep)/2
+zona 2   = fachada − sep − zona 1
+disponible = zona − sep × (n − 1)
 ```
 
-- Un renglón bajo el título del grupo muestra en vivo *alto útil / asignado / restante por cajón*.
-- El contador «Cantidad de cajones» se topa solo en cuantos caben al mínimo.
-- **Los presets que ya no caben dejan de ofrecerse.** Cada desplegable filtra CH/G contra el alto
-  que le queda a ese cajón sin dejar a los demás bajo el mínimo (`limiteAltoCajon`); «Automático»,
-  «Personalizado…» y la opción ya seleccionada nunca se ocultan — si lo elegido dejó de caber, quien
-  avisa es el presupuesto en rojo, no un `<select>` que salta solo.
-- **Generar se bloquea** si algún alto queda bajo el mínimo o si los altos fijados se pasan; que
-  **sobre** alto no bloquea (deja hueco, no desborda).
-- Los cajones en «Automático» reciben el alto restante ya calculado, para que el `.skp` coincida
-  con lo que mostró el presupuesto.
-- En modo **uniforme** («N cajones») no hay alto capturado: todo el disponible se reparte entre los
-  n cajones y ese resultado se inyecta en el primer attr, del que el componente copia los demás.
+- Un renglón en cada grupo «Zona N · Cajones» muestra el alto de la zona y el alto de cada cajón.
+- El contador se topa en cuantos caben al mínimo (`max_regla: "cajones:z1"`).
+- **Generar se bloquea** si, con «Iguales», cada cajón queda bajo el mínimo; si, con «Personalizado»,
+  un alto fijado o el último (el que toma el resto) quedan bajo el mínimo; o si hay gola y más de
+  2 cajones en la zona (`max`).
+- No se inyecta ningún alto calculado: el componente hace el reparto y el plugin solo lo verifica.
 
-Todo se configura en `reglas_cajones` del manifiesto (`alto_min_mm`, qué attrs restar, el mapa
-`estilos_con_cajones`, `uniforme_si_n`). Es **dato, no código**: si el mínimo real del herraje no es
-100 mm, se cambia ahí. Una familia sin `reglas_cajones` (Alacena, Esquinero) no se valida.
+Todo vive en `reglas_cajones` del manifiesto: `alto_min_mm`, `fachada`, `margen_superior`,
+`separacion`, `zonas` y una entrada por pila en `pilas` (`zona`, condición `si`, contador, modo,
+`attrs_alto`, `max`). Es **dato, no código**: si el mínimo real del herraje no es 100 mm, se cambia
+ahí. Espejo en Ruby: `validar_cajones` / `validar_pila` en `main.rb`. Una familia sin
+`reglas_cajones` (Alacena, Esquinero) no se valida.
 
-`cajon>a21cantcajon` admite 1-6 y solo existen cuatro `b1Xaltocaj`, pero en «N cajones» basta con el
-primero porque todos los cajones son copias suyas.
-- **Divisores** — cantidad de divisores (contador) con sus espacios y márgenes, intercalados:
-  espacio 1 → margen 1 → espacio 2 → margen 2 → …
+### Nombre automático
+
+`nombre_patron` admite `{attr}` y tramos opcionales `[…]` que desaparecen si todos sus `{attr}`
+quedan vacíos; `nombre_codigos` traduce valores a códigos cortos. Un attr que no se inyecta en esa
+configuración se escribe vacío. Ejemplos del gabinete:
+
+| Configuración | Nombre |
+|---|---|
+| Tirador, zona 1 puerta doble, zona 2 tres cajones | `GAB-600-T-Z1P2-Z2C3` |
+| Gola aluminio, 1 + 2 cajones | `GAB-600-GA-Z1C1-Z2C2` |
+| Una zona, 4 cajones Antaro, 450 mm | `GAB-450-T-Z1C4-AN` |
+| Puerta doble + puerta izquierda, con entrepaño | `GAB-600-T-Z1P2-Z2P1I-E` |
+
+### Mitered
+
+La línea de frente Mitered (`l01_linea_frente = 3`) necesita hornear escala y textura después de
+cada redraw. `rk_mitered.rb` es una copia de `ModuleUnifier/src/frente_mitered.rb`; `main.rb` lo
+carga y reengancha el hook (`RK::Mitered.instalar_hook`) antes de cada generación.
 
 ## Unión de mitades (Esquinero)
 
@@ -143,7 +181,7 @@ royal_catalog_creator/
   plantilla.rb                    Modelo de columnas de la plantilla (desde los manifiestos)
   xlsx.rb                         Lector/escritor mínimo de .xlsx, sin gems
   importer.rb                     Parseo estructural del archivo a importar (CSV/XLSX)
-  manifest/gabinete.json          Manifiesto curado = única fuente de la UI
+  manifest/*.json                 Manifiestos curados = única fuente de la UI
   html/dialog.html · css · js     Interfaz moderna (tema claro/oscuro)
   images/icon.png                 Icono de la barra de herramientas (128 px, PNG con alfa)
 ```
@@ -282,6 +320,18 @@ todas sus respuestas**. Sin él, `onGenerar` marcaba como generado al módulo *a
 un botón individual, equivocado en cuanto hay una cola.
 
 ## Notas de la definición (pendientes con el mantenedor)
+
+**Gabinete por zonas (2026-10-07):**
+
+- **`alto_min_mm = 100`** sigue siendo un valor pedido, no medido; el componente por sí solo baja hasta 10 mm.
+- **Tirador por omisión = Andrea (9)**: es el tirador «ancla» que conservará el esqueleto de la propuesta de
+  catálogo (`PROPUESTA-esqueleto-y-configuracion.md`); el catálogo lo intercambia al insertar.
+- **Materiales** fuera del formulario hasta resolver la paleta externa (`material01!…`).
+- **`f07_bisagra_angulo`** es texto libre en el componente; se captura como número sin unidad.
+- **Corte 45** se quitó de `g01_perfil_tipo`: solo se usan Aluminio y Melamina.
+
+**Anteriores** (las del gabinete v1 con `EstiloPuerta`, archivado en `Main Components/before/`, ya no
+aplican; las de Alacena / Esquinero siguen vigentes):
 
 - **Espesor fondo de cajones** → `cajon>c07espfondope` (nombre real hallado en `introspeccion_dump.txt`;
   el `cajon>c06esppuertape` duplicado que traía `gabinete.csv` se corrigió). Confirmar que

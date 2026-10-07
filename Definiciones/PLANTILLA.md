@@ -31,12 +31,12 @@ Prefijo del encabezado:
 
 Por qué importa, con los tres casos reales:
 
-- `EstiloPuerta` existe en Gabinete y Esquinero, pero el primero llega a «4 cajones» y el segundo
-  corta en «Puerta uñero». Una columna común con la unión de ambas listas dejaría elegir «4 cajones»
-  en un esquinero, que el componente no arma → **dos columnas**.
+- El Gabinete por zonas (2026-10-07) no comparte casi nada con las otras dos familias: sus variables
+  viven en el padre con nombres propios (`d11_z1_contenido`, `b01_gola_o_tirador`…) → **columnas
+  `[GAB]`**. Solo `Ancho (mm)` coincide con la Alacena → `[GAB·ALA] Ancho (mm)`.
 - El «Diseño de puerta» de Alacena es otro atributo (`c25tipopuerta`, 14 opciones con las Avento) →
   **columna propia**.
-- `LenY` es «Profundidad» en Gabinete/Alacena y «Ancho derecho» en Esquinero: mismo atributo,
+- `LenY` es «Profundidad» en Alacena, «Profundidad del cuerpo» en Gabinete y «Ancho derecho» en Esquinero: mismo atributo,
   significado distinto → **dos columnas**, para que nadie escriba una profundidad donde va un ancho.
 
 ## Orden de las columnas
@@ -46,7 +46,10 @@ Por qué importa, con los tres casos reales:
    (dimensiones → espesores → estructura → frente → tirador → divisores).
 3. **Bloques por familia** — lo exclusivo de Gabinete, luego Alacena, luego Esquinero.
 
-Estado al 2026-08-14: **62 columnas**.
+Estado al 2026-10-07: **130 columnas** (86 aplican al gabinete, contando `familia` y `nombre_salida`).
+
+`Input/Gabinetes.csv` es un ejemplo listo para «Importar…» con los encabezados de la plantilla y 4
+gabinetes por zonas (los mismos que se validaron en SketchUp).
 
 Ojo con `Cantidad de puertas`: desde que la alacena adoptó la lista del gabinete para sus puertas
 normales, ambas familias comparten una sola columna `[GAB·ALA]`. El Avento usa el mismo atributo con
@@ -95,9 +98,8 @@ del formulario. Detalles que conviene conocer:
 - **Los CSV de Excel en Windows salen en ANSI (Windows-1252)**, no UTF-8. El lector lo detecta y
   convierte: sin eso, «Puerta uñero» llegaría roto y no coincidiría con ninguna opción.
 - El separador se deduce de la primera línea (`,`, `;` o tabulador).
-- Acepta también **encabezados crudos** (`divisor>f03espacio1`), así el `Input/Gabinetes.csv` viejo
-  sigue sirviendo. Cuando un `attr` corresponde a dos columnas (`EstiloPuerta`), decide la familia de
-  la fila.
+- Acepta también **encabezados crudos** (el `attr`, p. ej. `d12_z1_cant_cajones` o
+  `divisor>f03espacio1`). Cuando un `attr` corresponde a dos columnas, decide la familia de la fila.
 - Tope de **500 filas** por archivo; se avisa si se recorta.
 - Con dos filas del mismo `nombre_salida` se marcan **las dos**: no hay forma de saber cuál es la
   buena. Corregir una libera ambas.

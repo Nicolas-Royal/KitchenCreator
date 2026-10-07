@@ -11,11 +11,11 @@
 #    `label` y el juego completo de opciones. En cuanto algo difiere, la columna
 #    se parte y cada familia recibe la suya con su prefijo.
 #
-#  Es la trampa principal del formato: `EstiloPuerta` existe en Gabinete y en
-#  Esquinero, pero el primero llega a «4 cajones» y el segundo corta en «Puerta
-#  uñero». Una columna común con la unión de ambas listas dejaría elegir «4
-#  cajones» en un esquinero, que el componente no arma. Y `LenY` es
-#  «Profundidad» en Gabinete/Alacena pero «Ancho derecho» en Esquinero: mismo
+#  Es la trampa principal del formato: `f21tipotirador` existe en Alacena y en
+#  Esquinero, pero si las listas de opciones difieren, una columna común con la
+#  unión de ambas dejaría elegir en una familia un valor que su componente no
+#  arma. Y `LenY` es «Profundidad» en Alacena pero «Ancho derecho» en
+#  Esquinero (y «Profundidad del cuerpo» en el Gabinete por zonas): mismo
 #  atributo, significado distinto, columna distinta.
 #
 #  El modelo que produce `modelo()` es JSON-serializable a propósito: la UI lo
@@ -219,8 +219,16 @@ module RoyalKitchen
           ['· Celda vacía = se usa el valor por omisión del plugin. No hace falta llenarlo todo.'],
           ['· Las medidas van en números, sin unidad: la unidad está en el encabezado, ej. «Ancho (mm)».'],
           ['· Los desplegables traen las opciones válidas. Escribe la etiqueta tal cual aparece.'],
-          ['· En los márgenes y los altos de cajón puedes escribir además una medida libre'],
+          ['· En los márgenes con lista puedes escribir además una medida libre'],
           ['  (por ejemplo 250) aunque no esté en la lista: eso equivale a «Personalizado».'],
+          [''],
+          ['Gabinete (por zonas):'],
+          ['· La fachada se divide en 1 o 2 zonas. Cada zona lleva Puerta, Cajones o Sin frente;'],
+          ['  llena solo las columnas «Zona 1: …» / «Zona 2: …» que correspondan a ese contenido.'],
+          ['· Profundidad y alto son del CUERPO: el plugin suma el espesor de puerta y el zoclo.'],
+          ['· Altos de cajón (solo con medida «Personalizado»): 0 = igual a los demás;'],
+          ['  el último cajón de la zona siempre toma el resto. Mínimo 100 mm por cajón.'],
+          ['· Con gola: máximo 2 cajones por zona y no se llenan columnas de tirador.'],
           [''],
           ['Las tres primeras filas son EJEMPLOS, una por familia. Bórralas o sobrescríbelas.'],
           [''],

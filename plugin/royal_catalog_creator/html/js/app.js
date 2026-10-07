@@ -156,13 +156,6 @@
 
   function fieldVisible(field, manifest, valores) {
     if (!field.visible_si) return true;
-    if (field.visible_si.min_cajones != null) {
-      // En modo uniforme el alto no se captura: los n cajones son copias del
-      // primero y miden lo mismo, así que sale de la resta (alto útil menos
-      // márgenes y separaciones) y el presupuesto lo enseña. Ningún campo.
-      if (indiceAlto(manifest, field.attr) >= 0 && cajonesUniformes(manifest, valores)) return false;
-      return cajonesEfectivos(manifest, valores) >= field.visible_si.min_cajones;
-    }
     // Sin `min` es el predicado normal del manifiesto: así un campo puede
     // aparecer solo con ciertos diseños de puerta, no solo por encima de un
     // número (Avento S trae dirección y tipo de apertura; Avento D, abatible).
@@ -179,8 +172,12 @@
      habilitado_si y los sumandos de `suma` no puedan divergir:
        { attr, valor }        -> igual a ese valor
        { attr, valores: [] }  -> igual a alguno
-       { attr, excepto: [] }  -> distinto de todos (ej. «puerta ≠ Ninguna») */
+       { attr, excepto: [] }  -> distinto de todos (ej. «puerta ≠ Ninguna»)
+       { todas: [cond…] }     -> se cumplen todas (ej. «2 zonas Y zona 2 con cajones»)
+       { alguna: [cond…] }    -> se cumple al menos una */
   function condicionCumple(manifest, valores, cond) {
+    if (cond.todas) return cond.todas.every(function (c) { return condicionCumple(manifest, valores, c); });
+    if (cond.alguna) return cond.alguna.some(function (c) { return condicionCumple(manifest, valores, c); });
     var actual = String(attrRaw(manifest, valores, cond.attr));
     if (cond.excepto) {
       return !cond.excepto.some(function (v) { return String(v) === actual; });
@@ -255,146 +252,169 @@
   }
 
   // =========================================================================
-  //  Presupuesto de alto de cajones  (errores 1 y 2 de Issues/errors.md)
+  //  Presupuesto de alto de cajones — una pila por zona de fachada
   // -------------------------------------------------------------------------
-  //  La fórmula interna del componente reparte el alto en partes iguales
-  //  (=(LenZ - f02sepcajtirad*(a21cantcajon-1))/a21cantcajon) pero NO tiene
-  //  piso: si el reparto queda por debajo del alto físico mínimo del cajón, el
-  //  componente lo recorta hacia arriba y la pila traspasa el mueble. Aquí se
-  //  hace la misma cuenta antes de generar, para bloquear lo que no cabe.
-  //  Todos los parámetros viven en manifest.reglas_cajones (dato, no código).
+  //  El gabinete por zonas reparte la fachada en 1 o 2 zonas y cada zona puede
+  //  llevar su propia pila de 1–6 cajones. El componente hace el reparto solo
+  //  (alturas iguales, o personalizadas con «0 = igual» y el último tomando el
+  //  resto), pero NO conoce el alto físico mínimo de un cajón: con cajones
+  //  demasiado bajos recorta hasta 10 mm y el herraje no entra. Aquí se repite
+  //  su misma cuenta para bloquearlo antes de generar.
+  //
+  //  Todo vive en manifest.reglas_cajones (dato, no código):
+  //    fachada          { attr_alto, restar[] }       alto total menos zoclo/márgenes
+  //    margen_superior  [{ attr, si? }]               el primero que cumple manda
+  //    separacion       [{ attr, si? }]               idem (gola vs tirador)
+  //    zonas            { attr_cantidad, attr_alto_superior }
+  //    pilas            [{ id, titulo, zona, si[], attr_cantidad, attr_modo,
+  //                        valor_personalizado, attrs_alto[], max[] }]
+  //  Espejo en Ruby: validar_cajones en main.rb.
   // =========================================================================
 
-  /* Cajones efectivos según el diseño de puerta: "n" toma el contador,
-     7/8/9 son los componentes fijos de 2/3/4 cajones. 0 = no aplica. */
-  function cajonesEfectivos(manifest, valores) {
-    var R = manifest.reglas_cajones;
-    if (!R) return 0;
-    var estilo = String(attrRaw(manifest, valores, R.attr_estilo_puerta));
-    var mapa = R.estilos_con_cajones || {};
-    if (!Object.prototype.hasOwnProperty.call(mapa, estilo)) return 0;
-    if (mapa[estilo] === 'n') {
-      var n = attrNumber(manifest, valores, R.attr_cantidad);
-      return isNaN(n) ? 0 : n;
-    }
-    return parseInt(mapa[estilo], 10) || 0;
+  /* Primer `attr` de la lista cuyas condiciones `si` se cumplen, en mm.
+     0 si ninguna aplica o el campo no existe en el manifiesto. */
+  function mmSegun(manifest, valores, lista) {
+    var hit = (lista || []).filter(function (e) {
+      return (e.si || []).every(function (c) { return condicionCumple(manifest, valores, c); });
+    })[0];
+    if (!hit) return 0;
+    var mm = attrMm(manifest, valores, hit.attr);
+    return isNaN(mm) ? 0 : mm;
   }
 
-  /* Modo uniforme: con «N cajones» el componente genera los cajones como copias
-     del primero (Cajon.copies), así que todos miden lo mismo y solo se captura
-     un alto. Se declara en reglas_cajones.uniforme_si_n. */
-  function cajonesUniformes(manifest, valores) {
+  /* Alto de la fachada = s01altofachada del componente:
+     LenZ (ya con el zoclo sumado) − zoclo − margen superior − margen inferior. */
+  function altoFachada(manifest, valores) {
     var R = manifest.reglas_cajones;
-    if (!R || !R.uniforme_si_n) return false;
-    var estilo = String(attrRaw(manifest, valores, R.attr_estilo_puerta));
-    return (R.estilos_con_cajones || {})[estilo] === 'n';
-  }
-
-  /* Posición del attr dentro de attrs_alto; -1 si no es un alto de cajón. */
-  function indiceAlto(manifest, attr) {
-    var R = manifest.reglas_cajones;
-    return (R && R.attrs_alto) ? R.attrs_alto.indexOf(attr) : -1;
-  }
-
-  function presupuestoCajones(manifest, valores) {
-    var R = manifest.reglas_cajones;
-    var n = cajonesEfectivos(manifest, valores);
-    if (!R || n < 1) return { aplica: false };
-
-    // attrMm devuelve el alto YA compensado (LenZ incluye el zócalo por el ajuste
-    // `suma`), que es exactamente lo que se inyecta y lo que revalida main.rb.
-    // Por eso attr_restar sigue quitando el zócalo aquí: no hay doble descuento,
-    // los dos espejos parten del mismo número. Ver validar_cajones en main.rb.
-    var util = attrMm(manifest, valores, R.attr_alto_util);
-    if (isNaN(util)) return { aplica: false };
-    (R.attr_restar || []).forEach(function (a) {
+    var alto = attrMm(manifest, valores, R.fachada.attr_alto);
+    if (isNaN(alto)) return NaN;
+    (R.fachada.restar || []).forEach(function (a) {
       var v = attrMm(manifest, valores, a);
-      if (!isNaN(v)) util -= v;
+      if (!isNaN(v)) alto -= v;
     });
+    return alto - mmSegun(manifest, valores, R.margen_superior);
+  }
 
-    var sep = attrMm(manifest, valores, R.attr_separacion);
-    if (isNaN(sep)) sep = 0;
+  function sepCajones(manifest, valores) {
+    return mmSegun(manifest, valores, manifest.reglas_cajones.separacion);
+  }
 
+  /* Alto de la zona 1 (superior) o 2 (inferior) = zn11altozona1 / zn21altozona2.
+     Con una sola zona, la zona 1 ocupa toda la fachada. La separación entre
+     zonas es la misma que entre cajones (u02sepcajgola). */
+  function altoZona(manifest, valores, zona) {
+    var R = manifest.reglas_cajones;
+    var F = altoFachada(manifest, valores);
+    if (isNaN(F)) return NaN;
+    var nz = attrNumber(manifest, valores, R.zonas.attr_cantidad);
+    if (nz !== 2) return F;
+    var sep = sepCajones(manifest, valores);
+    var sup = attrMm(manifest, valores, R.zonas.attr_alto_superior);
+    var z1 = Math.max(1, (!isNaN(sup) && sup > 0) ? sup : (F - sep) / 2);
+    return zona === 1 ? z1 : Math.max(1, F - sep - z1);
+  }
+
+  function pilasCajones(manifest) {
+    var R = manifest.reglas_cajones;
+    return (R && R.pilas) || [];
+  }
+  function pilaPorId(manifest, id) {
+    return pilasCajones(manifest).filter(function (p) { return p.id === id; })[0] || null;
+  }
+
+  function presupuestoCajones(manifest, valores, pilaId) {
+    var R = manifest.reglas_cajones;
+    var P = pilaPorId(manifest, pilaId);
+    if (!R || !P) return { aplica: false };
+    if (!(P.si || []).every(function (c) { return condicionCumple(manifest, valores, c); })) {
+      return { aplica: false };
+    }
+    var n = attrNumber(manifest, valores, P.attr_cantidad);
+    if (isNaN(n) || n < 1) return { aplica: false };
+
+    var zona = altoZona(manifest, valores, P.zona);
+    if (isNaN(zona)) return { aplica: false };
+    var sep        = sepCajones(manifest, valores);
     var altoMin    = R.alto_min_mm || 0;
-    var disponible = util - sep * (n - 1);   // suma de los n frentes
-    var uniforme   = cajonesUniformes(manifest, valores);
+    var disponible = zona - sep * (n - 1);   // suma de los n frentes
+    var igual      = disponible / n;
+    var personal   = condicionCumple(manifest, valores, { attr: P.attr_modo, valor: P.valor_personalizado });
+    var attrsAlto  = (P.attrs_alto || []).slice(0, n);
 
-    // Altos que la diseñadora fijó; los que están en «Automático» van vacíos.
-    // En modo uniforme no se fija ninguno: el alto de cada cajón es la resta, y
-    // solo queda el primer attr porque el componente copia los demás de él. Si
-    // no, y n supera la cantidad de campos, esos cajones también quedan
-    // automáticos (los reparte la fórmula del componente).
-    var attrsAlto = (R.attrs_alto || []).slice(0, uniforme ? 1 : n);
-    var altos     = uniforme ? [NaN]
-                  : attrsAlto.map(function (a) { return attrMm(manifest, valores, a); });
+    // Mismo reparto que el componente: con «Personalizado» cada cajón toma su
+    // valor (0 = igual) y el último se queda con lo que reste; con «Iguales»
+    // todos miden lo mismo.
+    var altos = [], fijos = [];
+    for (var i = 0; i < n - 1; i++) {
+      var v = personal ? attrMm(manifest, valores, attrsAlto[i]) : NaN;
+      if (!isNaN(v) && v > 0) { altos.push(v); fijos.push({ mm: v, i: i }); }
+      else altos.push(igual);
+    }
+    var asignado = altos.reduce(function (s, v) { return s + v; }, 0);
+    var ultimo   = n === 1 ? disponible : disponible - asignado;
+    altos.push(ultimo);
 
-    var fijos = [], libresIdx = [];
-    altos.forEach(function (v, i) {
-      if (isNaN(v)) libresIdx.push(i); else fijos.push({ mm: v, i: i });
-    });
-    var libres   = n - fijos.length;
-    var asignado = fijos.reduce(function (s, f) { return s + f.mm; }, 0);
-    var restante = disponible - asignado;
-    var porCajon = libres > 0 ? restante / libres : NaN;
-    var paso     = altoMin + sep;
-    // nMax = tope geométrico del mueble (todos los cajones al mínimo). No depende
-    // de n ni de los altos fijados, así que sirve de tope estable del contador.
-    var nMax     = paso > 0 ? Math.floor((util + sep) / paso) : n;
-    // cabenTotal = cuántos caben respetando los altos que ya fijó la diseñadora.
-    // En modo uniforme no hay ninguno fijado, así que manda el tope geométrico.
-    var cabenTotal = uniforme ? nMax
-                   : (paso > 0 ? fijos.length + Math.max(0, Math.floor((restante + sep) / paso)) : n);
+    var paso = altoMin + sep;
+    // nMax = tope geométrico de la zona (todos los cajones al mínimo).
+    var nMax = paso > 0 ? Math.max(1, Math.floor((zona + sep) / paso)) : n;
 
     var ok = true, mensaje = '';
+    var tope = (P.max || []).filter(function (e) {
+      return (e.si || []).every(function (c) { return condicionCumple(manifest, valores, c); });
+    })[0];
     var chico = fijos.filter(function (f) { return f.mm < altoMin; })[0];
-    if (disponible <= 0) {
+    if (tope && n > tope.n) {
       ok = false;
-      mensaje = 'El alto útil del mueble quedó en ' + fmt(util) + ' mm. Revisa alto, zócalo y márgenes.';
+      mensaje = tope.mensaje || ('Máximo ' + tope.n + ' cajones en esta zona.');
+    } else if (disponible <= 0) {
+      ok = false;
+      mensaje = 'La zona quedó en ' + fmt(zona) + ' mm. Revisa alto, zoclo, márgenes y alto de zonas.';
+    } else if (!personal && igual < altoMin) {
+      ok = false;
+      mensaje = n + ' cajones iguales en ' + fmt(disponible) + ' mm = ' + fmt(igual) +
+                ' mm cada uno, por debajo del mínimo de ' + altoMin + ' mm. En esta zona caben máximo ' +
+                nMax + (nMax === 1 ? ' cajón.' : ' cajones.');
     } else if (chico) {
       ok = false;
-      mensaje = (uniforme ? 'El alto de cada cajón (' : 'El alto del cajón ' + (chico.i + 1) + ' (') +
-                fmt(chico.mm) + ' mm) es menor al mínimo de ' + altoMin + ' mm.';
-    } else if (restante < -1) {
-      // Solo bloquea lo que se PASA. Que sobre alto deja un hueco, no un desborde.
+      mensaje = 'El alto del cajón ' + (chico.i + 1) + ' (' + fmt(chico.mm) + ' mm) es menor al mínimo de ' +
+                altoMin + ' mm.';
+    } else if (ultimo < altoMin) {
       ok = false;
-      mensaje = uniforme
-        ? 'Cada cajón de ' + fmt(altos[0]) + ' mm × ' + n + ' = ' + fmt(asignado) + ' mm y solo caben ' +
-          fmt(disponible) + ' mm: con ese alto caben ' + cabenTotal + (cabenTotal === 1 ? ' cajón.' : ' cajones.')
-        : 'Los altos fijados suman ' + fmt(asignado) + ' mm y solo caben ' + fmt(disponible) +
-          ' mm: se pasan ' + fmt(-restante) + ' mm.';
-    } else if (libres > 0 && porCajon < altoMin) {
-      ok = false;
-      mensaje = 'Quedan ' + fmt(restante) + ' mm para ' + libres + (libres === 1 ? ' cajón = ' : ' cajones = ') +
-                fmt(porCajon) + ' mm cada uno, por debajo del mínimo de ' + altoMin + ' mm. ' +
-                (fijos.length
-                  ? 'Con esos altos fijados caben ' + cabenTotal + (cabenTotal === 1 ? ' cajón' : ' cajones') + ' en total.'
-                  : 'Con ' + fmt(util) + ' mm de alto útil caben máximo ' + nMax + (nMax === 1 ? ' cajón.' : ' cajones.'));
+      mensaje = n === 1
+        ? 'El cajón queda en ' + fmt(ultimo) + ' mm, por debajo del mínimo de ' + altoMin + ' mm.'
+        : 'Los cajones 1–' + (n - 1) + ' suman ' + fmt(asignado) + ' mm y al último (el que toma el resto) le quedan ' +
+          fmt(ultimo) + ' mm, por debajo del mínimo de ' + altoMin + ' mm.';
     }
 
     return {
-      aplica: true, n: n, util: util, sep: sep, disponible: disponible,
-      asignado: asignado, restante: restante, porCajon: porCajon, libres: libres,
-      libresIdx: libresIdx, attrsAlto: attrsAlto, altos: altos, uniforme: uniforme,
-      altoMin: altoMin, nMax: nMax, cabenTotal: cabenTotal, ok: ok, mensaje: mensaje
+      aplica: true, id: P.id, titulo: P.titulo || P.id, n: n, zona: zona, sep: sep,
+      disponible: disponible, igual: igual, personal: personal, altos: altos,
+      asignado: asignado, ultimo: ultimo, attrsAlto: attrsAlto,
+      altoMin: altoMin, nMax: nMax, ok: ok, mensaje: mensaje
     };
   }
 
-  /* Alto máximo que puede tomar el cajón `attr` sin dejar a los demás por debajo
-     del mínimo. Es lo que decide qué presets (CH/G) se siguen ofreciendo. */
+  /* Presupuestos de todas las pilas que aplican en esta configuración. */
+  function presupuestosCajones(manifest, valores) {
+    return pilasCajones(manifest)
+      .map(function (P) { return presupuestoCajones(manifest, valores, P.id); })
+      .filter(function (p) { return p.aplica; });
+  }
+
+  /* Alto máximo que puede tomar el cajón `attr` sin dejar al último (el que
+     toma el resto) por debajo del mínimo. Lo usan los presets de alto. */
   function limiteAltoCajon(manifest, valores, attr) {
-    var p = presupuestoCajones(manifest, valores);
+    var pila = pilasCajones(manifest).filter(function (P) {
+      return (P.attrs_alto || []).indexOf(attr) >= 0;
+    })[0];
+    if (!pila) return Infinity;
+    var p = presupuestoCajones(manifest, valores, pila.id);
     if (!p.aplica) return Infinity;
     var i = p.attrsAlto.indexOf(attr);
-    if (i < 0) return Infinity;
-    if (p.uniforme) return p.disponible / p.n;   // el alto se multiplica por n
-    var otrosFijos = 0, otrosLibres = 0;
-    p.altos.forEach(function (mm, j) {
-      if (j === i) return;
-      if (isNaN(mm)) otrosLibres++; else otrosFijos += mm;
-    });
-    // Los cajones sin campo propio (n > attrs_alto.length) también piden su mínimo.
-    otrosLibres += p.n - p.altos.length;
-    return p.disponible - otrosFijos - p.altoMin * otrosLibres;
+    if (i < 0 || i === p.n - 1) return Infinity;
+    var otros = 0;
+    p.altos.forEach(function (mm, j) { if (j !== i && j !== p.n - 1) otros += mm; });
+    return p.disponible - otros - p.altoMin;
   }
 
   // =========================================================================
@@ -489,8 +509,14 @@
       if (mal) errs.push({ ids: ids, label: '', msg: r.mensaje + ' (' + fmt(suma) + ' mm contra ' + fmt(objetivo) + ' mm).' });
     });
 
-    var p = presupuestoCajones(manifest, valores);
-    if (p.aplica && !p.ok) errs.push({ ids: p.attrsAlto.slice(), label: 'Cajones', msg: p.mensaje });
+    presupuestosCajones(manifest, valores).forEach(function (p) {
+      if (p.ok) return;
+      var P = pilaPorId(manifest, p.id);
+      var f = P && fieldByAttr(manifest, P.attr_cantidad);
+      errs.push({ ids: p.attrsAlto.map(function (a) { var c = fieldByAttr(manifest, a); return c ? c.id : a; })
+                    .concat(f ? [f.id] : []),
+                  label: 'Cajones ' + p.titulo, msg: p.mensaje });
+    });
 
     return errs;
   }
@@ -498,10 +524,6 @@
   /* Lo que debe verse pero no bloquea (R-14 y R-17). */
   function avisosConfig(manifest, valores) {
     var out = [];
-    var p = presupuestoCajones(manifest, valores);
-    if (p.aplica && p.ok && p.libres === 0 && p.restante > 1) {
-      out.push('Sobran ' + fmt(p.restante) + ' mm de alto sin usar bajo la pila de cajones.');
-    }
     var d = presupuestoDivisores(manifest, valores);
     if (d.aplica && !d.ok) {
       out.push('Los espacios de los divisores suman ' + fmt(d.suma) + ' mm y el alto interior es ' + fmt(d.util) + ' mm.');
@@ -558,13 +580,39 @@
     return v;
   }
 
+  /* Patrón del nombre de archivo:
+       {attr}        -> valor del attr, traducido por `nombre_codigos[attr]` si
+                        lo declara (p. ej. Cajones = "C"). Un attr que no se
+                        inyecta en esta configuración se escribe vacío.
+       [ … ]         -> tramo opcional: desaparece si todos sus {attr} quedaron
+                        vacíos (la zona 2 de un gabinete de una sola zona).
+     Sin `nombre_codigos`, un {attr} vacío vale "0" como antes. */
   function autoNombre(manifest, valores) {
     var patron = manifest.nombre_patron;
     if (!patron) return manifest.titulo + '-' + state.seq;
-    return patron.replace(/\{([^}]+)\}/g, function (_, attr) {
+    var codigos = manifest.nombre_codigos;
+    function token(attr) {
+      if (codigos && !attrActivo(manifest, valores, attr)) return '';
       var r = attrRaw(manifest, valores, attr);
-      return (r == null || r === '') ? '0' : String(r);
+      if (r == null || r === '') return codigos ? '' : '0';
+      var mapa = codigos && codigos[attr];
+      if (mapa && Object.prototype.hasOwnProperty.call(mapa, String(r))) return mapa[String(r)];
+      return String(r);
+    }
+    function sustituir(txt) {
+      var hubo = false;
+      var out = txt.replace(/\{([^}]+)\}/g, function (_, attr) {
+        var t = token(attr);
+        if (t !== '') hubo = true;
+        return t;
+      });
+      return { txt: out, hubo: hubo };
+    }
+    var conTramos = patron.replace(/\[([^\]]*)\]/g, function (_, dentro) {
+      var s = sustituir(dentro);
+      return s.hubo ? s.txt : '';
     });
+    return sustituir(conTramos).txt;
   }
 
   /* El nombre del archivo describe la configuración, así que se recalcula en
@@ -893,8 +941,10 @@
        cuando el campo declara `max_regla` (evita el error 1 desde la captura). */
     function maxEfectivo() {
       var max = field.max || 99;
-      if (field.max_regla === 'cajones') {
-        var p = presupuestoCajones(manifest, registro.valores);
+      // `max_regla: "cajones:<pila>"` topa el contador con lo que cabe en esa zona.
+      var mr = /^cajones:(.+)$/.exec(field.max_regla || '');
+      if (mr) {
+        var p = presupuestoCajones(manifest, registro.valores, mr[1]);
         if (p.aplica && isFinite(p.nMax)) max = Math.min(max, Math.max(min, p.nMax));
       }
       return max;
@@ -929,27 +979,21 @@
   /* Pinta los resúmenes de los grupos con `presupuesto`. El de cajones bloquea
      (rojo) y el de divisores solo advierte (ámbar), igual que R-14/R-17. */
   function refreshBudget(manifest, valores) {
-    var box = document.querySelector('.budget[data-budget="cajones"]');
-    if (box) {
-      var p = presupuestoCajones(manifest, valores);
+    // Un resumen por pila: el grupo declara `presupuesto: "cajones:<pila>"`.
+    Array.prototype.forEach.call(document.querySelectorAll('.budget[data-budget^="cajones:"]'), function (box) {
+      var p = presupuestoCajones(manifest, valores, box.dataset.budget.slice('cajones:'.length));
       box.hidden = !p.aplica;
-      if (p.aplica) {
-        var sobra = p.ok && p.libres === 0 && p.restante > 1;
-        box.classList.toggle('budget--bad', !p.ok);
-        box.classList.toggle('budget--warn', sobra);
-        var partes = [
-          'Alto útil ' + fmt(p.util) + ' mm',
-          p.n + (p.n === 1 ? ' cajón' : ' cajones' + (p.uniforme ? ' iguales' : '')),
-          'asignado ' + fmt(p.asignado) + ' mm'
-        ];
-        if (p.libres > 0) {
-          partes.push('restante ' + fmt(p.restante) + ' mm → ' + fmt(p.porCajon) + ' mm c/u');
-        } else if (p.restante > 1) {
-          partes.push('sobran ' + fmt(p.restante) + ' mm sin usar');
-        }
-        box.textContent = partes.join(' · ') + (p.ok ? '' : ' — ' + p.mensaje);
-      }
-    }
+      if (!p.aplica) return;
+      box.classList.toggle('budget--bad', !p.ok);
+      box.classList.remove('budget--warn');
+      var partes = [
+        'Alto de la zona ' + fmt(p.zona) + ' mm',
+        p.n + (p.n === 1 ? ' cajón' : ' cajones' + (p.personal ? '' : ' iguales')),
+        p.n === 1 ? fmt(p.ultimo) + ' mm'
+                  : 'altos ' + p.altos.map(fmt).join(' / ') + ' mm' + (p.personal ? ' (el último toma el resto)' : '')
+      ];
+      box.textContent = partes.join(' · ') + (p.ok ? '' : ' — ' + p.mensaje);
+    });
 
     var caja = document.querySelector('.budget[data-budget="divisores"]');
     if (!caja) return;
@@ -1023,7 +1067,6 @@
 
     // Visibilidad y habilitación se resuelven desde el manifiesto (una sola
     // implementación de cada predicado, compartida con flatten()).
-    var uniforme = cajonesUniformes(manifest, valores);
     manifest.grupos.forEach(function (g) {
       g.campos.forEach(function (f) {
         var wrap = document.querySelector('.field[data-field-id="' + f.id + '"]');
@@ -1166,7 +1209,6 @@
         flat[f.attr] = v;   // duplicados de attr: gana el último (quirk conocido de la definición)
       });
     });
-    aplicarAltosAutomaticos(manifest, registro, flat);
     return flat;
   }
 
@@ -1197,20 +1239,6 @@
       nombres.push(Object.prototype.hasOwnProperty.call(mapa, modo) ? mapa[modo] : R.nombre_default);
     }
     return { prefijo: R.prefijo, nombres: nombres };
-  }
-
-  /* Cierra el reparto: los cajones en «Automático» reciben el alto restante ya
-     calculado, para que el .skp coincida con lo que mostró el presupuesto en vez
-     de depender de la fórmula sin piso del componente. */
-  function aplicarAltosAutomaticos(manifest, registro, flat) {
-    var p = presupuestoCajones(manifest, registro.valores);
-    if (!p.aplica || !p.ok || p.libres <= 0) return;
-    // `attrsAlto` ya viene recortado a los cajones que existen, así que no hace
-    // falta volver a filtrar por visibilidad: en modo uniforme el campo está
-    // oculto pero el alto calculado sí tiene que llegar al .skp.
-    p.libresIdx.forEach(function (i) {
-      flat[p.attrsAlto[i]] = (Math.round(p.porCajon * 100) / 100) + 'mm';
-    });
   }
 
   /* Manda UN registro a generar. Devuelve { ok } o { ok:false, titulo, error }
@@ -1927,6 +1955,8 @@
     avisosConfig:         avisosConfig,
     flatten:              flatten,
     presupuestoCajones:   presupuestoCajones,
+    presupuestosCajones:  presupuestosCajones,
+    altoZona:             altoZona,
     presupuestoDivisores: presupuestoDivisores,
     fieldByAttr:          fieldByAttr,
     fieldVisible:         fieldVisible,
